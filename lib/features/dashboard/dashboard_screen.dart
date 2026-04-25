@@ -11,163 +11,116 @@ class DashboardScreen extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: const Text('SIKADERCANTIK'),
-        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+        centerTitle: false,
         actions: [
           IconButton(
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Container(
-            height: 280,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withBlue(150),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-          ),
-          profileAsync.when(
-            data: (profile) {
-              if (profile == null) {
-                return const Center(child: Text('Profil tidak ditemukan'));
-              }
-              
-              return SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
+      body: profileAsync.when(
+        data: (profile) {
+          if (profile == null) {
+            return const Center(child: Text('Profil tidak ditemukan'));
+          }
+          
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  color: Colors.white,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                            ),
-                            child: CircleAvatar(
-                              radius: 32,
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              child: const Icon(Icons.person, size: 35, color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Selamat Datang,',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white.withOpacity(0.8)),
-                                ),
-                                Text(
-                                  profile.fullName,
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Hai, ${profile.fullName}!',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                        ),
                       ),
-                      const SizedBox(height: 40),
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Menu Utama',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 20),
-                            if (profile.role == 'admin') ...[
-                              _DashboardCard(
-                                title: 'Manajemen Wilayah',
-                                subtitle: 'Kelola Desa, RW, dan Posyandu',
-                                icon: Icons.location_city,
-                                color: Colors.blue,
-                                onTap: () => context.push('/locations'),
-                              ),
-                              const SizedBox(height: 16),
-                              _DashboardCard(
-                                title: 'Monitoring Laporan',
-                                subtitle: 'Lihat data jentik masuk',
-                                icon: Icons.analytics,
-                                color: Colors.orange,
-                                onTap: () => context.push('/analytics'),
-                              ),
-                            ],
-                            if (profile.role == 'kader') ...[
-                              _DashboardCard(
-                                title: 'Input Laporan PSN',
-                                subtitle: 'Catat temuan jentik nyamuk',
-                                icon: Icons.assignment_add,
-                                color: Theme.of(context).primaryColor,
-                                onTap: () => context.push('/report'),
-                              ),
-                              const SizedBox(height: 16),
-                              _DashboardCard(
-                                title: 'Riwayat Laporan',
-                                subtitle: 'Lihat laporan yang sudah dikirim',
-                                icon: Icons.history,
-                                color: Colors.purple,
-                                onTap: () => context.push('/history'),
-                              ),
-                            ],
-                          ],
-                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        profile.role == 'admin' ? 'Admin Puskesmas' : 'Kader Kesehatan',
+                        style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            error: (e, s) => Center(child: Text('Terjadi kesalahan: $e')),
-          ),
-        ],
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pilih Layanan',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      if (profile.role == 'admin') ...[
+                        _DashboardMenuTile(
+                          title: 'Monitoring Laporan',
+                          subtitle: 'Analisis data jentik real-time',
+                          icon: Icons.analytics_rounded,
+                          color: const Color(0xFF5FB946),
+                          onTap: () => context.push('/analytics'),
+                        ),
+                        const SizedBox(height: 12),
+                        _DashboardMenuTile(
+                          title: 'Manajemen Wilayah',
+                          subtitle: 'Atur Desa, RW, & Posyandu',
+                          icon: Icons.map_rounded,
+                          color: const Color(0xFFFF9F43),
+                          onTap: () => context.push('/locations'),
+                        ),
+                      ],
+                      if (profile.role == 'kader') ...[
+                        _DashboardMenuTile(
+                          title: 'Input Laporan PSN',
+                          subtitle: 'Catat hasil pemeriksaan jentik',
+                          icon: Icons.add_task_rounded,
+                          color: const Color(0xFF5FB946),
+                          onTap: () => context.push('/report'),
+                        ),
+                        const SizedBox(height: 12),
+                        _DashboardMenuTile(
+                          title: 'Riwayat Laporan',
+                          subtitle: 'Lihat progres laporan Anda',
+                          icon: Icons.history_rounded,
+                          color: const Color(0xFF54A0FF),
+                          onTap: () => context.push('/history'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('Terjadi kesalahan: $e')),
       ),
     );
   }
 }
 
-class _DashboardCard extends StatelessWidget {
+class _DashboardMenuTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _DashboardCard({
+  const _DashboardMenuTile({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -180,13 +133,15 @@ class _DashboardCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      elevation: 2,
-      shadowColor: Colors.black12,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Row(
             children: [
               Container(
@@ -206,6 +161,7 @@ class _DashboardCard extends StatelessWidget {
                       title,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(color: Colors.grey[600], fontSize: 13),
@@ -213,7 +169,7 @@ class _DashboardCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),
