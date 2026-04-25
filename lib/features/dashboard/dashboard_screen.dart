@@ -50,13 +50,35 @@ class DashboardScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        // Profile Menu with Logout
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'logout') {
+                              ref.read(authRepositoryProvider).signOut();
+                            }
+                          },
+                          offset: const Offset(0, 50),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'logout',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout, color: Colors.red, size: 20),
+                                  SizedBox(width: 10),
+                                  Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.3)),
+                            ),
+                            child: const Icon(Icons.person_outline, color: Colors.white),
                           ),
-                          child: const Icon(Icons.person_outline, color: Colors.white),
                         ),
                       ],
                     ),
@@ -197,32 +219,26 @@ class DashboardScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Error: $e')),
       ),
-      // 5. Floating Bottom Bar (Sayurbox Cart style)
+      // 5. Floating Bottom Bar (Tidied up)
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFF1D7423),
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.info_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Status Pelaporan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  Text('Anda belum mengirim laporan hari ini', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
+            Icon(Icons.info_outline, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Anda belum mengirim laporan hari ini',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
-            TextButton(
-              onPressed: () => ref.read(authRepositoryProvider).signOut(),
-              child: const Text('LOGOUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
-            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
           ],
         ),
       ),

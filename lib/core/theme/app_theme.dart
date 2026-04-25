@@ -18,7 +18,7 @@ class AppTheme {
         surface: Colors.white,
         background: backgroundLight,
       ),
-      textTheme: GoogleFonts.outfitTextTheme(), // More modern than Inter
+      textTheme: GoogleFonts.interTextTheme(),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
