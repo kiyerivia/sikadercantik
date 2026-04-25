@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryGreen = Color(0xFF00B894); // Modern Mint Green
+  static const Color primaryGreen = Color(0xFF1D7423); // Sayurbox Dark Green
   static const Color secondaryBlue = Color(0xFF0984E3); // Modern Blue
   static const Color accentPurple = Color(0xFF6C5CE7);
   static const Color backgroundLight = Color(0xFFF1F2F6);

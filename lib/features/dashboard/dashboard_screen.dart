@@ -11,169 +11,321 @@ class DashboardScreen extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-      appBar: AppBar(
-        title: const Text('SIKADERCANTIK'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.white,
       body: profileAsync.when(
         data: (profile) {
-          if (profile == null) {
-            return const Center(child: Text('Profil tidak ditemukan'));
-          }
-          
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  color: Colors.white,
+          if (profile == null) return const Center(child: Text('Profil tidak ditemukan'));
+
+          return Column(
+            children: [
+              // 1. Sayurbox Custom Header
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
+                color: const Color(0xFF1D7423),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pantau Jentik di',
+                                style: TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Pilih Lokasi',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          ),
+                          child: const Icon(Icons.person_outline, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Search Bar
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, color: Colors.grey[400]),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Cari laporan atau wilayah...',
+                            style: TextStyle(color: Colors.grey[400]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 2. Main Content
+              Expanded(
+                child: SingleChildScrollView(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Hai, ${profile.fullName}!',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1,
+                      // Banner Promo Placeholder
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Container(
+                          height: 160,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(16),
+                            image: const DecorationImage(
+                              image: NetworkImage('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1000'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                                begin: Alignment.bottomLeft,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            alignment: Alignment.bottomLeft,
+                            child: const Text(
+                              'Bersama Lawan\nDemam Berdarah',
+                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        profile.role == 'admin' ? 'Admin Puskesmas' : 'Kader Kesehatan',
-                        style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+
+                      // 3. Main Service Cards (Egg & Rice style)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            if (profile.role == 'kader') ...[
+                              Expanded(
+                                child: _SayurboxProductCard(
+                                  title: 'Input Laporan',
+                                  price: 'PSN Baru',
+                                  image: Icons.add_circle_outline,
+                                  color: Colors.orange,
+                                  onTap: () => context.push('/report'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _SayurboxProductCard(
+                                  title: 'Riwayat Saya',
+                                  price: 'Lihat Data',
+                                  image: Icons.history,
+                                  color: Colors.blue,
+                                  onTap: () => context.push('/history'),
+                                ),
+                              ),
+                            ] else ...[
+                              Expanded(
+                                child: _SayurboxProductCard(
+                                  title: 'Monitoring',
+                                  price: 'Cek Laporan',
+                                  image: Icons.analytics_outlined,
+                                  color: const Color(0xFF1D7423),
+                                  onTap: () => context.push('/analytics'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _SayurboxProductCard(
+                                  title: 'Lokasi',
+                                  price: 'Atur Wilayah',
+                                  image: Icons.map_outlined,
+                                  color: Colors.purple,
+                                  onTap: () => context.push('/locations'),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
+
+                      // 4. Category Icons
+                      const SizedBox(height: 24),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _CategoryIcon(icon: Icons.new_releases, label: 'Terbaru', color: Colors.amber),
+                            _CategoryIcon(icon: Icons.verified_user, label: 'Verifikasi', color: Colors.green),
+                            _CategoryIcon(icon: Icons.warning, label: 'Waspada', color: Colors.red),
+                            _CategoryIcon(icon: Icons.people, label: 'Kader', color: Colors.blue),
+                            _CategoryIcon(icon: Icons.assessment, label: 'Statistik', color: Colors.purple),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pilih Layanan',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      if (profile.role == 'admin') ...[
-                        _DashboardMenuTile(
-                          title: 'Monitoring Laporan',
-                          subtitle: 'Analisis data jentik real-time',
-                          icon: Icons.analytics_rounded,
-                          color: const Color(0xFF5FB946),
-                          onTap: () => context.push('/analytics'),
-                        ),
-                        const SizedBox(height: 12),
-                        _DashboardMenuTile(
-                          title: 'Manajemen Wilayah',
-                          subtitle: 'Atur Desa, RW, & Posyandu',
-                          icon: Icons.map_rounded,
-                          color: const Color(0xFFFF9F43),
-                          onTap: () => context.push('/locations'),
-                        ),
-                      ],
-                      if (profile.role == 'kader') ...[
-                        _DashboardMenuTile(
-                          title: 'Input Laporan PSN',
-                          subtitle: 'Catat hasil pemeriksaan jentik',
-                          icon: Icons.add_task_rounded,
-                          color: const Color(0xFF5FB946),
-                          onTap: () => context.push('/report'),
-                        ),
-                        const SizedBox(height: 12),
-                        _DashboardMenuTile(
-                          title: 'Riwayat Laporan',
-                          subtitle: 'Lihat progres laporan Anda',
-                          icon: Icons.history_rounded,
-                          color: const Color(0xFF54A0FF),
-                          onTap: () => context.push('/history'),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Terjadi kesalahan: $e')),
+        error: (e, s) => Center(child: Text('Error: $e')),
+      ),
+      // 5. Floating Bottom Bar (Sayurbox Cart style)
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D7423),
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Status Pelaporan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text('Anda belum mengirim laporan hari ini', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => ref.read(authRepositoryProvider).signOut(),
+              child: const Text('LOGOUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _DashboardMenuTile extends StatelessWidget {
+class _SayurboxProductCard extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final IconData icon;
+  final String price;
+  final IconData image;
   final Color color;
   final VoidCallback onTap;
 
-  const _DashboardMenuTile({
+  const _SayurboxProductCard({
     required this.title,
-    required this.subtitle,
-    required this.icon,
+    required this.price,
+    required this.image,
     required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.05),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  child: Icon(image, size: 50, color: color),
                 ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                  ],
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: Color(0xFF1D7423), shape: BoxShape.circle),
+                    child: const Icon(Icons.add, color: Colors.white, size: 18),
+                  ),
                 ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0xFF1D7423), borderRadius: BorderRadius.circular(100)),
+                    child: Text(
+                      price,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _CategoryIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _CategoryIcon({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+      ],
     );
   }
 }
