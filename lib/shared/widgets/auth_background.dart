@@ -22,7 +22,7 @@ class AuthBackground extends StatelessWidget {
           child: Container(
             height: headerHeight,
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -34,7 +34,7 @@ class AuthBackground extends StatelessWidget {
             ),
             child: CustomPaint(
               painter: TopographicPainter(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
           ),
