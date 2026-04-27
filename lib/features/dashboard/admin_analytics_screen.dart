@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
-import '../../shared/providers/report_providers.dart';
 import 'package:intl/intl.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
@@ -14,9 +13,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(allReportsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Monitoring & Analitik'),
-      ),
+      appBar: AppBar(title: const Text('Monitoring & Analitik')),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(allReportsProvider);
@@ -35,7 +32,10 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                   children: [
                     const Text(
                       'Laporan Terbaru',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
@@ -56,7 +56,8 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                       return _AdminReportTile(report: report);
                     },
                   ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Text('Error: $e'),
                 ),
               ],
@@ -166,7 +167,11 @@ class _StatCard extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 label,
-                style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -189,12 +194,14 @@ class _AdminReportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat('dd/MM/yy').format(report.reportDate);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         title: Text('Laporan $dateStr'),
-        subtitle: Text('Positif: ${report.housesPositive}/${report.housesInspected} rumah'),
+        subtitle: Text(
+          'Positif: ${report.housesPositive}/${report.housesInspected} rumah',
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/report-detail', extra: report),
       ),

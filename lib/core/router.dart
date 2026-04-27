@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../features/auth/login_screen.dart';
@@ -31,14 +30,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const DashboardScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
       GoRoute(
         path: '/locations',
         builder: (context, state) => const LocationManagementScreen(),
@@ -57,7 +50,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/report-detail',
-        builder: (context, state) => ReportDetailScreen(report: state.extra as Report),
+        builder: (context, state) =>
+            ReportDetailScreen(report: state.extra as Report),
       ),
     ],
   );

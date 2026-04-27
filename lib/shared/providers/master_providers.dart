@@ -23,6 +23,11 @@ final posyandusProvider = FutureProvider.family<List<Posyandu>, String>((ref, rw
   return await repo.getPosyandus(rwId);
 });
 
+final posyandusByVillageProvider = FutureProvider.family<List<Posyandu>, String>((ref, villageId) async {
+  final repo = ref.watch(masterRepositoryProvider);
+  return await repo.getPosyandusByVillage(villageId);
+});
+
 final breedingPlacesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.watch(masterRepositoryProvider);
   return await repo.getBreedingPlaces();

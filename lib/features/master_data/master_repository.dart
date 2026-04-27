@@ -29,6 +29,15 @@ class MasterRepository {
     return (response as List).map((m) => Posyandu.fromMap(m)).toList();
   }
 
+  Future<List<Posyandu>> getPosyandusByVillage(String villageId) async {
+    final response = await _client
+        .from('posyandus')
+        .select('*, rws!inner(*)')
+        .eq('rws.village_id', villageId)
+        .order('name');
+    return (response as List).map((m) => Posyandu.fromMap(m)).toList();
+  }
+
   Future<List<Map<String, dynamic>>> getBreedingPlaces() async {
     final response = await _client
         .from('mosquito_breeding_places')
