@@ -324,16 +324,18 @@ class ReportFormScreen extends HookConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            flex: 3,
+                            flex: 6,
                             child: _buildTextInput(kkNameController, 'Nama'),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildTextInput(rtController, 'RT'),
+                            flex: 2,
+                            child: _buildTextInput(rtController, 'RT', textAlign: TextAlign.center),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _buildTextInput(rwController, 'RW'),
+                            flex: 2,
+                            child: _buildTextInput(rwController, 'RW', textAlign: TextAlign.center),
                           ),
                         ],
                       ),
@@ -521,9 +523,10 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildTextInput(TextEditingController controller, String hint) {
+  Widget _buildTextInput(TextEditingController controller, String hint, {TextAlign textAlign = TextAlign.start}) {
     return TextFormField(
       controller: controller,
+      textAlign: textAlign,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
