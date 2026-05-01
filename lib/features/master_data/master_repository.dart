@@ -38,6 +38,38 @@ class MasterRepository {
     return (response as List).map((m) => Posyandu.fromMap(m)).toList();
   }
 
+  Future<String> insertVillage(String name) async {
+    final resp = await _client.from('villages').insert({'name': name}).select('id').single();
+    return (resp as Map<String, dynamic>)['id'] as String;
+  }
+
+  Future<String> insertRw({required String villageId, required String rwNumber}) async {
+    final resp = await _client.from('rws').insert({
+      'village_id': villageId,
+      'rw_number': rwNumber,
+    }).select('id').single();
+    return (resp as Map<String, dynamic>)['id'] as String;
+  }
+
+  Future<String> insertPosyandu({
+    required String rwId,
+    required String name,
+    String? year,
+    String? address,
+    String? chairName,
+    String? phone,
+  }) async {
+    final resp = await _client.from('posyandus').insert({
+      'rw_id': rwId,
+      'name': name,
+      if (year != null) 'year_established': year,
+      if (address != null) 'address': address,
+      if (chairName != null) 'chair_name': chairName,
+      if (phone != null) 'phone_number': phone,
+    }).select('id').single();
+    return (resp as Map<String, dynamic>)['id'] as String;
+  }
+
   Future<List<Map<String, dynamic>>> getBreedingPlaces() async {
     final response = await _client
         .from('mosquito_breeding_places')
@@ -46,4 +78,4 @@ class MasterRepository {
         .order('name');
     return List<Map<String, dynamic>>.from(response);
   }
-}
+

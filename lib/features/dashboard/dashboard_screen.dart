@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/providers/master_providers.dart'; // master data providers
+import 'package:file_picker/file_picker.dart'; // file picking
+import 'package:excel/excel.dart'; // Excel parsing
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -17,10 +20,11 @@ class DashboardScreen extends ConsumerWidget {
 
         if (profile.role == 'kader') {
           return _KaderDashboard(profile: profile);
+        } else if (profile.role == 'admin') {
+          return _AdminDashboard(profile: profile);
         }
-
-        // Admin Dashboard (Keep original for now or slightly update colors)
-        return _AdminDashboard(profile: profile);
+        
+        return Scaffold(body: Center(child: Text('Role tidak valid: ${profile.role}')));
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, s) => Scaffold(body: Center(child: Text('Error: $e'))),

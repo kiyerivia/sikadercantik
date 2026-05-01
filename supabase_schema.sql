@@ -81,6 +81,17 @@ ALTER TABLE interventions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public profiles are viewable by everyone." ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile." ON profiles FOR UPDATE USING (auth.uid() = id);
 
+-- POLICIES (Example: Report Junctions)
+CREATE POLICY "Report junction viewable by everyone." ON report_breeding_places FOR SELECT USING (true);
+CREATE POLICY "Kader can insert report junctions." ON report_breeding_places 
+FOR INSERT WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM reports 
+        WHERE reports.id = report_breeding_places.report_id 
+        AND reports.kader_id = auth.uid()
+    )
+);
+
 -- POLICIES (Example: Reports)
 CREATE POLICY "Kader can insert their own reports." ON reports FOR INSERT WITH CHECK (auth.uid() = kader_id);
 CREATE POLICY "Kader can view their own reports." ON reports FOR SELECT USING (auth.uid() = kader_id);

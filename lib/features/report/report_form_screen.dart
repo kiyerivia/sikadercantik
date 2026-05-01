@@ -4,9 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:excel/excel.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
-import '../../shared/widgets/location_selector.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/providers/auth_providers.dart';
 
@@ -22,7 +23,7 @@ class ReportFormScreen extends HookConsumerWidget {
     final rtController = useTextEditingController();
     final rwController = useTextEditingController();
     final positivePlacesCountController = useTextEditingController(text: '0');
-    
+
     final selectedVillageId = useState<String?>(null);
     final selectedPosyanduId = useState<String?>(null);
     final selectedResult = useState<String?>(null);
@@ -32,30 +33,35 @@ class ReportFormScreen extends HookConsumerWidget {
 
     // Watch Master Data
     final villagesAsync = ref.watch(villagesProvider);
-    final posyandusAsync = selectedVillageId.value != null 
-        ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!)) 
+    final posyandusAsync = selectedVillageId.value != null
+        ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
         : const AsyncValue.data(<Posyandu>[]);
     final breedingPlacesAsync = ref.watch(breedingPlacesProvider);
 
     Future<void> handleSubmit() async {
       if (!formKey.currentState!.validate()) return;
       if (selectedPosyanduId.value == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Silakan pilih Posyandu')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Silakan pilih Posyandu')));
         return;
       }
 
       isLoading.value = true;
       try {
-        await ref.read(reportRepositoryProvider).submitReport(
-          posyanduId: selectedPosyanduId.value!,
-          housesInspected: int.parse(housesInspectedController.text),
-          housesPositive: int.parse(housesPositiveController.text),
-          breedingPlaceIds: selectedPlaceId.value != null ? [selectedPlaceId.value!] : [],
-          notes: 'Hasil: ${selectedResult.value ?? "-"}\nKK: ${kkNameController.text}, RT: ${rtController.text}, RW: ${rwController.text}',
-        );
-        
+        await ref
+            .read(reportRepositoryProvider)
+            .submitReport(
+              posyanduId: selectedPosyanduId.value!,
+              housesInspected: int.parse(housesInspectedController.text),
+              housesPositive: int.parse(housesPositiveController.text),
+              breedingPlaceIds: selectedPlaceId.value != null
+                  ? [selectedPlaceId.value!]
+                  : [],
+              notes:
+                  'Hasil: ${selectedResult.value ?? "-"}\nKK: ${kkNameController.text}, RT: ${rtController.text}, RW: ${rwController.text}',
+            );
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Laporan berhasil dikirim!')),
@@ -65,9 +71,9 @@ class ReportFormScreen extends HookConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal mengirim laporan: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Gagal mengirim laporan: $e')));
         }
       } finally {
         isLoading.value = false;
@@ -105,7 +111,11 @@ class ReportFormScreen extends HookConsumerWidget {
           ],
         ),
         actions: [
-          const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
+          const Icon(
+            Icons.notifications_outlined,
+            color: Colors.white,
+            size: 28,
+          ),
           const SizedBox(width: 12),
           PopupMenuButton<void>(
             onSelected: (_) => ref.read(authRepositoryProvider).signOut(),
@@ -139,8 +149,87 @@ class ReportFormScreen extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          // Breadcrumbs
-          Container(
+          // Add Import Excel button above form
+    Widget _buildImportExcelButton(WidgetRef ref, BuildContext context) {
+      return ElevatedButton.icon(
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Import Master Data (Excel)'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1D7423),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () async {
+          await _handleExcelImport(ref, context);
+        },
+      );
+    }
+
+    Future<void> _handleExcelImport(WidgetRef ref, BuildContext ctx) async {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('Tidak ada file yang dipilih')),
+        );
+        return;
+      }
+      final bytes = result.files.first.bytes!;
+      final excel = Excel.decodeBytes(bytes);
+      final Sheet? sheet = excel.sheets.values.firstOrNull;
+      if (sheet == null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('File Excel tidak memiliki sheet')),
+        );
+        return;
+      }
+
+      final repo = ref.read(masterRepositoryProvider);
+      final Map<String, String> villageIdMap = {};
+      final Map<String, String> rwIdMap = {};
+
+      // Iterate rows, skipping header rows (assume first 2 rows are headers)
+      for (int i = 2; i < sheet.maxRows; i++) {
+        final row = sheet.row(i);
+        if (row.isEmpty) continue;
+        // Columns based on provided example
+        final desa = row[3]?.value?.toString().trim() ?? '';
+        final rwRaw = row[4]?.value?.toString().trim() ?? '';
+        final posyanduName = row[5]?.value?.toString().trim() ?? '';
+        if (desa.isEmpty || rwRaw.isEmpty || posyanduName.isEmpty) continue;
+        // Insert or fetch village id
+        String villageId;
+        if (villageIdMap.containsKey(desa)) {
+          villageId = villageIdMap[desa]!;
+        } else {
+          villageId = await repo.insertVillage(desa);
+          villageIdMap[desa] = villageId;
+        }
+        // Extract numeric RW number
+        final rwNumber = rwRaw.replaceAll(RegExp(r'[^0-9]'), '');
+        final rwKey = '$villageId|$rwNumber';
+        String rwId;
+        if (rwIdMap.containsKey(rwKey)) {
+          rwId = rwIdMap[rwKey]!;
+        } else {
+          rwId = await repo.insertRw(villageId: villageId, rwNumber: rwNumber);
+          rwIdMap[rwKey] = rwId;
+        }
+        // Insert posyandu
+        await repo.insertPosyandu(rwId: rwId, name: posyanduName);
+      }
+
+      // Refresh providers so dropdowns load new data
+      ref.invalidate(villagesProvider);
+      // Invalidate posyandu by village when a village is selected will refetch automatically
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Data master berhasil di‑import')),
+      );
+    }          Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             color: Colors.white.withOpacity(0.5),
@@ -150,7 +239,10 @@ class ReportFormScreen extends HookConsumerWidget {
                   onTap: () => context.pop(),
                   borderRadius: BorderRadius.circular(4),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     child: Text(
                       'Beranda',
                       style: GoogleFonts.outfit(
@@ -162,7 +254,10 @@ class ReportFormScreen extends HookConsumerWidget {
                   ),
                 ),
                 const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
-                Text('Entri Laporan PSN', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'Entri Laporan PSN',
+                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -196,7 +291,7 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Nama Desa
                       _buildLabel(Icons.location_on, 'Nama Desa', Colors.blue),
                       const SizedBox(height: 8),
@@ -207,17 +302,25 @@ class ReportFormScreen extends HookConsumerWidget {
                           error: (e, s) => 'Error: $e',
                           orElse: () => 'Pilih Desa',
                         ),
-                        onChanged: villagesAsync.maybeWhen<void Function(String?)?>(
-                          data: (villages) => villages.isEmpty ? null : (val) {
-                            selectedVillageId.value = val;
-                            selectedPosyanduId.value = null;
-                          },
-                          orElse: () => null,
-                        ),
+                        onChanged: villagesAsync
+                            .maybeWhen<void Function(String?)?>(
+                              data: (villages) => villages.isEmpty
+                                  ? null
+                                  : (val) {
+                                      selectedVillageId.value = val;
+                                      selectedPosyanduId.value = null;
+                                    },
+                              orElse: () => null,
+                            ),
                         items: villagesAsync.maybeWhen(
-                          data: (villages) => villages.map((v) => 
-                            DropdownMenuItem<String>(value: v.id, child: Text(v.name))
-                          ).toList(),
+                          data: (villages) => villages
+                              .map(
+                                (v) => DropdownMenuItem<String>(
+                                  value: v.id,
+                                  child: Text(v.name),
+                                ),
+                              )
+                              .toList(),
                           orElse: () => [],
                         ),
                       ),
@@ -228,28 +331,40 @@ class ReportFormScreen extends HookConsumerWidget {
                       const SizedBox(height: 8),
                       _buildDropdown(
                         value: selectedPosyanduId.value,
-                        hint: selectedVillageId.value == null 
-                            ? 'Pilih Desa Terlebih Dahulu' 
+                        hint: selectedVillageId.value == null
+                            ? 'Pilih Desa Terlebih Dahulu'
                             : posyandusAsync.maybeWhen(
                                 loading: () => 'Memuat posyandu...',
                                 error: (e, s) => 'Error: $e',
                                 orElse: () => 'Pilih Posyandu',
                               ),
-                        onChanged: posyandusAsync.maybeWhen<void Function(String?)?>(
-                          data: (posyandus) => posyandus.isEmpty ? null : (val) => selectedPosyanduId.value = val,
-                          orElse: () => null,
-                        ),
+                        onChanged: posyandusAsync
+                            .maybeWhen<void Function(String?)?>(
+                              data: (posyandus) => posyandus.isEmpty
+                                  ? null
+                                  : (val) => selectedPosyanduId.value = val,
+                              orElse: () => null,
+                            ),
                         items: posyandusAsync.maybeWhen(
-                          data: (posyandus) => posyandus.map((p) => 
-                            DropdownMenuItem<String>(value: p.id, child: Text(p.name))
-                          ).toList(),
+                          data: (posyandus) => posyandus
+                              .map(
+                                (p) => DropdownMenuItem<String>(
+                                  value: p.id,
+                                  child: Text(p.name),
+                                ),
+                              )
+                              .toList(),
                           orElse: () => [],
                         ),
                       ),
                       const SizedBox(height: 16),
 
                       // Tanggal Laporan
-                      _buildLabel(Icons.calendar_today, 'Tanggal Laporan', Colors.blue),
+                      _buildLabel(
+                        Icons.calendar_today,
+                        'Tanggal Laporan',
+                        Colors.blue,
+                      ),
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () async {
@@ -262,16 +377,27 @@ class ReportFormScreen extends HookConsumerWidget {
                           if (date != null) reportDate.value = date;
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey[300]!),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.calendar_month, color: Colors.grey[600], size: 20),
+                              Icon(
+                                Icons.calendar_month,
+                                color: Colors.grey[600],
+                                size: 20,
+                              ),
                               const SizedBox(width: 12),
-                              Text(DateFormat('dd MMMM yyyy').format(reportDate.value)),
+                              Text(
+                                DateFormat(
+                                  'dd MMMM yyyy',
+                                ).format(reportDate.value),
+                              ),
                             ],
                           ),
                         ),
@@ -285,7 +411,14 @@ class ReportFormScreen extends HookConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Jumlah Rumah Diperiksa', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF003049))),
+                                Text(
+                                  'Jumlah Rumah Diperiksa',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF003049),
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 _buildNumericInput(housesInspectedController),
                               ],
@@ -296,7 +429,14 @@ class ReportFormScreen extends HookConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Jumlah Rumah Positif Jentik', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF003049))),
+                                Text(
+                                  'Jumlah Rumah Positif Jentik',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF003049),
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 _buildNumericInput(housesPositiveController),
                               ],
@@ -307,18 +447,33 @@ class ReportFormScreen extends HookConsumerWidget {
                       const SizedBox(height: 16),
 
                       // Hasil PSN
-                      _buildLabel(Icons.bug_report, 'Hasil PSN (Pemberantasan Sarang Nyamuk)', Colors.green),
+                      _buildLabel(
+                        Icons.bug_report,
+                        'Hasil PSN (Pemberantasan Sarang Nyamuk)',
+                        Colors.green,
+                      ),
                       const SizedBox(height: 8),
                       _buildDropdown(
                         value: selectedResult.value,
                         hint: 'Pilih Hasil',
                         onChanged: (val) => selectedResult.value = val,
-                        items: (['Ada Jentik', 'Nihil']..sort()).map<DropdownMenuItem<String>>((e) => DropdownMenuItem<String>(value: e, child: Text(e))).toList(),
+                        items: (['Ada Jentik', 'Nihil']..sort())
+                            .map<DropdownMenuItem<String>>(
+                              (e) => DropdownMenuItem<String>(
+                                value: e,
+                                child: Text(e),
+                              ),
+                            )
+                            .toList(),
                       ),
                       const SizedBox(height: 16),
 
                       // Nama KK section
-                      _buildLabel(Icons.assignment, 'Nama KK Positif Jentik', Colors.teal),
+                      _buildLabel(
+                        Icons.assignment,
+                        'Nama KK Positif Jentik',
+                        Colors.teal,
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,12 +485,20 @@ class ReportFormScreen extends HookConsumerWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 2,
-                            child: _buildTextInput(rtController, 'RT', textAlign: TextAlign.center),
+                            child: _buildTextInput(
+                              rtController,
+                              'RT',
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 2,
-                            child: _buildTextInput(rwController, 'RW', textAlign: TextAlign.center),
+                            child: _buildTextInput(
+                              rwController,
+                              'RW',
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ],
                       ),
@@ -346,18 +509,36 @@ class ReportFormScreen extends HookConsumerWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                              child: const Icon(Icons.add, color: Colors.white, size: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                             const SizedBox(height: 4),
-                            Text('Tambah\nNama KK', style: GoogleFonts.outfit(fontSize: 10, color: Colors.black54), textAlign: TextAlign.center),
+                            Text(
+                              'Tambah\nNama KK',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                color: Colors.black54,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 16),
 
                       // Tempat Positif
-                      _buildLabel(Icons.water_drop, 'Tempat Positif Jentik', Colors.blue),
+                      _buildLabel(
+                        Icons.water_drop,
+                        'Tempat Positif Jentik',
+                        Colors.blue,
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -368,14 +549,21 @@ class ReportFormScreen extends HookConsumerWidget {
                                 loading: () => 'Memuat tempat...',
                                 orElse: () => 'Pilih Tempat',
                               ),
-                              onChanged: breedingPlacesAsync.maybeWhen<void Function(String?)?>(
-                                data: (places) => (val) => selectedPlaceId.value = val,
-                                orElse: () => null,
-                              ),
+                              onChanged: breedingPlacesAsync
+                                  .maybeWhen<void Function(String?)?>(
+                                    data: (places) =>
+                                        (val) => selectedPlaceId.value = val,
+                                    orElse: () => null,
+                                  ),
                               items: breedingPlacesAsync.maybeWhen(
-                                data: (places) => places.map((e) => 
-                                  DropdownMenuItem<String>(value: e['id'] as String, child: Text(e['name'] as String))
-                                ).toList(),
+                                data: (places) => places
+                                    .map(
+                                      (e) => DropdownMenuItem<String>(
+                                        value: e['id'] as String,
+                                        child: Text(e['name'] as String),
+                                      ),
+                                    )
+                                    .toList(),
                                 orElse: () => [],
                               ),
                             ),
@@ -385,11 +573,25 @@ class ReportFormScreen extends HookConsumerWidget {
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(4)),
-                                child: const Icon(Icons.add, color: Colors.white, size: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                               ),
                               const SizedBox(height: 4),
-                              Text('Tambah\nTempat', style: GoogleFonts.outfit(fontSize: 10, color: Colors.black54), textAlign: TextAlign.center),
+                              Text(
+                                'Tambah\nTempat',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  color: Colors.black54,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ],
                           ),
                         ],
@@ -399,11 +601,17 @@ class ReportFormScreen extends HookConsumerWidget {
                       // Jumlah Tempat
                       Row(
                         children: [
-                          _buildLabel(Icons.settings, 'Jumlah Tempat Positif Jentik', Colors.teal),
+                          _buildLabel(
+                            Icons.settings,
+                            'Jumlah Tempat Positif Jentik',
+                            Colors.teal,
+                          ),
                           const SizedBox(width: 12),
                           SizedBox(
                             width: 80,
-                            child: _buildNumericInput(positivePlacesCountController),
+                            child: _buildNumericInput(
+                              positivePlacesCountController,
+                            ),
                           ),
                         ],
                       ),
@@ -431,10 +639,14 @@ class ReportFormScreen extends HookConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: isLoading.value
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : Text(
                                   'KIRIM LAPORAN',
                                   style: GoogleFonts.outfit(
@@ -489,7 +701,10 @@ class ReportFormScreen extends HookConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+          hint: Text(
+            hint,
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+          ),
           isExpanded: true,
           menuMaxHeight: 350, // Higher menu for better scrolling
           borderRadius: BorderRadius.circular(12),
@@ -523,7 +738,11 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildTextInput(TextEditingController controller, String hint, {TextAlign textAlign = TextAlign.start}) {
+  Widget _buildTextInput(
+    TextEditingController controller,
+    String hint, {
+    TextAlign textAlign = TextAlign.start,
+  }) {
     return TextFormField(
       controller: controller,
       textAlign: textAlign,
@@ -532,7 +751,10 @@ class ReportFormScreen extends HookConsumerWidget {
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
         filled: true,
         fillColor: const Color(0xFFF8F9FA),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey[300]!),

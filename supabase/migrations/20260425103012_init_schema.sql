@@ -92,6 +92,14 @@ CREATE POLICY "Admins can view and update all reports." ON reports FOR ALL USING
 
 CREATE POLICY "Breeding places are viewable by everyone." ON mosquito_breeding_places FOR SELECT USING (true);
 CREATE POLICY "Report junction viewable by everyone." ON report_breeding_places FOR SELECT USING (true);
+CREATE POLICY "Kader can insert report junctions." ON report_breeding_places 
+FOR INSERT WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM reports 
+        WHERE reports.id = report_breeding_places.report_id 
+        AND reports.kader_id = auth.uid()
+    )
+);
 CREATE POLICY "Admins can manage interventions." ON interventions FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
