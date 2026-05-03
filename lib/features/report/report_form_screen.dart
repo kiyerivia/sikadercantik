@@ -344,46 +344,52 @@ class ReportFormScreen extends HookConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
-                                  // Custom Add Button (Only on the first entry)
+                                  Text(
+                                    'DATA KK POSITIF #${idx + 1}',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: const Color(0xFF154360),
+                                    ),
+                                  ),
+                                  // Custom Add Button (Match Screenshot Proportions)
                                   if (idx == 0)
                                     InkWell(
                                       onTap: () {
                                         Feedback.forTap(context);
                                         houseEntries.value = [...houseEntries.value, HouseReportEntry()];
                                       },
-                                      borderRadius: BorderRadius.circular(25),
+                                      borderRadius: BorderRadius.circular(20),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          border: Border.all(color: const Color(0xFF154360), width: 1.5),
-                                          borderRadius: BorderRadius.circular(25),
+                                          border: Border.all(color: const Color(0xFF154360), width: 1.2),
+                                          borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                               child: Text(
                                                 'Tambah data KK',
                                                 style: GoogleFonts.outfit(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
                                                   color: const Color(0xFF154360),
                                                 ),
                                               ),
                                             ),
                                             Container(
-                                              width: 1.5,
-                                              height: 28,
+                                              width: 1.2,
+                                              height: 22,
                                               color: const Color(0xFF154360),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                                              padding: const EdgeInsets.symmetric(horizontal: 6),
                                               child: Image.asset(
                                                 'assets/images/icon_tambah_lokasi_positif.png',
-                                                width: 20,
-                                                height: 20,
-                                                fit: BoxFit.contain,
+                                                width: 16,
+                                                height: 16,
                                               ),
                                             ),
                                           ],
@@ -393,19 +399,26 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              _buildLabel(iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18), label: 'Status Pemeriksaan'),
+                              _buildLabel(
+                                iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18),
+                                label: 'Status Pemeriksaan',
+                              ),
                               const SizedBox(height: 8),
                               _buildDropdown(
                                 value: entry.selectedResult,
                                 hint: 'Pilih Status',
                                 onChanged: (val) {
+                                  Feedback.forTap(context);
                                   entry.selectedResult = val;
                                   houseEntries.value = [...houseEntries.value]; // Trigger rebuild
                                 },
                                 items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                               ),
                               const SizedBox(height: 16),
-                              _buildLabel(iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal), label: 'Nama KK & RT/RW'),
+                              _buildLabel(
+                                iconWidget: Image.asset('assets/images/icon_kk.png', width: 18, height: 18),
+                                label: 'Nama KK & RT/RW',
+                              ),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
@@ -421,12 +434,16 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
+                              _buildLabel(
+                                iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue),
+                                label: 'Tempat Positif Jentik',
+                              ),
                               const SizedBox(height: 8),
                               _buildDropdown(
                                 value: entry.selectedPlaceId,
                                 hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
                                 onChanged: (val) {
+                                  Feedback.forTap(context);
                                   entry.selectedPlaceId = val;
                                   houseEntries.value = [...houseEntries.value];
                                 },
@@ -439,7 +456,10 @@ class ReportFormScreen extends HookConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
+                                  _buildLabel(
+                                    iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal),
+                                    label: 'Jumlah Tempat Positif',
+                                  ),
                                   SizedBox(width: 60, child: _buildNumericInput(entry.positivePlacesCountController)),
                                 ],
                               ),
