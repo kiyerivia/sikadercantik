@@ -344,43 +344,44 @@ class ReportFormScreen extends HookConsumerWidget {
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
                                   Row(
                                     children: [
-                                      // Custom Add Button (Match Screenshot)
-                                      InkWell(
-                                        onTap: () {
-                                          houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                                        },
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: const Color(0xFF154360), width: 1.5),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                child: Text(
-                                                  'Tambah data KK',
-                                                  style: GoogleFonts.outfit(
-                                                    color: const Color(0xFF154360),
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 11,
+                                      // Custom Add Button (Only on the first entry)
+                                      if (idx == 0)
+                                        InkWell(
+                                          onTap: () {
+                                            houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: const Color(0xFF154360), width: 1.5),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  child: Text(
+                                                    'Tambah data KK',
+                                                    style: GoogleFonts.outfit(
+                                                      color: const Color(0xFF154360),
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 11,
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                              Container(
-                                                width: 1.5,
-                                                height: 20,
-                                                color: const Color(0xFF154360),
-                                              ),
-                                              const Padding(
-                                                padding: EdgeInsets.symmetric(horizontal: 6),
-                                                child: Icon(Icons.add, size: 16, color: Color(0xFF154360)),
-                                              ),
-                                            ],
+                                                Container(
+                                                  width: 1.5,
+                                                  height: 20,
+                                                  color: const Color(0xFF154360),
+                                                ),
+                                                const Padding(
+                                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                                  child: Icon(Icons.add, size: 16, color: Color(0xFF154360)),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
                                       const SizedBox(width: 8),
                                       if (houseEntries.value.length > 1)
                                         IconButton(
