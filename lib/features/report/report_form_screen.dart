@@ -342,16 +342,58 @@ class ReportFormScreen extends HookConsumerWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
-                                  if (houseEntries.value.length > 1)
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                      onPressed: () {
-                                        final newList = List<HouseReportEntry>.from(houseEntries.value);
-                                        newList.removeAt(idx);
-                                        entry.dispose();
-                                        houseEntries.value = newList;
-                                      },
-                                    ),
+                                  Row(
+                                    children: [
+                                      // Custom Add Button (Match Screenshot)
+                                      InkWell(
+                                        onTap: () {
+                                          houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: const Color(0xFF154360), width: 1.5),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                child: Text(
+                                                  'Tambah data KK',
+                                                  style: GoogleFonts.outfit(
+                                                    color: const Color(0xFF154360),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ),
+                                              Container(
+                                                width: 1.5,
+                                                height: 20,
+                                                color: const Color(0xFF154360),
+                                              ),
+                                              const Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 6),
+                                                child: Icon(Icons.add, size: 16, color: Color(0xFF154360)),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      if (houseEntries.value.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                          onPressed: () {
+                                            final newList = List<HouseReportEntry>.from(houseEntries.value);
+                                            newList.removeAt(idx);
+                                            entry.dispose();
+                                            houseEntries.value = newList;
+                                          },
+                                        ),
+                                    ],
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -411,20 +453,7 @@ class ReportFormScreen extends HookConsumerWidget {
                           );
                         }),
 
-                        // Add Entry Button
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                            },
-                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF1F618D)),
-                            label: Text(
-                              'TAMBAH KK POSITIF JENTIK',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF1F618D)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
 
                         // Submit Button
                         SizedBox(
