@@ -345,54 +345,40 @@ class ReportFormScreen extends HookConsumerWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
-                                  Row(
-                                    children: [
-                                      // Custom Add Button (Only on the first entry)
-                                      if (idx == 0)
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                onTap: () {
-                                                  houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                                                },
-                                                borderRadius: BorderRadius.circular(20),
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(color: const Color(0xFF154360), width: 1.5),
-                                                  ),
-                                                  child: const Icon(Icons.add, size: 20, color: Color(0xFF154360)),
-                                                ),
+                                  // Custom Add Button (Only on the first entry)
+                                  if (idx == 0)
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              Feedback.forTap(context);
+                                              houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                            },
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: const Color(0xFF154360), width: 1.5),
                                               ),
+                                              child: const Icon(Icons.add, size: 20, color: Color(0xFF154360)),
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Tambah data KK',
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF154360),
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      const SizedBox(width: 8),
-                                      if (houseEntries.value.length > 1)
-                                        IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                          onPressed: () {
-                                            final newList = List<HouseReportEntry>.from(houseEntries.value);
-                                            newList.removeAt(idx);
-                                            entry.dispose();
-                                            houseEntries.value = newList;
-                                          },
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Tambah data KK',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF154360),
+                                          ),
                                         ),
-                                    ],
-                                  ),
+                                      ],
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -446,6 +432,32 @@ class ReportFormScreen extends HookConsumerWidget {
                                   SizedBox(width: 60, child: _buildNumericInput(entry.positivePlacesCountController)),
                                 ],
                               ),
+                              if (houseEntries.value.length > 1)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () {
+                                        Feedback.forTap(context);
+                                        final newList = List<HouseReportEntry>.from(houseEntries.value);
+                                        newList.removeAt(idx);
+                                        entry.dispose();
+                                        houseEntries.value = newList;
+                                      },
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                      label: Text(
+                                        'Hapus KK ini',
+                                        style: GoogleFonts.outfit(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        backgroundColor: Colors.red.withOpacity(0.05),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               const SizedBox(height: 16),
                               const Divider(height: 32),
                             ],
@@ -459,7 +471,12 @@ class ReportFormScreen extends HookConsumerWidget {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: isLoading.value ? null : handleSubmit,
+                            onPressed: isLoading.value
+                                ? null
+                                : () {
+                                    Feedback.forTap(context);
+                                    handleSubmit();
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF27AE60),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

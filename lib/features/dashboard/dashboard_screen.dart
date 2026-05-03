@@ -286,7 +286,10 @@ class _MenuCard extends StatelessWidget {
       color: bgColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          Feedback.forTap(context);
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         splashColor: iconColor.withOpacity(0.1),
         highlightColor: iconColor.withOpacity(0.05),
