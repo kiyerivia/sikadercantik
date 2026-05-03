@@ -347,37 +347,48 @@ class ReportFormScreen extends HookConsumerWidget {
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
                                   // Custom Add Button (Only on the first entry)
                                   if (idx == 0)
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: () {
-                                              Feedback.forTap(context);
-                                              houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                                            },
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                border: Border.all(color: const Color(0xFF154360), width: 1.5),
+                                    InkWell(
+                                      onTap: () {
+                                        Feedback.forTap(context);
+                                        houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                      },
+                                      borderRadius: BorderRadius.circular(25),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: const Color(0xFF154360), width: 1.5),
+                                          borderRadius: BorderRadius.circular(25),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              child: Text(
+                                                'Tambah data KK',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(0xFF154360),
+                                                ),
                                               ),
-                                              child: const Icon(Icons.add, size: 20, color: Color(0xFF154360)),
                                             ),
-                                          ),
+                                            Container(
+                                              width: 1.5,
+                                              height: 28,
+                                              color: const Color(0xFF154360),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                                              child: Image.asset(
+                                                'assets/images/icon_tambah_lokasi_positif.png',
+                                                width: 20,
+                                                height: 20,
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Tambah data KK',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF154360),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                 ],
                               ),
