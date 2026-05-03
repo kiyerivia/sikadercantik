@@ -106,7 +106,10 @@ class _KaderDashboard extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           PopupMenuButton<void>(
-            onSelected: (_) => ref.read(authRepositoryProvider).signOut(),
+            onSelected: (_) async {
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) context.go('/login');
+            },
             offset: const Offset(0, 50),
             itemBuilder: (context) => [
               PopupMenuItem(
