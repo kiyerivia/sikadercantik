@@ -421,7 +421,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                 final pIdx = pIdxEntry.key;
                                 final pValue = pIdxEntry.value;
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.only(bottom: 12),
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -438,6 +438,16 @@ class ReportFormScreen extends HookConsumerWidget {
                                           ),
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
+                                      if (entry.selectedPlaceIds.length > 1)
+                                        InkWell(
+                                          onTap: () {
+                                            entry.selectedPlaceIds.removeAt(pIdx);
+                                            houseEntries.value = [...houseEntries.value];
+                                          },
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 28),
+                                        ),
                                       if (pIdx == entry.selectedPlaceIds.length - 1)
                                         Padding(
                                           padding: const EdgeInsets.only(left: 8),
@@ -446,16 +456,9 @@ class ReportFormScreen extends HookConsumerWidget {
                                               entry.selectedPlaceIds.add(null);
                                               houseEntries.value = [...houseEntries.value];
                                             },
-                                            child: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: const Icon(Icons.add_circle, color: Colors.green, size: 28),
                                           ),
-                                        ),
-                                      if (entry.selectedPlaceIds.length > 1)
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 24),
-                                          onPressed: () {
-                                            entry.selectedPlaceIds.removeAt(pIdx);
-                                            houseEntries.value = [...houseEntries.value];
-                                          },
                                         ),
                                     ],
                                   ),
