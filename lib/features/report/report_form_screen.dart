@@ -446,12 +446,12 @@ class ReportFormScreen extends HookConsumerWidget {
                                               entry.selectedPlaceIds.add(null);
                                               houseEntries.value = [...houseEntries.value];
                                             },
-                                            child: Image.asset('assets/images/icon_tambah_lokasi_positif.png', width: 44, height: 44),
+                                            child: const Icon(Icons.add_circle, color: Colors.green, size: 32),
                                           ),
                                         ),
                                       if (entry.selectedPlaceIds.length > 1)
                                         IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 20),
+                                          icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 24),
                                           onPressed: () {
                                             entry.selectedPlaceIds.removeAt(pIdx);
                                             houseEntries.value = [...houseEntries.value];
