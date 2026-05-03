@@ -2,7 +2,7 @@
   "name": "sikadercantik",
   "version": "1.0.0",
   "scripts": {
-    "build": "flutter build web --release"
+    "build": "bash build.sh"
   },
   "dependencies": {},
   "devDependencies": {}
