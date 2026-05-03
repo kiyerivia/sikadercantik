@@ -2,7 +2,8 @@
   "name": "sikadercantik",
   "version": "1.0.0",
   "scripts": {
-    "build": "bash build.sh"
+    "build": "bash build.sh",
+    "vercel-build": "bash build.sh"
   },
   "dependencies": {},
   "devDependencies": {}
