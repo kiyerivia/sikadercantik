@@ -42,7 +42,8 @@ dependencies:
   intl: ^0.20.2
   google_fonts: ^8.0.2
   flutter_dotenv: ^6.0.1
-
+  file_picker: any
+  excel: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

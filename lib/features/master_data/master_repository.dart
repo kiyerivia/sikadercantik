@@ -78,4 +78,4 @@ class MasterRepository {
         .order('name');
     return List<Map<String, dynamic>>.from(response);
   }
-
+}

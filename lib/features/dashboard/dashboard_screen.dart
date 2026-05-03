@@ -3,9 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
-import '../../shared/providers/master_providers.dart'; // master data providers
-import 'package:file_picker/file_picker.dart'; // file picking
-import 'package:excel/excel.dart'; // Excel parsing
+
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -16,17 +14,23 @@ class DashboardScreen extends ConsumerWidget {
 
     return profileAsync.when(
       data: (profile) {
-        if (profile == null) return const Scaffold(body: Center(child: Text('Profil tidak ditemukan')));
+        if (profile == null)
+          return const Scaffold(
+            body: Center(child: Text('Profil tidak ditemukan')),
+          );
 
         if (profile.role == 'kader') {
           return _KaderDashboard(profile: profile);
         } else if (profile.role == 'admin') {
           return _AdminDashboard(profile: profile);
         }
-        
-        return Scaffold(body: Center(child: Text('Role tidak valid: ${profile.role}')));
+
+        return Scaffold(
+          body: Center(child: Text('Role tidak valid: ${profile.role}')),
+        );
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, s) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
   }
@@ -69,15 +73,33 @@ class _KaderDashboard extends ConsumerWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
+              const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 28,
+              ),
               Positioned(
                 top: 12,
                 right: 2,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                  constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                  child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
+                  child: const Text(
+                    '1',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ],
@@ -168,7 +190,11 @@ class _KaderDashboard extends ConsumerWidget {
                         color: Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.health_and_safety, color: Colors.white, size: 60),
+                      child: const Icon(
+                        Icons.health_and_safety,
+                        color: Colors.white,
+                        size: 60,
+                      ),
                     ),
                   ],
                 ),
@@ -179,7 +205,10 @@ class _KaderDashboard extends ConsumerWidget {
               offset: const Offset(0, -20),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 30,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -211,7 +240,8 @@ class _KaderDashboard extends ConsumerWidget {
                     const SizedBox(height: 16),
                     _MenuCard(
                       title: 'Riwayat Laporan PSN',
-                      subtitle: 'Lihat dan kelola laporan PSN yang sudah dikirim',
+                      subtitle:
+                          'Lihat dan kelola laporan PSN yang sudah dikirim',
                       icon: Icons.history_rounded,
                       iconColor: const Color(0xFF0077B6),
                       bgColor: const Color(0xFFE7F3F9),
@@ -265,41 +295,41 @@ class _MenuCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor,
-                borderRadius: BorderRadius.circular(12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 32),
               ),
-              child: Icon(icon, color: Colors.white, size: 32),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF003049),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF003049),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF003049).withOpacity(0.6),
-                      fontSize: 13,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF003049).withOpacity(0.6),
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right, color: iconColor, size: 24),
-          ],
-        ),
+              Icon(Icons.chevron_right, color: iconColor, size: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -372,11 +402,25 @@ class _AdminDashboard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Pantau Jentik di', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          Text(
+                            'Pantau Jentik di',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
                           Row(
                             children: [
-                              Text('Pilih Lokasi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                              Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18),
+                              Text(
+                                'Pilih Lokasi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ],
                           ),
                         ],
@@ -442,7 +486,10 @@ class _AdminMenuCard extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey[200]!)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
     );
   }
 }

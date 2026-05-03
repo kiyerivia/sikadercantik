@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' hide Border;
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
@@ -150,86 +150,11 @@ class ReportFormScreen extends HookConsumerWidget {
       body: Column(
         children: [
           // Add Import Excel button above form
-    Widget _buildImportExcelButton(WidgetRef ref, BuildContext context) {
-      return ElevatedButton.icon(
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Import Master Data (Excel)'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1D7423),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: _buildImportExcelButton(ref, context),
           ),
-        ),
-        onPressed: () async {
-          await _handleExcelImport(ref, context);
-        },
-      );
-    }
-
-    Future<void> _handleExcelImport(WidgetRef ref, BuildContext ctx) async {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls'],
-        withData: true,
-      );
-      if (result == null || result.files.isEmpty) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Tidak ada file yang dipilih')),
-        );
-        return;
-      }
-      final bytes = result.files.first.bytes!;
-      final excel = Excel.decodeBytes(bytes);
-      final Sheet? sheet = excel.sheets.values.firstOrNull;
-      if (sheet == null) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('File Excel tidak memiliki sheet')),
-        );
-        return;
-      }
-
-      final repo = ref.read(masterRepositoryProvider);
-      final Map<String, String> villageIdMap = {};
-      final Map<String, String> rwIdMap = {};
-
-      // Iterate rows, skipping header rows (assume first 2 rows are headers)
-      for (int i = 2; i < sheet.maxRows; i++) {
-        final row = sheet.row(i);
-        if (row.isEmpty) continue;
-        // Columns based on provided example
-        final desa = row[3]?.value?.toString().trim() ?? '';
-        final rwRaw = row[4]?.value?.toString().trim() ?? '';
-        final posyanduName = row[5]?.value?.toString().trim() ?? '';
-        if (desa.isEmpty || rwRaw.isEmpty || posyanduName.isEmpty) continue;
-        // Insert or fetch village id
-        String villageId;
-        if (villageIdMap.containsKey(desa)) {
-          villageId = villageIdMap[desa]!;
-        } else {
-          villageId = await repo.insertVillage(desa);
-          villageIdMap[desa] = villageId;
-        }
-        // Extract numeric RW number
-        final rwNumber = rwRaw.replaceAll(RegExp(r'[^0-9]'), '');
-        final rwKey = '$villageId|$rwNumber';
-        String rwId;
-        if (rwIdMap.containsKey(rwKey)) {
-          rwId = rwIdMap[rwKey]!;
-        } else {
-          rwId = await repo.insertRw(villageId: villageId, rwNumber: rwNumber);
-          rwIdMap[rwKey] = rwId;
-        }
-        // Insert posyandu
-        await repo.insertPosyandu(rwId: rwId, name: posyanduName);
-      }
-
-      // Refresh providers so dropdowns load new data
-      ref.invalidate(villagesProvider);
-      // Invalidate posyandu by village when a village is selected will refetch automatically
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(content: Text('Data master berhasil di‑import')),
-      );
-    }          Container(
+          Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             color: Colors.white.withOpacity(0.5),
@@ -683,6 +608,93 @@ class ReportFormScreen extends HookConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildImportExcelButton(WidgetRef ref, BuildContext context) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.upload_file),
+      label: const Text('Import Master Data (Excel)'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF1D7423),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      onPressed: () async {
+        await _handleExcelImport(ref, context);
+      },
+    );
+  }
+
+  Future<void> _handleExcelImport(WidgetRef ref, BuildContext ctx) async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('Tidak ada file yang dipilih')),
+        );
+      }
+      return;
+    }
+    final bytes = result.files.first.bytes!;
+    final excel = Excel.decodeBytes(bytes);
+    final Sheet? sheet = excel.sheets.values.firstOrNull;
+    if (sheet == null) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('File Excel tidak memiliki sheet')),
+        );
+      }
+      return;
+    }
+
+    final repo = ref.read(masterRepositoryProvider);
+    final Map<String, String> villageIdMap = {};
+    final Map<String, String> rwIdMap = {};
+
+    // Iterate rows, skipping header rows (assume first 2 rows are headers)
+    for (int i = 2; i < sheet.maxRows; i++) {
+      final row = sheet.row(i);
+      if (row.isEmpty) continue;
+      // Columns based on provided example
+      final desa = row[3]?.value?.toString().trim() ?? '';
+      final rwRaw = row[4]?.value?.toString().trim() ?? '';
+      final posyanduName = row[5]?.value?.toString().trim() ?? '';
+      if (desa.isEmpty || rwRaw.isEmpty || posyanduName.isEmpty) continue;
+      // Insert or fetch village id
+      String villageId;
+      if (villageIdMap.containsKey(desa)) {
+        villageId = villageIdMap[desa]!;
+      } else {
+        villageId = await repo.insertVillage(desa);
+        villageIdMap[desa] = villageId;
+      }
+      // Extract numeric RW number
+      final rwNumber = rwRaw.replaceAll(RegExp(r'[^0-9]'), '');
+      final rwKey = '$villageId|$rwNumber';
+      String rwId;
+      if (rwIdMap.containsKey(rwKey)) {
+        rwId = rwIdMap[rwKey]!;
+      } else {
+        rwId = await repo.insertRw(villageId: villageId, rwNumber: rwNumber);
+        rwIdMap[rwKey] = rwId;
+      }
+      // Insert posyandu
+      await repo.insertPosyandu(rwId: rwId, name: posyanduName);
+    }
+
+    // Refresh providers so dropdowns load new data
+    ref.invalidate(villagesProvider);
+    // Invalidate posyandu by village when a village is selected will refetch automatically
+    if (ctx.mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Data master berhasil di‑import')),
+      );
+    }
   }
 
   Widget _buildDropdown({
