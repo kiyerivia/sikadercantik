@@ -11,6 +11,24 @@ import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/providers/auth_providers.dart';
 
+class HouseReportEntry {
+  final TextEditingController kkNameController = TextEditingController();
+  final TextEditingController rtController = TextEditingController();
+  final TextEditingController rwController = TextEditingController();
+  final TextEditingController positivePlacesCountController = TextEditingController(text: '0');
+  String? selectedResult;
+  String? selectedPlaceId;
+
+  HouseReportEntry();
+
+  void dispose() {
+    kkNameController.dispose();
+    rtController.dispose();
+    rwController.dispose();
+    positivePlacesCountController.dispose();
+  }
+}
+
 class ReportFormScreen extends HookConsumerWidget {
   const ReportFormScreen({super.key});
 
@@ -19,15 +37,23 @@ class ReportFormScreen extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final housesInspectedController = useTextEditingController(text: '0');
     final housesPositiveController = useTextEditingController(text: '0');
-    final kkNameController = useTextEditingController();
-    final rtController = useTextEditingController();
-    final rwController = useTextEditingController();
-    final positivePlacesCountController = useTextEditingController(text: '0');
+    
+    final houseEntries = useState<List<HouseReportEntry>>([]);
+
+    // Initialize with one entry if empty
+    useEffect(() {
+      if (houseEntries.value.isEmpty) {
+        houseEntries.value = [HouseReportEntry()];
+      }
+      return () {
+        for (var entry in houseEntries.value) {
+          entry.dispose();
+        }
+      };
+    }, []);
 
     final selectedVillageId = useState<String?>(null);
     final selectedPosyanduId = useState<String?>(null);
-    final selectedResult = useState<String?>(null);
-    final selectedPlaceId = useState<String?>(null);
     final reportDate = useState(DateTime.now());
     final isLoading = useState(false);
 
@@ -49,16 +75,30 @@ class ReportFormScreen extends HookConsumerWidget {
 
       isLoading.value = true;
       try {
-        final notes = 'Hasil: ${selectedResult.value ?? "-"}\n'
-            'KK: ${kkNameController.text.trim()}, RT: ${rtController.text.trim()}, RW: ${rwController.text.trim()}\n'
-            'Jumlah Tempat: ${positivePlacesCountController.text.trim()}';
+        StringBuffer notesBuffer = StringBuffer();
+        List<String> allBreedingPlaceIds = [];
+
+        for (int i = 0; i < houseEntries.value.length; i++) {
+          final entry = houseEntries.value[i];
+          notesBuffer.writeln('--- KK ${i + 1} ---');
+          notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
+          notesBuffer.writeln('RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}');
+          notesBuffer.writeln('Hasil: ${entry.selectedResult ?? "-"}');
+          notesBuffer.writeln('Tempat: ${entry.selectedPlaceId ?? "-"}');
+          notesBuffer.writeln('Jumlah: ${entry.positivePlacesCountController.text.trim()}');
+          notesBuffer.writeln('');
+
+          if (entry.selectedPlaceId != null) {
+            allBreedingPlaceIds.add(entry.selectedPlaceId!);
+          }
+        }
 
         await ref.read(reportRepositoryProvider).submitReport(
               posyanduId: selectedPosyanduId.value!,
               housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
               housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
-              breedingPlaceIds: selectedPlaceId.value != null ? [selectedPlaceId.value!] : [],
-              notes: notes,
+              breedingPlaceIds: allBreedingPlaceIds,
+              notes: notesBuffer.toString(),
             );
 
         if (context.mounted) {
@@ -84,7 +124,7 @@ class ReportFormScreen extends HookConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Custom App Bar
+            // Custom App Bar (Same as before)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(
@@ -101,7 +141,6 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
-                  // App Logo (From Upload)
                   Container(
                     width: 36,
                     height: 36,
@@ -113,7 +152,6 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 8),
-                  // App Title
                   RichText(
                     text: TextSpan(
                       style: GoogleFonts.outfit(
@@ -127,7 +165,6 @@ class ReportFormScreen extends HookConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  // Notification Icon
                   Stack(
                     children: [
                       const Icon(Icons.notifications, color: Colors.white),
@@ -146,7 +183,6 @@ class ReportFormScreen extends HookConsumerWidget {
                     ],
                   ),
                   const SizedBox(width: 12),
-                  // User Avatar with Logout
                   PopupMenuButton<void>(
                     onSelected: (_) => ref.read(authRepositoryProvider).signOut(),
                     offset: const Offset(0, 50),
@@ -157,13 +193,7 @@ class ReportFormScreen extends HookConsumerWidget {
                           children: [
                             const Icon(Icons.logout, color: Colors.red, size: 20),
                             const SizedBox(width: 12),
-                            Text(
-                              'Logout',
-                              style: GoogleFonts.outfit(
-                                color: Colors.red,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       ),
@@ -178,7 +208,7 @@ class ReportFormScreen extends HookConsumerWidget {
               ),
             ),
             
-            // Breadcrumbs
+            // Breadcrumbs (Same as before)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -186,16 +216,10 @@ class ReportFormScreen extends HookConsumerWidget {
                 children: [
                   InkWell(
                     onTap: () => context.pop(),
-                    child: Text(
-                      'Beranda',
-                      style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12),
-                    ),
+                    child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
                   ),
                   const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
-                  Text(
-                    'Entri Laporan PSN',
-                    style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                  Text('Entri Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -210,11 +234,7 @@ class ReportFormScreen extends HookConsumerWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Form(
@@ -224,23 +244,16 @@ class ReportFormScreen extends HookConsumerWidget {
                       children: [
                         Text(
                           'ENTRI LAPORAN PSN',
-                          style: GoogleFonts.outfit(
-                            color: const Color(0xFF154360),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: GoogleFonts.outfit(color: const Color(0xFF154360), fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 20),
 
-                        // Nama Desa
+                        // Global Fields
                         _buildLabel(iconWidget: const Icon(Icons.location_on, size: 16, color: Colors.blue), label: 'Nama Desa'),
                         const SizedBox(height: 8),
                         _buildDropdown(
                           value: selectedVillageId.value,
-                          hint: villagesAsync.maybeWhen(
-                            loading: () => 'Memuat desa...',
-                            orElse: () => 'Pilih Desa',
-                          ),
+                          hint: villagesAsync.maybeWhen(loading: () => 'Memuat desa...', orElse: () => 'Pilih Desa'),
                           onChanged: (val) {
                             selectedVillageId.value = val;
                             selectedPosyanduId.value = null;
@@ -252,15 +265,11 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Nama Posyandu
                         _buildLabel(iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 16, height: 16), label: 'Nama Posyandu'),
                         const SizedBox(height: 8),
                         _buildDropdown(
                           value: selectedPosyanduId.value,
-                          hint: posyandusAsync.maybeWhen(
-                            loading: () => 'Memuat posyandu...',
-                            orElse: () => 'Pilih Posyandu',
-                          ),
+                          hint: posyandusAsync.maybeWhen(loading: () => 'Memuat posyandu...', orElse: () => 'Pilih Posyandu'),
                           onChanged: (val) => selectedPosyanduId.value = val,
                           items: posyandusAsync.maybeWhen(
                             data: (posyandus) => posyandus.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
@@ -269,7 +278,6 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Tanggal Laporan
                         _buildLabel(iconWidget: const Icon(Icons.calendar_today, size: 16, color: Colors.blue), label: 'Tanggal Laporan'),
                         const SizedBox(height: 8),
                         InkWell(
@@ -284,10 +292,7 @@ class ReportFormScreen extends HookConsumerWidget {
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                            decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(8)),
                             child: Row(
                               children: [
                                 Icon(Icons.calendar_month, color: Colors.grey[600], size: 18),
@@ -299,7 +304,6 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Rumah Diperiksa & Positif
                         Row(
                           children: [
                             Expanded(
@@ -325,74 +329,102 @@ class ReportFormScreen extends HookConsumerWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const Divider(height: 40, thickness: 1, color: Color(0xFFD4E6F1)),
 
-                        // Status Pemeriksaan
-                        _buildLabel(iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18), label: 'Status Pemeriksaan'),
-                        const SizedBox(height: 8),
-                        _buildDropdown(
-                          value: selectedResult.value,
-                          hint: 'Pilih Status',
-                          onChanged: (val) => selectedResult.value = val,
-                          items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                        ),
-                        const SizedBox(height: 16),
+                        // House Entries
+                        ...houseEntries.value.asMap().entries.map((e) {
+                          final idx = e.key;
+                          final entry = e.value;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
+                                  if (houseEntries.value.length > 1)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      onPressed: () {
+                                        final newList = List<HouseReportEntry>.from(houseEntries.value);
+                                        newList.removeAt(idx);
+                                        entry.dispose();
+                                        houseEntries.value = newList;
+                                      },
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              _buildLabel(iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18), label: 'Status Pemeriksaan'),
+                              const SizedBox(height: 8),
+                              _buildDropdown(
+                                value: entry.selectedResult,
+                                hint: 'Pilih Status',
+                                onChanged: (val) {
+                                  entry.selectedResult = val;
+                                  houseEntries.value = [...houseEntries.value]; // Trigger rebuild
+                                },
+                                items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildLabel(iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal), label: 'Nama KK & RT/RW'),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(flex: 2, child: _buildTextInput(entry.kkNameController, 'Nama')),
+                                  const SizedBox(width: 12),
+                                  _buildSmallLabel('RT'),
+                                  const SizedBox(width: 4),
+                                  SizedBox(width: 45, child: _buildSmallTextInput(entry.rtController)),
+                                  const SizedBox(width: 8),
+                                  _buildSmallLabel('RW'),
+                                  const SizedBox(width: 4),
+                                  SizedBox(width: 45, child: _buildSmallTextInput(entry.rwController)),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
+                              const SizedBox(height: 8),
+                              _buildDropdown(
+                                value: entry.selectedPlaceId,
+                                hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
+                                onChanged: (val) {
+                                  entry.selectedPlaceId = val;
+                                  houseEntries.value = [...houseEntries.value];
+                                },
+                                items: breedingPlacesAsync.maybeWhen(
+                                  data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String))).toList(),
+                                  orElse: () => [],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
+                                  SizedBox(width: 60, child: _buildNumericInput(entry.positivePlacesCountController)),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Divider(height: 32),
+                            ],
+                          );
+                        }),
 
-                        // Nama KK & RT/RW
-                        _buildLabel(iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal), label: 'Nama KK Positif Jentik'),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: _buildTextInput(kkNameController, 'Nama'),
+                        // Add Entry Button
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                            },
+                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF1F618D)),
+                            label: Text(
+                              'TAMBAH KK POSITIF JENTIK',
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF1F618D)),
                             ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
-                              child: Text('RT', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
-                            ),
-                            const SizedBox(width: 4),
-                            SizedBox(width: 45, child: _buildSmallTextInput(rtController)),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
-                              child: Text('RW', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
-                            ),
-                            const SizedBox(width: 4),
-                            SizedBox(width: 45, child: _buildSmallTextInput(rwController)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Tempat Positif Jentik
-                        _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
-                        const SizedBox(height: 8),
-                        _buildDropdown(
-                          value: selectedPlaceId.value,
-                          hint: breedingPlacesAsync.maybeWhen(
-                            loading: () => 'Memuat tempat...',
-                            orElse: () => 'Pilih Tempat',
                           ),
-                          onChanged: (val) => selectedPlaceId.value = val,
-                          items: breedingPlacesAsync.maybeWhen(
-                            data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String))).toList(),
-                            orElse: () => [],
-                          ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // Jumlah Tempat Positif Jentik
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif Jentik'),
-                            SizedBox(width: 60, child: _buildNumericInput(positivePlacesCountController)),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
 
                         // Submit Button
                         SizedBox(
@@ -402,20 +434,11 @@ class ReportFormScreen extends HookConsumerWidget {
                             onPressed: isLoading.value ? null : handleSubmit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF27AE60),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             child: isLoading.value
                                 ? const CircularProgressIndicator(color: Colors.white)
-                                : Text(
-                                    'KIRIM LAPORAN',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                : Text('KIRIM LAPORAN', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                           ),
                         ),
                       ],
@@ -430,6 +453,14 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
+  Widget _buildSmallLabel(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+      child: Text(text, style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
+    );
+  }
+
   Widget _buildLabel({required Widget iconWidget, required String label}) {
     return Row(
       children: [
@@ -437,11 +468,7 @@ class ReportFormScreen extends HookConsumerWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF154360),
-          ),
+          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
         ),
       ],
     );
@@ -478,10 +505,7 @@ class ReportFormScreen extends HookConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(
-            hint,
-            style: TextStyle(color: Colors.grey[500], fontSize: 13),
-          ),
+          hint: Text(hint, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
           isExpanded: true,
           menuMaxHeight: 350,
           borderRadius: BorderRadius.circular(12),
@@ -498,51 +522,31 @@ class ReportFormScreen extends HookConsumerWidget {
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
-      textAlign: TextAlign.start,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         filled: true,
         fillColor: const Color(0xFFF8F9FA),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
       ),
     );
   }
 
-  Widget _buildTextInput(
-    TextEditingController controller,
-    String hint, {
-    TextAlign textAlign = TextAlign.start,
-  }) {
+  Widget _buildTextInput(TextEditingController controller, String hint) {
     return TextFormField(
       controller: controller,
-      textAlign: textAlign,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
         filled: true,
         fillColor: const Color(0xFFF8F9FA),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
       ),
     );
   }
 }
+
