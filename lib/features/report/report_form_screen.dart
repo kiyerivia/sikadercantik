@@ -17,7 +17,7 @@ class HouseReportEntry {
   final TextEditingController rwController = TextEditingController();
   final TextEditingController positivePlacesCountController = TextEditingController(text: '0');
   String? selectedResult;
-  String? selectedPlaceId;
+  List<String?> selectedPlaceIds = [null];
 
   HouseReportEntry();
 
@@ -84,13 +84,13 @@ class ReportFormScreen extends HookConsumerWidget {
           notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
           notesBuffer.writeln('RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}');
           notesBuffer.writeln('Hasil: ${entry.selectedResult ?? "-"}');
-          notesBuffer.writeln('Tempat: ${entry.selectedPlaceId ?? "-"}');
+          
+          final places = entry.selectedPlaceIds.where((id) => id != null).cast<String>().toList();
+          notesBuffer.writeln('Tempat: ${places.join(", ")}');
           notesBuffer.writeln('Jumlah: ${entry.positivePlacesCountController.text.trim()}');
           notesBuffer.writeln('');
 
-          if (entry.selectedPlaceId != null) {
-            allBreedingPlaceIds.add(entry.selectedPlaceId!);
-          }
+          allBreedingPlaceIds.addAll(places);
         }
 
         await ref.read(reportRepositoryProvider).submitReport(
@@ -347,34 +347,27 @@ class ReportFormScreen extends HookConsumerWidget {
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
                                   Row(
                                     children: [
-                                      // Custom Add Button (Icon + Label)
+                                      // Custom Add KK Button (Based on screenshot)
                                       if (idx == 0)
-                                        Column(
-                                          children: [
-                                            InkWell(
-                                              onTap: () {
-                                                houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                                              },
-                                              borderRadius: BorderRadius.circular(30),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(color: const Color(0xFF154360), width: 1.5),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.add, size: 22, color: Color(0xFF154360)),
+                                        InkWell(
+                                          onTap: () {
+                                            houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                          },
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
+                                                  Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                                                ],
                                               ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Tambah data KK',
-                                              style: GoogleFonts.outfit(
-                                                color: const Color(0xFF154360),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 8),
+                                              Image.asset('assets/images/icon_kk.png', width: 44, height: 44),
+                                            ],
+                                          ),
                                         ),
                                       const SizedBox(width: 8),
                                       if (houseEntries.value.length > 1)
@@ -420,21 +413,56 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 16),
+                              
+                              // Multiple Breeding Places
                               _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
                               const SizedBox(height: 8),
-                              _buildDropdown(
-                                value: entry.selectedPlaceId,
-                                hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
-                                onChanged: (val) {
-                                  entry.selectedPlaceId = val;
-                                  houseEntries.value = [...houseEntries.value];
-                                },
-                                items: breedingPlacesAsync.maybeWhen(
-                                  data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String))).toList(),
-                                  orElse: () => [],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
+                              ...entry.selectedPlaceIds.asMap().entries.map((pIdxEntry) {
+                                final pIdx = pIdxEntry.key;
+                                final pValue = pIdxEntry.value;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDropdown(
+                                          value: pValue,
+                                          hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
+                                          onChanged: (val) {
+                                            entry.selectedPlaceIds[pIdx] = val;
+                                            houseEntries.value = [...houseEntries.value];
+                                          },
+                                          items: breedingPlacesAsync.maybeWhen(
+                                            data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String))).toList(),
+                                            orElse: () => [],
+                                          ),
+                                        ),
+                                      ),
+                                      if (pIdx == entry.selectedPlaceIds.length - 1)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: InkWell(
+                                            onTap: () {
+                                              entry.selectedPlaceIds.add(null);
+                                              houseEntries.value = [...houseEntries.value];
+                                            },
+                                            child: Image.asset('assets/images/icon_tambah_lokasi_positif.png', width: 44, height: 44),
+                                          ),
+                                        ),
+                                      if (entry.selectedPlaceIds.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 20),
+                                          onPressed: () {
+                                            entry.selectedPlaceIds.removeAt(pIdx);
+                                            houseEntries.value = [...houseEntries.value];
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              
+                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
