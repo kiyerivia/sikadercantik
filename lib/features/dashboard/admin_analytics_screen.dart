@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/admin_providers.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +14,50 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(allReportsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Monitoring & Analitik')),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1F618D),
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
+            ),
+            const SizedBox(width: 10),
+            const Text('SI KADER PSN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<void>(
+            onSelected: (_) async {
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) context.go('/login');
+            },
+            offset: const Offset(0, 50),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: null,
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+            ],
+            child: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(allReportsProvider);
