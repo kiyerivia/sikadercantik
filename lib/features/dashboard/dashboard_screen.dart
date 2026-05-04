@@ -471,71 +471,69 @@ class _AdminDashboard extends ConsumerWidget {
             // Hero Section
             Container(
               width: double.infinity,
+              height: 240,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1F618D), Color(0xFF2E86C1)],
+                image: DecorationImage(
+                  image: AssetImage('assets/images/admin_dashboard_bg.png'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
                 ),
               ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -20,
-                    bottom: 0,
-                    top: 0,
-                    child: Opacity(
-                      opacity: 0.9,
-                      child: Image.asset(
-                        'assets/images/admin_dashboard_illustration.png',
-                        fit: BoxFit.contain,
-                        alignment: Alignment.bottomRight,
-                        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      const Color(0xFF1F618D).withOpacity(0.85),
+                      const Color(0xFF1F618D).withOpacity(0.1),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Selamat Datang,',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white.withOpacity(0.95),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 40, 140, 60),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selamat Datang,',
-                          style: GoogleFonts.outfit(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          'Admin Puskesmas',
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Puskesmas Gumelar',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Admin Puskesmas',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                        shadows: [
+                          Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 2)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        'Puskesmas Gumelar',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             
