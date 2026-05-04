@@ -106,12 +106,17 @@ class _KaderDashboard extends ConsumerWidget {
             ],
           ),
           const SizedBox(width: 12),
-          PopupMenuButton<void>(
-            onSelected: (_) => ref.read(authRepositoryProvider).signOut(),
+          PopupMenuButton<String>(
+            onSelected: (val) async {
+              if (val == 'logout') {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/login');
+              }
+            },
             offset: const Offset(0, 50),
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: null,
+                value: 'logout',
                 child: Row(
                   children: [
                     const Icon(Icons.logout, color: Colors.red, size: 20),
@@ -431,15 +436,17 @@ class _AdminDashboard extends ConsumerWidget {
             ],
           ),
           const SizedBox(width: 12),
-          PopupMenuButton<void>(
-            onSelected: (_) async {
-              await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) context.go('/login');
+          PopupMenuButton<String>(
+            onSelected: (val) async {
+              if (val == 'logout') {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/login');
+              }
             },
             offset: const Offset(0, 50),
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: null,
+                value: 'logout',
                 child: Row(
                   children: [
                     const Icon(Icons.logout, color: Colors.red, size: 20),
