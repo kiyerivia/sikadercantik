@@ -471,43 +471,68 @@ class _AdminDashboard extends ConsumerWidget {
             // Hero Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 32, 0, 0),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1F618D), Color(0xFFE3F2FD)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1F618D), Color(0xFF2E86C1)],
                 ),
               ),
-              child: Row(
+              child: Stack(
                 children: [
-                  Expanded(
+                  Positioned(
+                    right: -20,
+                    bottom: 0,
+                    top: 0,
+                    child: Opacity(
+                      opacity: 0.9,
+                      child: Image.asset(
+                        'assets/images/admin_dashboard_illustration.png',
+                        fit: BoxFit.contain,
+                        alignment: Alignment.bottomRight,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 40, 140, 60),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Selamat Datang,',
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.outfit(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         Text(
                           'Admin Puskesmas',
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Puskesmas Gumelar',
-                          style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.9), fontSize: 16),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Puskesmas Gumelar',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 32),
                       ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: 180,
-                    child: Image.asset(
-                      'assets/images/admin_dashboard_illustration.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                     ),
                   ),
                 ],
