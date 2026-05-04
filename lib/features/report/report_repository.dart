@@ -98,4 +98,12 @@ class ReportRepository {
 
     await updateReportStatus(reportId, 'need_intervention');
   }
+
+  Future<void> deleteReport(String reportId) async {
+    // 1. Delete junctions
+    await _client.from('report_breeding_places').delete().eq('report_id', reportId);
+    
+    // 2. Delete report
+    await _client.from('reports').delete().eq('id', reportId);
+  }
 }

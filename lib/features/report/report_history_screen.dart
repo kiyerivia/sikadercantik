@@ -67,37 +67,44 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  Stack(
-                    children: [
-                      const Icon(Icons.notifications, color: Colors.white),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                  PopupMenuButton<void>(
+                    onSelected: (_) async {
+                      await ref.read(authRepositoryProvider).signOut();
+                      if (context.mounted) context.go('/login');
+                    },
+                    offset: const Offset(0, 50),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: null,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.logout, color: Colors.red, size: 20),
+                            const SizedBox(width: 12),
+                            Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.w500)),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(width: 12),
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.white,
-                    child: Image.asset('assets/images/avatar_kader.png'),
+                    child: const CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // Breadcrumbs
+            // Breadcrumbs (Same as before)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 children: [
-                  Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
+                  InkWell(
+                    onTap: () => context.pop(),
+                    child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
+                  ),
                   const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
                   Text('Riwayat Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
@@ -109,7 +116,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Filter Section
+                    // Filter Section (Same as before)
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -196,9 +203,6 @@ class ReportHistoryScreen extends HookConsumerWidget {
                             if (selectedPosyanduId.value != null) {
                               return r.posyanduId == selectedPosyanduId.value;
                             }
-                            // Note: Village filter is implicit via Posyandu filter in UI, 
-                            // but if only Village is selected, we'd need to fetch or map.
-                            // For now, let's keep it simple.
                             return true;
                           }).toList();
 
@@ -209,13 +213,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                 child: DataTable(
                                   headingRowColor: MaterialStateProperty.all(const Color(0xFFEBF5FB)),
                                   dataRowHeight: 60,
-                                  columnSpacing: 20,
+                                  columnSpacing: 24,
                                   columns: [
                                     _buildTableHeader('Tanggal\nPSN'),
                                     _buildTableHeader('Nama\nDesa'),
                                     _buildTableHeader('Nama\nPosyandu'),
-                                    _buildTableHeader('Jumlah Rumah\nDiperiksa'),
-                                    _buildTableHeader('Jumlah Rumah\nPositif Jentik'),
+                                    _buildTableHeader('Rumah\nDiperiksa'),
+                                    _buildTableHeader('Rumah\nPositif'),
                                     _buildTableHeader('ABJ'),
                                     _buildTableHeader('Aksi'),
                                   ],
@@ -223,20 +227,45 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     final abj = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
                                     return DataRow(
                                       cells: [
-                                        DataCell(Text(DateFormat('d MMMM\nyyyy', 'id_ID').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 11))),
-                                        DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 11))),
-                                        DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 11))),
+                                        DataCell(Center(child: Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 11)))),
                                         DataCell(Center(child: Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 11)))),
                                         DataCell(Center(child: Text('${report.housesPositive}', style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Text('${abj.toStringAsFixed(1)}%', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: abj >= 95 ? Colors.green : Colors.orange))),
+                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: abj >= 95 ? Colors.green : Colors.orange)))),
                                         DataCell(
-                                          OutlinedButton.icon(
-                                            onPressed: () {},
-                                            icon: const Icon(Icons.edit, size: 14),
-                                            label: const Text('Edit Laporan', style: TextStyle(fontSize: 10)),
-                                            style: OutlinedButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                              side: const BorderSide(color: Colors.blue),
+                                          Center(
+                                            child: PopupMenuButton<String>(
+                                              icon: const Icon(Icons.more_vert, size: 20, color: Colors.blue),
+                                              onSelected: (val) {
+                                                if (val == 'edit') {
+                                                  // Edit logic
+                                                } else if (val == 'delete') {
+                                                  _showDeleteConfirm(context, ref, report);
+                                                }
+                                              },
+                                              itemBuilder: (context) => [
+                                                PopupMenuItem(
+                                                  value: 'edit',
+                                                  child: Row(
+                                                    children: [
+                                                      const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                                      const SizedBox(width: 8),
+                                                      Text('Edit', style: GoogleFonts.outfit(fontSize: 13)),
+                                                    ],
+                                                  ),
+                                                ),
+                                                PopupMenuItem(
+                                                  value: 'delete',
+                                                  child: Row(
+                                                    children: [
+                                                      const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                                      const SizedBox(width: 8),
+                                                      Text('Hapus', style: GoogleFonts.outfit(fontSize: 13, color: Colors.red)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
@@ -356,8 +385,46 @@ class ReportHistoryScreen extends HookConsumerWidget {
           icon: const Icon(Icons.keyboard_arrow_down, size: 18),
           items: items,
           onChanged: onChanged,
-        ),
+         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirm(BuildContext context, WidgetRef ref, Report report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus Laporan?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text('Apakah Anda yakin ingin menghapus laporan ini? Data yang dihapus tidak dapat dikembalikan.', style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Batal', style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(reportRepositoryProvider).deleteReport(report.id);
+        ref.invalidate(myReportsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Laporan berhasil dihapus'), backgroundColor: Colors.green),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 }
