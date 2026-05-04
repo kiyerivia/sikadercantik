@@ -86,7 +86,18 @@ class ReportFormScreen extends HookConsumerWidget {
           notesBuffer.writeln('Hasil: ${entry.selectedResult ?? "-"}');
           
           final places = entry.selectedPlaceIds.where((id) => id != null).cast<String>().toList();
-          notesBuffer.writeln('Tempat: ${places.join(", ")}');
+          
+          // Map IDs to Names for display in notes
+          final breedingPlaces = breedingPlacesAsync.value ?? [];
+          final placeNames = places.map((id) {
+            final found = breedingPlaces.firstWhere(
+              (p) => p['id'] == id,
+              orElse: () => {'name': id},
+            );
+            return found['name'] as String;
+          }).toList();
+
+          notesBuffer.writeln('Tempat: ${placeNames.join(", ")}');
           notesBuffer.writeln('Jumlah: ${entry.positivePlacesCountController.text.trim()}');
           notesBuffer.writeln('');
 
