@@ -468,114 +468,100 @@ class _AdminDashboard extends ConsumerWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Section with Illustration
+            // Hero Section
             Container(
               width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 32, 0, 0),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1F618D), Color(0xFF3498DB)],
+                  colors: [Color(0xFF1F618D), Color(0xFFE3F2FD)],
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Selamat Datang,',
-                            style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.9), fontSize: 18),
-                          ),
-                          Text(
-                            'Admin Puskesmas',
-                            style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Puskesmas Gumelar',
-                            style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.8), fontSize: 14),
-                          ),
-                        ],
-                      ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selamat Datang,',
+                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Admin Puskesmas',
+                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Puskesmas Gumelar',
+                          style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.9), fontSize: 16),
+                        ),
+                        const SizedBox(height: 32),
+                      ],
                     ),
-                    // Illustration
-                    Container(
-                      height: 120,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        'assets/images/admin_dashboard_illustration.png', 
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.admin_panel_settings, color: Colors.white, size: 60),
-                      ),
+                  ),
+                  SizedBox(
+                    height: 180,
+                    child: Image.asset(
+                      'assets/images/admin_dashboard_illustration.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            
             // Menu Section
-            Transform.translate(
-              offset: const Offset(0, -20),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PILIH MENU',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF003049),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _MenuCard(
-                      title: 'Data Monitoring Laporan PSN',
-                      subtitle: 'Lihat, kelola, dan rekapitulasi data laporan PSN dari kader',
-                      icon: Icons.assignment_turned_in_rounded,
-                      iconColor: const Color(0xFF27AE60),
-                      bgColor: const Color(0xFFE9F7EF),
-                      onTap: () => context.push('/analytics'),
-                    ),
-                    const SizedBox(height: 16),
-                    _MenuCard(
-                      title: 'Dashboard ABJ',
-                      subtitle: 'Pantau Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN',
-                      icon: Icons.bar_chart_rounded,
-                      iconColor: const Color(0xFF2980B9),
-                      bgColor: const Color(0xFFEBF5FB),
-                      onTap: () => context.push('/analytics'), // Assuming ABJ is part of analytics
-                    ),
-                    const SizedBox(height: 16),
-                    _MenuCard(
-                      title: 'Manajemen Wilayah',
-                      subtitle: 'Kelola data desa, posyandu, RT/RW, dan wilayah kerja',
-                      icon: Icons.map_rounded,
-                      iconColor: const Color(0xFF8E44AD),
-                      bgColor: const Color(0xFFF4ECF7),
-                      onTap: () => context.push('/locations'),
-                    ),
-                    const SizedBox(height: 24),
-                    _InfoCard(
-                      text: 'Pastikan data yang ditampilkan selalu diperbarui untuk monitoring yang akurat.',
-                    ),
-                  ],
-                ),
+            Container(
+              width: double.infinity,
+              transform: Matrix4.translationValues(0, -20, 0),
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PILIH MENU',
+                    style: GoogleFonts.outfit(color: const Color(0xFF003049), fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                  ),
+                  const SizedBox(height: 20),
+                  _MenuCard(
+                    title: 'Data Monitoring Laporan PSN',
+                    subtitle: 'Lihat, kelola, dan rekapitulasi data laporan PSN dari kader',
+                    icon: Icons.fact_check_rounded,
+                    iconColor: const Color(0xFF27AE60),
+                    bgColor: const Color(0xFFEAFAF1),
+                    onTap: () => context.push('/history'),
+                  ),
+                  const SizedBox(height: 16),
+                  _MenuCard(
+                    title: 'Dashboard ABJ',
+                    subtitle: 'Pantau Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN',
+                    icon: Icons.show_chart_rounded,
+                    iconColor: const Color(0xFF2980B9),
+                    bgColor: const Color(0xFFEBF5FB),
+                    onTap: () => context.push('/analytics'),
+                  ),
+                  const SizedBox(height: 16),
+                  _MenuCard(
+                    title: 'Manajemen Wilayah',
+                    subtitle: 'Kelola data desa, posyandu, RT/RW, dan wilayah kerja',
+                    icon: Icons.map_rounded,
+                    iconColor: const Color(0xFF8E44AD),
+                    bgColor: const Color(0xFFF4ECF7),
+                    onTap: () => context.push('/locations'),
+                  ),
+                  const SizedBox(height: 24),
+                  const _InfoCard(
+                    text: 'Pastikan data yang ditampilkan selalu diperbarui untuk monitoring yang akurat.',
+                  ),
+                ],
               ),
             ),
           ],
