@@ -239,7 +239,16 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                               icon: const Icon(Icons.more_vert, size: 20, color: Colors.blue),
                                               onSelected: (val) {
                                                 if (val == 'edit') {
-                                                  context.push('/report', extra: report);
+                                                  if (report.status == 'verified') {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('Laporan sudah terverifikasi dan tidak dapat diedit'),
+                                                        backgroundColor: Colors.orange,
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    context.push('/report', extra: report);
+                                                  }
                                                 } else if (val == 'delete') {
                                                   _showDeleteConfirm(context, ref, report);
                                                 }
@@ -249,9 +258,15 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                   value: 'edit',
                                                   child: Row(
                                                     children: [
-                                                      const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                                      Icon(Icons.edit, size: 18, color: report.status == 'verified' ? Colors.grey : Colors.blue),
                                                       const SizedBox(width: 8),
-                                                      Text('Edit', style: GoogleFonts.outfit(fontSize: 13)),
+                                                      Text(
+                                                        'Edit', 
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 13, 
+                                                          color: report.status == 'verified' ? Colors.grey : Colors.black,
+                                                        ),
+                                                      ),
                                                     ],
                                                   ),
                                                 ),
