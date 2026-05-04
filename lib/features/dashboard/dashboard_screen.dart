@@ -106,10 +106,7 @@ class _KaderDashboard extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           PopupMenuButton<void>(
-            onSelected: (_) async {
-              await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) context.go('/login');
-            },
+            onSelected: (_) => ref.read(authRepositoryProvider).signOut(),
             offset: const Offset(0, 50),
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -286,10 +283,7 @@ class _MenuCard extends StatelessWidget {
       color: bgColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: () {
-          Feedback.forTap(context);
-          onTap();
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         splashColor: iconColor.withOpacity(0.1),
         highlightColor: iconColor.withOpacity(0.05),

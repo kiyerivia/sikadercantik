@@ -47,9 +47,9 @@ class ReportRepository {
 
     final response = await _client
         .from('reports')
-        .select('*, report_breeding_places(breeding_place_id)')
+        .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
         .eq('kader_id', userId!)
-        .order('created_at', ascending: false);
+        .order('report_date', ascending: false);
 
     return (response as List).map((data) {
       final breedingPlaces = (data['report_breeding_places'] as List)
