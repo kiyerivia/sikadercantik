@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/domain/models.dart';
 
 
 class DashboardScreen extends ConsumerWidget {
@@ -37,7 +38,7 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 class _KaderDashboard extends ConsumerWidget {
-  final dynamic profile;
+  final Profile profile;
   const _KaderDashboard({required this.profile});
 
   @override
@@ -337,6 +338,9 @@ class _MenuCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
+  final String? text;
+  const _InfoCard({this.text});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -364,7 +368,7 @@ class _InfoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
+                  text ?? 'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF01579B).withOpacity(0.7),
                     fontSize: 13,
@@ -574,104 +578,3 @@ class _AdminDashboard extends ConsumerWidget {
   }
 }
 
-class _MenuCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
-  final VoidCallback onTap;
-
-  const _MenuCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: bgColor,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        splashColor: iconColor.withOpacity(0.1),
-        highlightColor: iconColor.withOpacity(0.05),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: iconColor.withOpacity(0.1)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: iconColor, borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: Colors.white, size: 32),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.outfit(color: const Color(0xFF003049), fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.outfit(color: const Color(0xFF003049).withOpacity(0.6), fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: iconColor, size: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final String? text;
-  const _InfoCard({this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFFE1F5FE), borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_outline, color: Color(0xFF0288D1), size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Informasi',
-                  style: GoogleFonts.outfit(color: const Color(0xFF01579B), fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  text ?? 'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
-                  style: GoogleFonts.outfit(color: const Color(0xFF01579B).withOpacity(0.7), fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
