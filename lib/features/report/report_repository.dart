@@ -99,6 +99,31 @@ class ReportRepository {
     await updateReportStatus(reportId, 'need_intervention');
   }
 
+  Future<void> updateReport({
+    required String reportId,
+    required int housesInspected,
+    required int housesPositive,
+    required List<String> breedingPlaceIds,
+    String? notes,
+  }) async {
+    // 1. Update Report
+    await _client.from('reports').update({
+      'houses_inspected': housesInspected,
+      'houses_positive': housesPositive,
+      'notes': notes,
+    }).eq('id', reportId);
+
+    // 2. Refresh breeding places
+    await _client.from('report_breeding_places').delete().eq('report_id', reportId);
+    if (breedingPlaceIds.isNotEmpty) {
+      final junctionData = breedingPlaceIds.map((id) => {
+        'report_id': reportId,
+        'breeding_place_id': id,
+      }).toList();
+      await _client.from('report_breeding_places').insert(junctionData);
+    }
+  }
+
   Future<void> deleteReport(String reportId) async {
     // 1. Delete junctions
     await _client.from('report_breeding_places').delete().eq('report_id', reportId);

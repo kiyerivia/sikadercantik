@@ -227,19 +227,19 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     final abj = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
                                     return DataRow(
                                       cells: [
-                                        DataCell(Center(child: Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${report.housesPositive}', style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: abj >= 95 ? Colors.green : Colors.orange)))),
+                                        DataCell(Center(child: Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text(report.villageName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text(report.posyanduName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text('${report.housesPositive}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: abj >= 95 ? Colors.green : Colors.orange)))),
                                         DataCell(
                                           Center(
                                             child: PopupMenuButton<String>(
                                               icon: const Icon(Icons.more_vert, size: 20, color: Colors.blue),
                                               onSelected: (val) {
                                                 if (val == 'edit') {
-                                                  // Edit logic
+                                                  context.push('/report', extra: report);
                                                 } else if (val == 'delete') {
                                                   _showDeleteConfirm(context, ref, report);
                                                 }

@@ -42,7 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/report',
-        builder: (context, state) => const ReportFormScreen(),
+        builder: (context, state) => ReportFormScreen(initialReport: state.extra as Report?),
       ),
       GoRoute(
         path: '/history',

@@ -30,7 +30,8 @@ class HouseReportEntry {
 }
 
 class ReportFormScreen extends HookConsumerWidget {
-  const ReportFormScreen({super.key});
+  final Report? initialReport;
+  const ReportFormScreen({super.key, this.initialReport});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,22 +40,54 @@ class ReportFormScreen extends HookConsumerWidget {
     final housesPositiveController = useTextEditingController(text: '0');
     
     final houseEntries = useState<List<HouseReportEntry>>([]);
+    final isEdit = initialReport != null;
 
-    // Initialize with one entry if empty
+    // Initialize data
     useEffect(() {
-      if (houseEntries.value.isEmpty) {
+      if (initialReport != null) {
+        // Populate totals
+        housesInspectedController.text = initialReport!.housesInspected.toString();
+        housesPositiveController.text = initialReport!.housesPositive.toString();
+        
+        // Parse notes
+        if (initialReport!.notes != null) {
+          final parsed = <HouseReportEntry>[];
+          final blocks = initialReport!.notes!.split('--- KK');
+          for (var block in blocks) {
+            if (block.trim().isEmpty) continue;
+            final entry = HouseReportEntry();
+            final lines = block.split('\n');
+            for (var line in lines) {
+              final t = line.trim();
+              if (t.startsWith('Nama KK: ')) entry.kkNameController.text = t.substring(9);
+              else if (t.startsWith('RT/RW: ')) {
+                final parts = t.substring(7).split('/');
+                if (parts.length == 2) {
+                  entry.rtController.text = parts[0];
+                  entry.rwController.text = parts[1];
+                }
+              }
+              else if (t.startsWith('Hasil: ')) entry.selectedResult = t.substring(7);
+              else if (t.startsWith('Jumlah: ')) entry.positivePlacesCountController.text = t.substring(8);
+            }
+            parsed.add(entry);
+          }
+          if (parsed.isNotEmpty) houseEntries.value = parsed;
+        }
+      } else if (houseEntries.value.isEmpty) {
         houseEntries.value = [HouseReportEntry()];
       }
+      
       return () {
         for (var entry in houseEntries.value) {
           entry.dispose();
         }
       };
-    }, []);
+    }, [initialReport]);
 
     final selectedVillageId = useState<String?>(null);
-    final selectedPosyanduId = useState<String?>(null);
-    final reportDate = useState(DateTime.now());
+    final selectedPosyanduId = useState<String?>(initialReport?.posyanduId);
+    final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
     final isLoading = useState(false);
 
     // Watch Master Data
@@ -104,17 +137,27 @@ class ReportFormScreen extends HookConsumerWidget {
           allBreedingPlaceIds.addAll(places);
         }
 
-        await ref.read(reportRepositoryProvider).submitReport(
-              posyanduId: selectedPosyanduId.value!,
-              housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
-              housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
-              breedingPlaceIds: allBreedingPlaceIds,
-              notes: notesBuffer.toString(),
-            );
+        if (isEdit) {
+          await ref.read(reportRepositoryProvider).updateReport(
+            reportId: initialReport!.id,
+            housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
+            housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
+            breedingPlaceIds: allBreedingPlaceIds,
+            notes: notesBuffer.toString(),
+          );
+        } else {
+          await ref.read(reportRepositoryProvider).submitReport(
+            posyanduId: selectedPosyanduId.value!,
+            housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
+            housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
+            breedingPlaceIds: allBreedingPlaceIds,
+            notes: notesBuffer.toString(),
+          );
+        }
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Laporan berhasil dikirim dan tersimpan di database!')),
+            SnackBar(content: Text(isEdit ? 'Laporan berhasil diperbarui!' : 'Laporan berhasil dikirim dan tersimpan di database!')),
           );
           ref.invalidate(myReportsProvider);
           context.pop();
@@ -233,7 +276,7 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
                   ),
                   const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
-                  Text('Entri Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(isEdit ? 'Edit Laporan PSN' : 'Entri Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -257,7 +300,7 @@ class ReportFormScreen extends HookConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ENTRI LAPORAN PSN',
+                          isEdit ? 'EDIT LAPORAN PSN' : 'ENTRI LAPORAN PSN',
                           style: GoogleFonts.outfit(color: const Color(0xFF154360), fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 20),
@@ -499,12 +542,12 @@ class ReportFormScreen extends HookConsumerWidget {
                           child: ElevatedButton(
                             onPressed: isLoading.value ? null : handleSubmit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF27AE60),
+                              backgroundColor: isEdit ? const Color(0xFF2980B9) : const Color(0xFF27AE60),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             child: isLoading.value
                                 ? const CircularProgressIndicator(color: Colors.white)
-                                : Text('KIRIM LAPORAN', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                : Text(isEdit ? 'SIMPAN PERUBAHAN' : 'KIRIM LAPORAN', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                           ),
                         ),
                       ],
