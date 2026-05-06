@@ -45,11 +45,12 @@ class LoginScreen extends HookConsumerWidget {
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/background_login_screen.jpeg'),
-            fit: BoxFit.cover,
+            fit: BoxFit.fitWidth,
+            alignment: Alignment.topCenter,
           ),
         ),
         child: Container(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withOpacity(0.8),
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -57,17 +58,17 @@ class LoginScreen extends HookConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Centered Logo
+                    // Centered Logo (Enlarged)
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 180,
+                      height: 180,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
+                            blurRadius: 25,
                             offset: const Offset(0, 10),
                           ),
                         ],
@@ -76,24 +77,6 @@ class LoginScreen extends HookConsumerWidget {
                       child: Image.asset(
                         'assets/images/logo_sikadercantik.jpeg',
                         fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'SIKADERCANTIK',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1D7423),
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const Text(
-                      'Sistem Kader Pencatatan Jentik',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 60),
