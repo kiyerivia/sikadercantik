@@ -47,7 +47,7 @@ class ReportRepository {
 
     final response = await _client
         .from('reports')
-        .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
+        .select('*, posyandus(name, rws(villages(id, name))), report_breeding_places(breeding_place_id)')
         .eq('kader_id', userId!)
         .order('report_date', ascending: false);
 
