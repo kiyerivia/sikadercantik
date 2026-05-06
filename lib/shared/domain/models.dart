@@ -79,6 +79,7 @@ class Report {
   final int housesPositive;
   final String? notes;
   final String status;
+  final List<String> breedingPlaceIds;
   final String? villageId;
   final String? villageName;
   final String? posyanduName;
