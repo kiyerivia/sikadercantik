@@ -45,8 +45,7 @@ class LoginScreen extends HookConsumerWidget {
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/background_login_screen.jpeg'),
-            fit: BoxFit.fitWidth,
-            alignment: Alignment.topCenter,
+            fit: BoxFit.fill,
           ),
         ),
         child: Container(
