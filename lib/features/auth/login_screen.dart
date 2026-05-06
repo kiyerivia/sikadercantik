@@ -176,9 +176,11 @@ class LoginScreen extends HookConsumerWidget {
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
