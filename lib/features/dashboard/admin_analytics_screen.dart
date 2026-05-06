@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/domain/models.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/admin_providers.dart';
 import 'package:intl/intl.dart';
