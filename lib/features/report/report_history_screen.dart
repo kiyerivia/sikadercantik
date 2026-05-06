@@ -148,10 +148,14 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     const SizedBox(height: 8),
                                     _buildDropdown(
                                       value: selectedVillageId.value,
-                                      hint: 'Pilih Desa',
+                                      hint: 'Semua',
                                       items: villagesAsync.maybeWhen(
-                                        data: (villages) => villages.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList(),
-                                        orElse: () => [],
+                                        data: (villages) {
+                                          final list = villages.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
+                                          list.insert(0, const DropdownMenuItem(value: null, child: Text('Semua')));
+                                          return list;
+                                        },
+                                        orElse: () => [const DropdownMenuItem(value: null, child: Text('Semua'))],
                                       ),
                                       onChanged: (val) {
                                         selectedVillageId.value = val;
@@ -173,10 +177,14 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     const SizedBox(height: 8),
                                     _buildDropdown(
                                       value: selectedPosyanduId.value,
-                                      hint: 'Pilih Posyandu',
+                                      hint: 'Semua',
                                       items: posyandusAsync.maybeWhen(
-                                        data: (posyandus) => posyandus.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
-                                        orElse: () => [],
+                                        data: (posyandus) {
+                                          final list = posyandus.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
+                                          list.insert(0, const DropdownMenuItem(value: null, child: Text('Semua')));
+                                          return list;
+                                        },
+                                        orElse: () => [const DropdownMenuItem(value: null, child: Text('Semua'))],
                                       ),
                                       onChanged: (val) => selectedPosyanduId.value = val,
                                     ),
@@ -202,10 +210,18 @@ class ReportHistoryScreen extends HookConsumerWidget {
                         data: (reports) {
                           // Apply filters
                           final filteredReports = reports.where((r) {
-                            if (selectedPosyanduId.value != null) {
-                              return r.posyanduId == selectedPosyanduId.value;
+                            bool matchesVillage = true;
+                            if (selectedVillageId.value != null) {
+                              final village = villagesAsync.value?.firstWhere((v) => v.id == selectedVillageId.value);
+                              matchesVillage = r.villageName == village?.name;
                             }
-                            return true;
+                            
+                            bool matchesPosyandu = true;
+                            if (selectedPosyanduId.value != null) {
+                              matchesPosyandu = r.posyanduId == selectedPosyanduId.value;
+                            }
+                            
+                            return matchesVillage && matchesPosyandu;
                           }).toList();
 
                           return Column(
