@@ -376,10 +376,14 @@ class ReportHistoryScreen extends HookConsumerWidget {
 
   DataColumn _buildTableHeader(String label) {
     return DataColumn(
-      label: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+      label: Expanded(
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+          ),
+        ),
       ),
     );
   }
