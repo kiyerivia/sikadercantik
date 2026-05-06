@@ -401,43 +401,16 @@ class ReportFormScreen extends HookConsumerWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
-                                  Row(
-                                    children: [
-                                      // Custom Add KK Button (Based on screenshot)
-                                      if (idx == 0)
-                                        InkWell(
-                                          onTap: () {
-                                            houseEntries.value = [...houseEntries.value, HouseReportEntry()];
-                                          },
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Column(
-                                                crossAxisAlignment: CrossAxisAlignment.end,
-                                                children: [
-                                                  Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
-                                                  Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
-                                                ],
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Image.asset('assets/images/icon_kk.png', width: 44, height: 44),
-                                            ],
-                                          ),
-                                        ),
-                                      const SizedBox(width: 8),
-                                      if (houseEntries.value.length > 1)
-                                        IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                          onPressed: () {
-                                            final newList = List<HouseReportEntry>.from(houseEntries.value);
-                                            newList.removeAt(idx);
-                                            entry.dispose();
-                                            houseEntries.value = newList;
-                                          },
-                                        ),
-                                    ],
-                                  ),
+                                  if (houseEntries.value.length > 1)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      onPressed: () {
+                                        final newList = List<HouseReportEntry>.from(houseEntries.value);
+                                        newList.removeAt(idx);
+                                        entry.dispose();
+                                        houseEntries.value = newList;
+                                      },
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -520,8 +493,6 @@ class ReportFormScreen extends HookConsumerWidget {
                                   ),
                                 );
                               }),
-                              
-                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -530,6 +501,39 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 16),
+                              if (idx == houseEntries.value.length - 1)
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: InkWell(
+                                    onTap: () {
+                                      houseEntries.value = [...houseEntries.value, HouseReportEntry()];
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
+                                              Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Image.asset('assets/images/icon_kk.png', width: 40, height: 40),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
                               const Divider(height: 32),
                             ],
                           );
