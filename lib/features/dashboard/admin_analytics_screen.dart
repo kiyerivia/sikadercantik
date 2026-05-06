@@ -86,7 +86,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        // View all reports filter
+                        // This could navigate to a full report list with filters
                       },
                       child: const Text('Lihat Semua'),
                     ),
@@ -94,17 +94,26 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 reportsAsync.when(
-                  data: (reports) => ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: reports.length > 5 ? 5 : reports.length,
-                    itemBuilder: (context, index) {
-                      final report = reports[index];
-                      return _AdminReportTile(report: report);
-                    },
-                  ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                  data: (reports) {
+                    if (reports.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Text('Belum ada laporan masuk', style: TextStyle(color: Colors.grey[500])),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: reports.length > 5 ? 5 : reports.length,
+                      itemBuilder: (context, index) {
+                        final report = reports[index];
+                        return _AdminReportTile(report: report);
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Text('Error: $e'),
                 ),
               ],
@@ -155,12 +164,17 @@ class AdminAnalyticsScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _StatCard(
-          label: 'Menunggu Verifikasi',
-          value: '${stats['needVerification']}',
-          icon: Icons.pending_actions,
-          color: Colors.purple,
-          isFullWidth: true,
+        InkWell(
+          onTap: () {
+            // Filter list to only pending?
+          },
+          child: _StatCard(
+            label: 'Menunggu Verifikasi',
+            value: '${stats['needVerification']}',
+            icon: Icons.pending_actions,
+            color: Colors.purple,
+            isFullWidth: true,
+          ),
         ),
       ],
     );
@@ -220,6 +234,14 @@ class _StatCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              if (label == 'Menunggu Verifikasi' && int.parse(value) > 0)
+                const Spacer(),
+              if (label == 'Menunggu Verifikasi' && int.parse(value) > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                  child: const Text('PERLU TINDAKAN', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -234,22 +256,76 @@ class _StatCard extends StatelessWidget {
 }
 
 class _AdminReportTile extends StatelessWidget {
-  final dynamic report;
+  final Report report;
 
   const _AdminReportTile({required this.report});
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd/MM/yy').format(report.reportDate);
+    final dateStr = DateFormat('dd MMM yyyy', 'id_ID').format(report.reportDate);
+    Color statusColor = Colors.grey;
+    String statusLabel = report.status.toUpperCase();
+
+    if (report.status == 'submitted') {
+      statusColor = Colors.orange;
+      statusLabel = 'PENDING';
+    } else if (report.status == 'verified') {
+      statusColor = Colors.green;
+      statusLabel = 'VERIFIED';
+    } else if (report.status == 'need_intervention') {
+      statusColor = Colors.red;
+      statusLabel = 'INTERVENTION';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        title: Text('Laporan $dateStr'),
-        subtitle: Text(
-          'Positif: ${report.housesPositive}/${report.housesInspected} rumah',
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.description, color: statusColor),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        title: Text(
+          report.posyanduName ?? 'Laporan PSN',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(dateStr, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            const SizedBox(height: 4),
+            Text(
+              'Positif: ${report.housesPositive}/${report.housesInspected} rumah',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusLabel,
+                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+          ],
+        ),
         onTap: () => context.push('/report-detail', extra: report),
       ),
     );
