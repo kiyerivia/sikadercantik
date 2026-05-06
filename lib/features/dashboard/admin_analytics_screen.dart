@@ -15,12 +15,9 @@ class AdminAnalyticsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(color: Colors.white),
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
         title: Row(
           children: [
             Container(

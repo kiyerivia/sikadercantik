@@ -80,7 +80,6 @@ class Report {
   final String? notes;
   final String status;
   final List<String> breedingPlaceIds;
-  final String? villageId;
   final String? villageName;
   final String? posyanduName;
 
@@ -94,21 +93,18 @@ class Report {
     this.notes,
     required this.status,
     this.breedingPlaceIds = const [],
-    this.villageId,
     this.villageName,
     this.posyanduName,
   });
 
   factory Report.fromMap(Map<String, dynamic> map, {List<String>? breedingPlaceIds}) {
     // Extract names from joined data if available
-    String? vId;
     String? vName;
     String? pName;
     
     if (map['posyandus'] != null) {
       pName = map['posyandus']['name'] as String?;
       if (map['posyandus']['rws'] != null && map['posyandus']['rws']['villages'] != null) {
-        vId = map['posyandus']['rws']['villages']['id'] as String?;
         vName = map['posyandus']['rws']['villages']['name'] as String?;
       }
     }
@@ -123,7 +119,6 @@ class Report {
       notes: map['notes'] as String?,
       status: map['status'] as String,
       breedingPlaceIds: breedingPlaceIds ?? [],
-      villageId: vId,
       villageName: vName,
       posyanduName: pName,
     );
