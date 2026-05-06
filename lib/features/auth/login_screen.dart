@@ -51,33 +51,45 @@ class LoginScreen extends HookConsumerWidget {
         child: Container(
           color: Colors.white.withOpacity(0.8),
           child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Centered Logo (Enlarged)
-                    Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 25,
-                            offset: const Offset(0, 10),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Image.asset(
+                    'assets/images/logo_dinas_banyumas.png',
+                    width: 60,
+                    height: 60,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Centered Logo (Enlarged)
+                        Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 25,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        'assets/images/logo_sikadercantik.jpeg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            'assets/images/logo_sikadercantik.jpeg',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                     const SizedBox(height: 60),
                     const Align(
                       alignment: Alignment.centerLeft,
