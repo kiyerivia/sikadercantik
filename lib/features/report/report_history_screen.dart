@@ -43,7 +43,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 children: [
                   InkWell(
                     onTap: () => context.pop(),
-                    child: const Icon(Icons.menu, color: Colors.white),
+                    child: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
                   Container(
