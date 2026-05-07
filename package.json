@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "build": "bash build.sh",
-    "vercel-build": "bash build.sh"
+    "vercel-build": "bash build.sh",
+    "seed-locations": "node seed_locations.mjs"
   },
   "dependencies": {},
   "devDependencies": {}

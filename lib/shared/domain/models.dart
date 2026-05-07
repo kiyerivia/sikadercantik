@@ -58,14 +58,24 @@ class Posyandu {
   final String id;
   final String rwId;
   final String name;
+  final double? latitude;
+  final double? longitude;
 
-  Posyandu({required this.id, required this.rwId, required this.name});
+  Posyandu({
+    required this.id,
+    required this.rwId,
+    required this.name,
+    this.latitude,
+    this.longitude,
+  });
 
   factory Posyandu.fromMap(Map<String, dynamic> map) {
     return Posyandu(
       id: map['id'] as String,
       rwId: map['rw_id'] as String,
       name: map['name'] as String,
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 }

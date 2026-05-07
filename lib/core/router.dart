@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../features/auth/login_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/dashboard/admin_analytics_screen.dart';
+import '../features/dashboard/admin_map_screen.dart';
 import '../features/master_data/location_management_screen.dart';
 import '../features/report/report_form_screen.dart';
 import '../features/report/report_history_screen.dart';
@@ -52,6 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/report-detail',
         builder: (context, state) =>
             ReportDetailScreen(report: state.extra as Report),
+      ),
+      GoRoute(
+        path: '/map',
+        builder: (context, state) => const AdminMapScreen(),
       ),
     ],
   );

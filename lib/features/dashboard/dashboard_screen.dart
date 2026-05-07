@@ -580,6 +580,15 @@ class _AdminDashboard extends ConsumerWidget {
                     bgColor: const Color(0xFFF4ECF7),
                     onTap: () => context.push('/locations'),
                   ),
+                  const SizedBox(height: 16),
+                  _MenuCard(
+                    title: 'Peta Sebaran Jentik',
+                    subtitle: 'Visualisasi penyebaran jentik per wilayah secara real-time',
+                    icon: Icons.explore_rounded,
+                    iconColor: const Color(0xFFE67E22),
+                    bgColor: const Color(0xFFFEF5E7),
+                    onTap: () => context.push('/map'),
+                  ),
                   const SizedBox(height: 24),
                   const _InfoCard(
                     text: 'Pastikan data yang ditampilkan selalu diperbarui untuk monitoring yang akurat.',
