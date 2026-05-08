@@ -315,9 +315,10 @@ class ReportFormScreen extends HookConsumerWidget {
                         _buildLabel(iconWidget: const Icon(Icons.location_on, size: 16, color: Colors.blue), label: 'Nama Desa'),
                         const SizedBox(height: 8),
                         _buildDropdown(
+                          key: ValueKey('village_form_${selectedVillageId.value}'),
                           value: selectedVillageId.value,
                           hint: villagesAsync.maybeWhen(loading: () => 'Memuat desa...', orElse: () => 'Pilih Desa'),
-                          onChanged: (val) {
+                          onChanged: villagesAsync.isLoading ? null : (val) {
                             selectedVillageId.value = val;
                             selectedPosyanduId.value = null;
                           },
@@ -335,9 +336,10 @@ class ReportFormScreen extends HookConsumerWidget {
                         _buildLabel(iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 16, height: 16), label: 'Nama Posyandu'),
                         const SizedBox(height: 8),
                         _buildDropdown(
+                          key: ValueKey('posyandu_form_${selectedVillageId.value}_${selectedPosyanduId.value}'),
                           value: selectedPosyanduId.value,
                           hint: posyandusAsync.maybeWhen(loading: () => 'Memuat posyandu...', orElse: () => 'Pilih Posyandu'),
-                          onChanged: (val) => selectedPosyanduId.value = val,
+                          onChanged: (posyandusAsync.isLoading || selectedVillageId.value == null) ? null : (val) => selectedPosyanduId.value = val,
                           items: posyandusAsync.maybeWhen(
                             data: (posyandus) {
                               final sorted = List<Posyandu>.from(posyandus)
@@ -429,6 +431,7 @@ class ReportFormScreen extends HookConsumerWidget {
                               _buildLabel(iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18), label: 'Status Pemeriksaan'),
                               const SizedBox(height: 8),
                               _buildDropdown(
+                                key: ValueKey('status_entry_$idx'),
                                 value: entry.selectedResult,
                                 hint: 'Pilih Status',
                                 onChanged: (val) {
@@ -616,16 +619,19 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildDropdown({
+   Widget _buildDropdown({
+    Key? key,
     required String? value,
     required String hint,
     required List<DropdownMenuItem<String>> items,
     required void Function(String?)? onChanged,
   }) {
+    final isDisabled = onChanged == null;
     return Container(
+      key: key,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
+        color: isDisabled ? Colors.grey[100] : const Color(0xFFF8F9FA),
         border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -636,7 +642,9 @@ class ReportFormScreen extends HookConsumerWidget {
           isExpanded: true,
           menuMaxHeight: 350,
           borderRadius: BorderRadius.circular(12),
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+          icon: isDisabled && hint.contains('Memuat')
+            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
           dropdownColor: Colors.white,
           items: items,
           onChanged: onChanged,

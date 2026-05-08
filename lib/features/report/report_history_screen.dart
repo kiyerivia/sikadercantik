@@ -154,11 +154,12 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
                                     const SizedBox(height: 8),
                                     _buildDropdown(
+                                      key: ValueKey('village_history_${selectedVillageId.value}'),
                                       value: selectedVillageId.value,
                                       hint: villagesAsync.isLoading ? 'Memuat...' : 'Pilih Desa',
                                       onChanged: villagesAsync.isLoading ? null : (val) {
                                         selectedVillageId.value = val;
-                                        selectedPosyanduId.value = null;
+                                        selectedPosyanduId.value = 'all';
                                       },
                                       items: villagesAsync.maybeWhen(
                                         data: (villages) {
@@ -185,6 +186,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     _buildDropdown(
+                                      key: ValueKey('posyandu_history_${selectedVillageId.value}_${selectedPosyanduId.value}'),
                                       value: selectedPosyanduId.value,
                                       hint: posyandusAsync.isLoading ? 'Memuat...' : 'Pilih Posyandu',
                                       onChanged: (posyandusAsync.isLoading || (selectedVillageId.value == null || selectedVillageId.value == 'all')) ? null : (val) => selectedPosyanduId.value = val,
@@ -418,6 +420,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
   }
 
   Widget _buildDropdown({
+    Key? key,
     required String? value,
     required String hint,
     required List<DropdownMenuItem<String>> items,
@@ -425,6 +428,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
   }) {
     final isDisabled = onChanged == null;
     return Container(
+      key: key,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: isDisabled ? Colors.grey[100] : Colors.white,

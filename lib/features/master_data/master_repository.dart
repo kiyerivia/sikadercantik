@@ -23,7 +23,7 @@ class MasterRepository {
   Future<List<Posyandu>> getPosyandus(String rwId) async {
     final response = await _client
         .from('posyandus')
-        .select()
+        .select('*, rws(*)')
         .eq('rw_id', rwId)
         .order('name');
     return (response as List).map((m) => Posyandu.fromMap(m)).toList();
@@ -32,7 +32,7 @@ class MasterRepository {
   Future<List<Posyandu>> getPosyandusByVillage(String villageId) async {
     final response = await _client
         .from('posyandus')
-        .select('*, rws!inner(village_id)')
+        .select('*, rws!inner(*)')
         .eq('rws.village_id', villageId)
         .order('name');
     return (response as List).map((m) => Posyandu.fromMap(m)).toList();
@@ -71,10 +71,10 @@ class MasterRepository {
     final resp = await _client.from('posyandus').insert({
       'rw_id': rwId,
       'name': name,
-      'tahun_pendirian': ?year,
-      'alamat': ?address,
-      'nama_ketua': ?chairName,
-      'nomor_hp': ?phone,
+      'tahun_pendirian': year,
+      'alamat': address,
+      'nama_ketua': chairName,
+      'nomor_hp': phone,
     }).select('id').single();
     return (resp)['id'] as String;
   }
