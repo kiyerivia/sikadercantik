@@ -41,6 +41,10 @@ class ReportFormScreen extends HookConsumerWidget {
     
     final houseEntries = useState<List<HouseReportEntry>>([]);
     final isEdit = initialReport != null;
+    final selectedVillageId = useState<String?>(null);
+    final selectedPosyanduId = useState<String?>(initialReport?.posyanduId);
+    final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
+    final isLoading = useState(false);
 
     // Initialize data
     useEffect(() {
@@ -89,11 +93,6 @@ class ReportFormScreen extends HookConsumerWidget {
         }
       };
     }, [initialReport]);
-
-    final selectedVillageId = useState<String?>(null);
-    final selectedPosyanduId = useState<String?>(initialReport?.posyanduId);
-    final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
-    final isLoading = useState(false);
 
     // Watch Master Data
     final villagesAsync = ref.watch(villagesProvider);

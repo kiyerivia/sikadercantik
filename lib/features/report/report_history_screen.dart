@@ -146,6 +146,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                   children: [
                                     _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
                                     const SizedBox(height: 8),
+                                    _buildDropdown(
+                                      value: selectedVillageId.value,
+                                      hint: 'Pilih Desa',
                                       onChanged: (val) {
                                         selectedVillageId.value = val;
                                         selectedPosyanduId.value = null;
@@ -160,6 +163,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         },
                                         orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -173,6 +177,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       label: 'Posyandu',
                                     ),
                                     const SizedBox(height: 8),
+                                    _buildDropdown(
+                                      value: selectedPosyanduId.value,
+                                      hint: 'Pilih Posyandu',
                                       onChanged: (val) => selectedPosyanduId.value = val,
                                       items: posyandusAsync.maybeWhen(
                                         data: (posyandus) {
@@ -184,6 +191,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         },
                                         orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
