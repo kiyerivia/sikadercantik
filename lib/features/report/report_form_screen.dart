@@ -305,6 +305,54 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (initialReport?.status == 'need_intervention')
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final interventionsAsync = ref.watch(interventionsByReportProvider(initialReport!.id));
+                              return interventionsAsync.when(
+                                data: (items) {
+                                  if (items.isEmpty) return const SizedBox.shrink();
+                                  final latest = items.first;
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 20),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange[50],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.orange[200]!),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.assignment_late, color: Colors.orange, size: 20),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Instruksi Intervensi Admin',
+                                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.orange[900]),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          latest['description'] ?? '-',
+                                          style: GoogleFonts.outfit(fontSize: 14, color: Colors.orange[800]),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin'}',
+                                          style: GoogleFonts.outfit(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange[700]),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (_, __) => const SizedBox.shrink(),
+                              );
+                            },
+                          ),
                         Text(
                           isEdit ? 'EDIT LAPORAN PSN' : 'ENTRI LAPORAN PSN',
                           style: GoogleFonts.outfit(color: const Color(0xFF154360), fontSize: 16, fontWeight: FontWeight.bold),

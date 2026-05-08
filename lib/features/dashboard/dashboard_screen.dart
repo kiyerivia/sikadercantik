@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/providers/report_providers.dart';
 import '../../shared/domain/models.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -92,14 +93,19 @@ class _KaderDashboard extends ConsumerWidget {
                     minWidth: 14,
                     minHeight: 14,
                   ),
-                  child: const Text(
-                    '1',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final count = ref.watch(interventionCountProvider);
+                      return Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -254,7 +260,18 @@ class _KaderDashboard extends ConsumerWidget {
                       onTap: () => context.push('/history'),
                     ),
                     const SizedBox(height: 16),
-                    _InfoCard(),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final count = ref.watch(interventionCountProvider);
+                        if (count > 0) {
+                          return _InfoCard(
+                            text: 'Anda memiliki $count laporan yang memerlukan intervensi/perbaikan. Silakan cek di Riwayat Laporan.',
+                            isWarning: true,
+                          );
+                        }
+                        return const _InfoCard();
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -344,29 +361,35 @@ class _MenuCard extends StatelessWidget {
 
 class _InfoCard extends StatelessWidget {
   final String? text;
-  const _InfoCard({this.text});
+  final bool isWarning;
+  const _InfoCard({this.text, this.isWarning = false});
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = isWarning ? const Color(0xFFFFF3E0) : const Color(0xFFE1F5FE);
+    final iconColor = isWarning ? Colors.orange[800] : const Color(0xFF0288D1);
+    final titleColor = isWarning ? Colors.orange[900] : const Color(0xFF01579B);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFE1F5FE),
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
+        border: isWarning ? Border.all(color: Colors.orange[200]!) : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF0288D1), size: 24),
+          Icon(isWarning ? Icons.warning_amber_rounded : Icons.info_outline, color: iconColor, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Informasi',
+                  isWarning ? 'Perlu Perhatian' : 'Informasi',
                   style: GoogleFonts.outfit(
-                    color: const Color(0xFF01579B),
+                    color: titleColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -376,7 +399,7 @@ class _InfoCard extends StatelessWidget {
                   text ??
                       'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
                   style: GoogleFonts.outfit(
-                    color: const Color(0xFF01579B).withOpacity(0.7),
+                    color: titleColor.withOpacity(0.7),
                     fontSize: 13,
                   ),
                 ),

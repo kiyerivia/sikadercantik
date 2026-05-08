@@ -259,7 +259,19 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     final abj = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
                                     return DataRow(
                                       cells: [
-                                        DataCell(Center(child: Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
+                                        DataCell(Center(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (report.status == 'need_intervention')
+                                                const Padding(
+                                                  padding: EdgeInsets.only(right: 4),
+                                                  child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
+                                                ),
+                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? Colors.orange[900] : Colors.black)),
+                                            ],
+                                          ),
+                                        )),
                                         DataCell(Center(child: Text(report.villageName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
                                         DataCell(Center(child: Text(report.posyanduName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
                                         DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),

@@ -131,4 +131,13 @@ class ReportRepository {
     // 2. Delete report
     await _client.from('reports').delete().eq('id', reportId);
   }
+
+  Future<List<Map<String, dynamic>>> getInterventionsByReport(String reportId) async {
+    final response = await _client
+        .from('interventions')
+        .select('*, profiles:admin_id(full_name)')
+        .eq('report_id', reportId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }
