@@ -24,7 +24,10 @@ class ReportDetailScreen extends ConsumerWidget {
         title: Text('Detail Laporan', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
-          const NotificationBadge(),
+        actions: const [
+          NotificationBadge(),
+          SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
