@@ -145,64 +145,60 @@ class ReportHistoryScreen extends HookConsumerWidget {
                             style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 12),
                           ),
                           const SizedBox(height: 20),
-                          Row(
+                          Column(
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
-                                    const SizedBox(height: 8),
-                                    _buildDropdown(
-                                      key: ValueKey('village_history_${selectedVillageId.value}'),
-                                      value: selectedVillageId.value,
-                                      hint: villagesAsync.isLoading ? 'Memuat...' : 'Pilih Desa',
-                                      onChanged: villagesAsync.isLoading ? null : (val) {
-                                        selectedVillageId.value = val;
-                                        selectedPosyanduId.value = 'all';
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
+                                  const SizedBox(height: 8),
+                                  _buildDropdown(
+                                    key: ValueKey('village_history_${selectedVillageId.value}'),
+                                    value: selectedVillageId.value,
+                                    hint: villagesAsync.isLoading ? 'Memuat...' : 'Pilih Desa',
+                                    onChanged: villagesAsync.isLoading ? null : (val) {
+                                      selectedVillageId.value = val;
+                                      selectedPosyanduId.value = 'all';
+                                    },
+                                    items: villagesAsync.maybeWhen(
+                                      data: (villages) {
+                                        final sorted = List<Village>.from(villages)
+                                          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                                        final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
+                                        list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
+                                        return list;
                                       },
-                                      items: villagesAsync.maybeWhen(
-                                        data: (villages) {
-                                          final sorted = List<Village>.from(villages)
-                                            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                          final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
-                                          list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
-                                          return list;
-                                        },
-                                        orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
-                                      ),
+                                      orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabel(
-                                      iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 18, height: 18),
-                                      label: 'Posyandu',
+                              const SizedBox(height: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildLabel(
+                                    iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 18, height: 18),
+                                    label: 'Posyandu',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildDropdown(
+                                    key: ValueKey('posyandu_history_${selectedVillageId.value}_${selectedPosyanduId.value}'),
+                                    value: selectedPosyanduId.value,
+                                    hint: posyandusAsync.isLoading ? 'Memuat...' : 'Pilih Posyandu',
+                                    onChanged: (posyandusAsync.isLoading || (selectedVillageId.value == null || selectedVillageId.value == 'all')) ? null : (val) => selectedPosyanduId.value = val,
+                                    items: posyandusAsync.maybeWhen(
+                                      data: (posyandus) {
+                                        final sorted = List<Posyandu>.from(posyandus)
+                                          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                                        final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
+                                        list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
+                                        return list;
+                                      },
+                                      orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
                                     ),
-                                    const SizedBox(height: 8),
-                                    _buildDropdown(
-                                      key: ValueKey('posyandu_history_${selectedVillageId.value}_${selectedPosyanduId.value}'),
-                                      value: selectedPosyanduId.value,
-                                      hint: posyandusAsync.isLoading ? 'Memuat...' : 'Pilih Posyandu',
-                                      onChanged: (posyandusAsync.isLoading || (selectedVillageId.value == null || selectedVillageId.value == 'all')) ? null : (val) => selectedPosyanduId.value = val,
-                                      items: posyandusAsync.maybeWhen(
-                                        data: (posyandus) {
-                                          final sorted = List<Posyandu>.from(posyandus)
-                                            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                          final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
-                                          list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
-                                          return list;
-                                        },
-                                        orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
