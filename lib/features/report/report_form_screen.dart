@@ -290,14 +290,15 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (initialReport?.status == 'need_intervention')
+                        if (isEdit && initialReport != null)
                           Consumer(
                             builder: (context, ref, child) {
                               final interventionsAsync = ref.watch(interventionsByReportProvider(initialReport!.id));
+                              
                               return interventionsAsync.when(
                                 data: (items) {
                                   if (items.isEmpty) return const SizedBox.shrink();
-                                  final latest = items.first;
+                                  final latest = items.last; // Use last for newest instruction
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 20),
                                     padding: const EdgeInsets.all(16),
@@ -367,8 +368,22 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ),
                                   );
                                 },
-                                loading: () => const LinearProgressIndicator(),
-                                error: (_, __) => const SizedBox.shrink(),
+                                loading: () => const Padding(
+                                  padding: EdgeInsets.only(bottom: 20),
+                                  child: LinearProgressIndicator(),
+                                ),
+                                error: (err, _) => Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Gagal memuat instruksi: $err',
+                                    style: TextStyle(color: Colors.red[900], fontSize: 12),
+                                  ),
+                                ),
                               );
                             },
                           ),
