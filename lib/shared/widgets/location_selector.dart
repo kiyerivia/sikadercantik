@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/master_providers.dart';
 
 class LocationSelector extends HookConsumerWidget {
@@ -42,7 +43,7 @@ class LocationSelector extends HookConsumerWidget {
                 .map(
                   (v) => DropdownMenuItem(
                     value: v.id,
-                    child: Text(v.name, overflow: TextOverflow.ellipsis),
+                    child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)),
                   ),
                 )
                 .toList(),
@@ -77,7 +78,7 @@ class LocationSelector extends HookConsumerWidget {
                       .map(
                         (r) => DropdownMenuItem(
                           value: r.id,
-                          child: Text('RW ${r.rwNumber}'),
+                          child: Text('RW ${r.rwNumber}', style: GoogleFonts.outfit(fontSize: 12)),
                         ),
                       )
                       .toList(),
@@ -123,7 +124,7 @@ class LocationSelector extends HookConsumerWidget {
                       .map(
                         (p) => DropdownMenuItem(
                           value: p.id,
-                          child: Text(p.name, overflow: TextOverflow.ellipsis),
+                          child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)),
                         ),
                       )
                       .toList(),

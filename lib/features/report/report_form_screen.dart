@@ -326,7 +326,7 @@ class ReportFormScreen extends HookConsumerWidget {
                             data: (villages) {
                               final sorted = List<Village>.from(villages)
                                 ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                              return sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
+                              return sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
                             },
                             orElse: () => [],
                           ),
@@ -344,7 +344,7 @@ class ReportFormScreen extends HookConsumerWidget {
                             data: (posyandus) {
                               final sorted = List<Posyandu>.from(posyandus)
                                 ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                              return sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
+                              return sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
                             },
                             orElse: () => [],
                           ),
@@ -438,7 +438,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                   entry.selectedResult = val;
                                   houseEntries.value = [...houseEntries.value]; // Trigger rebuild
                                 },
-                                items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
                               ),
                               const SizedBox(height: 16),
                               _buildLabel(iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal), label: 'Nama KK & RT/RW'),
@@ -477,7 +477,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                             houseEntries.value = [...houseEntries.value];
                                           },
                                           items: breedingPlacesAsync.maybeWhen(
-                                            data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String))).toList(),
+                                            data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
                                             orElse: () => [],
                                           ),
                                         ),
@@ -638,8 +638,9 @@ class ReportFormScreen extends HookConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          hint: Text(hint, style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 12)),
           isExpanded: true,
+          isDense: true,
           menuMaxHeight: 350,
           borderRadius: BorderRadius.circular(12),
           icon: isDisabled && hint.contains('Memuat')

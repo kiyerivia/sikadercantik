@@ -165,11 +165,11 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         data: (villages) {
                                           final sorted = List<Village>.from(villages)
                                             ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                          final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
-                                          list.insert(0, const DropdownMenuItem(value: 'all', child: Text('Semua')));
+                                          final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
+                                          list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
                                           return list;
                                         },
-                                        orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
+                                        orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
                                       ),
                                     ),
                                   ],
@@ -194,11 +194,11 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         data: (posyandus) {
                                           final sorted = List<Posyandu>.from(posyandus)
                                             ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                          final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
-                                          list.insert(0, const DropdownMenuItem(value: 'all', child: Text('Semua')));
+                                          final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
+                                          list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
                                           return list;
                                         },
-                                        orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
+                                        orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
                                       ),
                                     ),
                                   ],
@@ -438,8 +438,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: Text(hint, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+          hint: Text(hint, style: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 12)),
           isExpanded: true,
+          isDense: true,
           icon: isDisabled && hint == 'Memuat...' 
             ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
             : const Icon(Icons.keyboard_arrow_down, size: 18),

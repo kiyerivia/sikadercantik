@@ -238,7 +238,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 items: posyandus.map((p) {
                   return DropdownMenuItem(
                     value: p,
-                    child: Text(p.name, overflow: TextOverflow.ellipsis),
+                    child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)),
                   );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedPosyandu = val),
