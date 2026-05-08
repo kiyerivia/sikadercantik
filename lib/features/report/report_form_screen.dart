@@ -330,7 +330,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                             Text(
                                               'INSTRUKSI PERBAIKAN ADMIN',
                                               style: GoogleFonts.outfit(
-                                                fontWeight: FontWeight.black, 
+                                                fontWeight: FontWeight.w900, 
                                                 color: Colors.red[900],
                                                 letterSpacing: 1.2,
                                                 fontSize: 12,
