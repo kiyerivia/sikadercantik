@@ -223,6 +223,7 @@ class ReportFormScreen extends HookConsumerWidget {
                       ],
                     ),
                   ),
+                  const Spacer(),
                   const NotificationBadge(),
                   const SizedBox(width: 12),
                   PopupMenuButton<String>(
@@ -301,32 +302,66 @@ class ReportFormScreen extends HookConsumerWidget {
                                     margin: const EdgeInsets.only(bottom: 20),
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Colors.orange[50],
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.orange[200]!),
+                                      color: Colors.red[50],
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.red[200]!, width: 2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.1),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            const Icon(Icons.assignment_late, color: Colors.orange, size: 20),
-                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.red,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(Icons.warning_rounded, color: Colors.white, size: 16),
+                                            ),
+                                            const SizedBox(width: 10),
                                             Text(
-                                              'Instruksi Intervensi Admin',
-                                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.orange[900] ?? Colors.orange),
+                                              'INSTRUKSI PERBAIKAN ADMIN',
+                                              style: GoogleFonts.outfit(
+                                                fontWeight: FontWeight.black, 
+                                                color: Colors.red[900],
+                                                letterSpacing: 1.2,
+                                                fontSize: 12,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 12),
                                         Text(
                                           latest['description'] ?? '-',
-                                          style: GoogleFonts.outfit(fontSize: 14, color: Colors.orange[800] ?? Colors.orange),
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 15, 
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.red[800],
+                                          ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin'}',
-                                          style: GoogleFonts.outfit(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange[700] ?? Colors.orange),
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red[100],
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin Puskesmas'}',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11, 
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red[900],
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
