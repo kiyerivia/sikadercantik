@@ -274,16 +274,29 @@ class ReportDetailScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800]),
             onPressed: () async {
               if (controller.text.isEmpty) return;
-              await ref.read(reportRepositoryProvider).addIntervention(
-                    reportId: report.id,
-                    type: 'psn_ulang',
-                    description: controller.text,
+              
+              // Simple loading indicator would be better but let's at least handle error
+              try {
+                await ref.read(reportRepositoryProvider).addIntervention(
+                      reportId: report.id,
+                      type: 'psn_ulang',
+                      description: controller.text,
+                    );
+                ref.invalidate(allReportsProvider);
+                ref.invalidate(adminStatsProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Instruksi berhasil dikirim!'), backgroundColor: Colors.green),
                   );
-              ref.invalidate(allReportsProvider);
-              ref.invalidate(adminStatsProvider);
-              if (context.mounted) {
-                Navigator.pop(context); // Close dialog
-                context.pop(); // Close detail screen
+                  Navigator.pop(context); // Close dialog
+                  context.pop(); // Close detail screen
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal mengirim instruksi: $e'), backgroundColor: Colors.red),
+                  );
+                }
               }
             },
             child: const Text('KIRIM INSTRUKSI'),

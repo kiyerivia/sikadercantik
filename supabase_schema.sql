@@ -98,3 +98,15 @@ CREATE POLICY "Kader can view their own reports." ON reports FOR SELECT USING (a
 CREATE POLICY "Admins can view and update all reports." ON reports FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+
+-- POLICIES (Interventions)
+CREATE POLICY "Admins can do everything with interventions." ON interventions FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "Kader can view interventions for their reports." ON interventions FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM reports 
+        WHERE reports.id = interventions.report_id 
+        AND reports.kader_id = auth.uid()
+    )
+);

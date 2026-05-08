@@ -556,11 +556,12 @@ class ReportFormScreen extends HookConsumerWidget {
                                   ),
                                 );
                               }),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
-                                  SizedBox(width: 60, child: _buildNumericInput(entry.positivePlacesCountController)),
+                                  const SizedBox(height: 8),
+                                  SizedBox(width: double.infinity, child: _buildNumericInput(entry.positivePlacesCountController)),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -579,18 +580,13 @@ class ReportFormScreen extends HookConsumerWidget {
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.blue.withOpacity(0.2)),
                                       ),
-                                      child: Row(
+                                      child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
-                                              Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
-                                              Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
-                                            ],
-                                          ),
-                                          const SizedBox(width: 12),
                                           Image.asset('assets/images/icon_kk.png', width: 40, height: 40),
+                                          const SizedBox(height: 8),
+                                          Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
+                                          Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
                                         ],
                                       ),
                                     ),
