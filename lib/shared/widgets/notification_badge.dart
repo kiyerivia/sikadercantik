@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/report_providers.dart';
+import '../providers/auth_providers.dart';
 
 class NotificationBadge extends ConsumerWidget {
   final Color color;
@@ -10,12 +11,16 @@ class NotificationBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(interventionCountProvider);
-    final reportsAsync = ref.watch(myReportsProvider);
+    final profile = ref.watch(userProfileProvider).value;
+    final isAdmin = profile?.role == 'admin';
+
+    final count = isAdmin 
+        ? ref.watch(pendingVerificationCountProvider)
+        : ref.watch(interventionCountProvider);
 
     return InkWell(
       onTap: () {
-        _showNotificationDialog(context, ref);
+        _showNotificationDialog(context, ref, isAdmin);
       },
       borderRadius: BorderRadius.circular(20),
       child: Padding(
@@ -35,7 +40,7 @@ class NotificationBadge extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: isAdmin ? Colors.orange : Colors.red,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
@@ -60,11 +65,16 @@ class NotificationBadge extends ConsumerWidget {
     );
   }
 
-  void _showNotificationDialog(BuildContext context, WidgetRef ref) {
-    final reports = ref.read(myReportsProvider).maybeWhen(
-          data: (list) => list.where((r) => r.status == 'need_intervention').toList(),
-          orElse: () => [],
-        );
+  void _showNotificationDialog(BuildContext context, WidgetRef ref, bool isAdmin) {
+    final reports = isAdmin
+        ? ref.read(allReportsProvider).maybeWhen(
+              data: (list) => list.where((r) => r.status == 'submitted').toList(),
+              orElse: () => [],
+            )
+        : ref.read(myReportsProvider).maybeWhen(
+              data: (list) => list.where((r) => r.status == 'need_intervention').toList(),
+              orElse: () => [],
+            );
 
     showGeneralDialog(
       context: context,
@@ -97,21 +107,29 @@ class NotificationBadge extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.orange[50],
+                        color: isAdmin ? Colors.blue[50] : Colors.orange[50],
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.notifications_active, color: Colors.orange, size: 20),
+                          Icon(
+                            isAdmin ? Icons.assignment_late : Icons.notifications_active, 
+                            color: isAdmin ? Colors.blue[800] : Colors.orange, 
+                            size: 20
+                          ),
                           const SizedBox(width: 10),
                           Text(
-                            'Pemberitahuan',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange[900]),
+                            isAdmin ? 'Verifikasi Laporan' : 'Pemberitahuan',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold, 
+                              fontSize: 16, 
+                              color: isAdmin ? Colors.blue[900] : Colors.orange[900]
+                            ),
                           ),
                           const Spacer(),
                           InkWell(
                             onTap: () => Navigator.pop(context),
-                            child: Icon(Icons.close, size: 18, color: Colors.orange[300]),
+                            child: Icon(Icons.close, size: 18, color: isAdmin ? Colors.blue[300] : Colors.orange[300]),
                           ),
                         ],
                       ),
@@ -128,7 +146,7 @@ class NotificationBadge extends ConsumerWidget {
                                   Icon(Icons.check_circle_outline, size: 32, color: Colors.green[200]),
                                   const SizedBox(height: 12),
                                   Text(
-                                    'Semua laporan aman!',
+                                    isAdmin ? 'Tidak ada laporan baru.' : 'Semua laporan aman!',
                                     style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13),
                                   ),
                                 ],
@@ -145,20 +163,28 @@ class NotificationBadge extends ConsumerWidget {
                                   dense: true,
                                   leading: CircleAvatar(
                                     radius: 14,
-                                    backgroundColor: Colors.orange[100],
-                                    child: const Icon(Icons.edit, size: 14, color: Colors.orange),
+                                    backgroundColor: isAdmin ? Colors.blue[100] : Colors.orange[100],
+                                    child: Icon(
+                                      isAdmin ? Icons.rate_review : Icons.edit, 
+                                      size: 14, 
+                                      color: isAdmin ? Colors.blue : Colors.orange
+                                    ),
                                   ),
                                   title: Text(
-                                    report.posyanduName ?? 'Laporan',
+                                    '${report.posyanduName ?? 'Laporan'} (${report.villageName ?? '-'})',
                                     style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold),
                                   ),
                                   subtitle: Text(
-                                    'Klik untuk memperbaiki data',
+                                    isAdmin ? 'Klik untuk verifikasi data' : 'Klik untuk memperbaiki data',
                                     style: GoogleFonts.outfit(fontSize: 11, color: Colors.blue),
                                   ),
                                   onTap: () {
                                     Navigator.pop(context);
-                                    context.push('/report', extra: report);
+                                    if (isAdmin) {
+                                      context.push('/report-detail', extra: report);
+                                    } else {
+                                      context.push('/report', extra: report);
+                                    }
                                   },
                                 );
                               },

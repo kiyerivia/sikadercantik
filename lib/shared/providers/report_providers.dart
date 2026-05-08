@@ -30,3 +30,11 @@ final interventionCountProvider = Provider<int>((ref) {
     orElse: () => 0,
   );
 });
+
+final pendingVerificationCountProvider = Provider<int>((ref) {
+  final reportsAsync = ref.watch(allReportsProvider);
+  return reportsAsync.maybeWhen(
+    data: (reports) => reports.where((r) => r.status == 'submitted').length,
+    orElse: () => 0,
+  );
+});

@@ -106,11 +106,12 @@ class ReportRepository {
     required List<String> breedingPlaceIds,
     String? notes,
   }) async {
-    // 1. Update Report
+    // 1. Update Report & reset status to submitted for re-verification
     await _client.from('reports').update({
       'houses_inspected': housesInspected,
       'houses_positive': housesPositive,
       'notes': notes,
+      'status': 'submitted', // Change back to submitted
     }).eq('id', reportId);
 
     // 2. Refresh breeding places
