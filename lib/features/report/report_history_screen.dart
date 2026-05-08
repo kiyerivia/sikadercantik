@@ -230,7 +230,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                 orElse: () => Village(id: '', name: ''),
                               );
                               if (village?.name.isNotEmpty ?? false) {
-                                matchesVillage = r.villageName?.toLowerCase() == village?.name.toLowerCase();
+                                matchesVillage = r.villageName?.trim().toLowerCase() == village?.name.trim().toLowerCase();
                               }
                             }
                             

@@ -62,8 +62,8 @@ class ReportRepository {
   Future<List<Report>> getAllReports() async {
     final response = await _client
         .from('reports')
-        .select('*, profiles(full_name), report_breeding_places(breeding_place_id)')
-        .order('created_at', ascending: false);
+        .select('*, profiles(full_name), posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
+        .order('report_date', ascending: false);
 
     return (response as List).map((data) {
       final breedingPlaces = (data['report_breeding_places'] as List)
