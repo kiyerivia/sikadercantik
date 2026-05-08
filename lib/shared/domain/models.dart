@@ -58,6 +58,10 @@ class Posyandu {
   final String id;
   final String rwId;
   final String name;
+  final String? tahunPendirian;
+  final String? alamat;
+  final String? namaKetua;
+  final String? nomorHp;
   final double? latitude;
   final double? longitude;
 
@@ -65,6 +69,10 @@ class Posyandu {
     required this.id,
     required this.rwId,
     required this.name,
+    this.tahunPendirian,
+    this.alamat,
+    this.namaKetua,
+    this.nomorHp,
     this.latitude,
     this.longitude,
   });
@@ -74,6 +82,10 @@ class Posyandu {
       id: map['id'] as String,
       rwId: map['rw_id'] as String,
       name: map['name'] as String,
+      tahunPendirian: map['tahun_pendirian'] as String?,
+      alamat: map['alamat'] as String?,
+      namaKetua: map['nama_ketua'] as String?,
+      nomorHp: map['nomor_hp'] as String?,
       latitude: (map['latitude'] as num?)?.toDouble(),
       longitude: (map['longitude'] as num?)?.toDouble(),
     );

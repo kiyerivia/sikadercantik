@@ -62,10 +62,10 @@ class MasterRepository {
     final resp = await _client.from('posyandus').insert({
       'rw_id': rwId,
       'name': name,
-      if (year != null) 'year_established': year,
-      if (address != null) 'address': address,
-      if (chairName != null) 'chair_name': chairName,
-      if (phone != null) 'phone_number': phone,
+      if (year != null) 'tahun_pendirian': year,
+      if (address != null) 'alamat': address,
+      if (chairName != null) 'nama_ketua': chairName,
+      if (phone != null) 'nomor_hp': phone,
     }).select('id').single();
     return (resp as Map<String, dynamic>)['id'] as String;
   }
