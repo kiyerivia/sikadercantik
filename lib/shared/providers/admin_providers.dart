@@ -2,10 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'report_providers.dart';
 import '../domain/models.dart';
 
-final allReportsProvider = FutureProvider<List<Report>>((ref) async {
-  final repo = ref.watch(reportRepositoryProvider);
-  return await repo.getAllReports();
-});
+// allReportsProvider is now moved to report_providers.dart to avoid duplication
 
 final adminStatsProvider = Provider<AsyncValue<Map<String, dynamic>>>((ref) {
   final reportsAsync = ref.watch(allReportsProvider);
