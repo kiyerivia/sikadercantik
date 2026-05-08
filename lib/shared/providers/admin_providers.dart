@@ -1,6 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'report_providers.dart';
-import '../domain/models.dart';
 
 // allReportsProvider is now moved to report_providers.dart to avoid duplication
 

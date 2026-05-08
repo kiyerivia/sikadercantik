@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 
-
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -15,10 +14,11 @@ class DashboardScreen extends ConsumerWidget {
 
     return profileAsync.when(
       data: (profile) {
-        if (profile == null)
+        if (profile == null) {
           return const Scaffold(
             body: Center(child: Text('Profil tidak ditemukan')),
           );
+        }
 
         if (profile.role == 'kader') {
           return _KaderDashboard(profile: profile);
@@ -373,7 +373,8 @@ class _InfoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  text ?? 'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
+                  text ??
+                      'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF01579B).withOpacity(0.7),
                     fontSize: 13,
@@ -405,16 +406,30 @@ class _AdminDashboard extends ConsumerWidget {
           children: [
             RichText(
               text: TextSpan(
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
                 children: const [
-                  TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
-                  TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF82E0AA))),
+                  TextSpan(
+                    text: 'SI KADER ',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  TextSpan(
+                    text: 'PSN',
+                    style: TextStyle(color: Color(0xFF82E0AA)),
+                  ),
                 ],
               ),
             ),
             Text(
               'ADMIN PUSKESMAS',
-              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 1),
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1,
+              ),
             ),
           ],
         ),
@@ -422,15 +437,33 @@ class _AdminDashboard extends ConsumerWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
+              const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 28,
+              ),
               Positioned(
                 top: 12,
                 right: 2,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                  constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                  child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
+                  child: const Text(
+                    '1',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ],
@@ -451,7 +484,13 @@ class _AdminDashboard extends ConsumerWidget {
                   children: [
                     const Icon(Icons.logout, color: Colors.red, size: 20),
                     const SizedBox(width: 12),
-                    Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.w500)),
+                    Text(
+                      'Logout',
+                      style: GoogleFonts.outfit(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -490,7 +529,10 @@ class _AdminDashboard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -511,17 +553,26 @@ class _AdminDashboard extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                         height: 1.2,
                         shadows: [
-                          Shadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 2)),
+                          Shadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
                       ),
                       child: Text(
                         'Puskesmas Gumelar',
@@ -536,7 +587,7 @@ class _AdminDashboard extends ConsumerWidget {
                 ),
               ),
             ),
-            
+
             // Menu Section
             Container(
               width: double.infinity,
@@ -544,19 +595,28 @@ class _AdminDashboard extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'PILIH MENU',
-                    style: GoogleFonts.outfit(color: const Color(0xFF003049), fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF003049),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _MenuCard(
                     title: 'Data Monitoring Laporan PSN',
-                    subtitle: 'Lihat, kelola, dan rekapitulasi data laporan PSN dari kader',
+                    subtitle:
+                        'Lihat, kelola, dan rekapitulasi data laporan PSN dari kader',
                     icon: Icons.fact_check_rounded,
                     iconColor: const Color(0xFF27AE60),
                     bgColor: const Color(0xFFEAFAF1),
@@ -565,7 +625,8 @@ class _AdminDashboard extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _MenuCard(
                     title: 'Dashboard ABJ',
-                    subtitle: 'Pantau Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN',
+                    subtitle:
+                        'Pantau Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN',
                     icon: Icons.show_chart_rounded,
                     iconColor: const Color(0xFF2980B9),
                     bgColor: const Color(0xFFEBF5FB),
@@ -574,7 +635,8 @@ class _AdminDashboard extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _MenuCard(
                     title: 'Manajemen Wilayah',
-                    subtitle: 'Kelola data desa, posyandu, RT/RW, dan wilayah kerja',
+                    subtitle:
+                        'Kelola data desa, posyandu, RT/RW, dan wilayah kerja',
                     icon: Icons.map_rounded,
                     iconColor: const Color(0xFF8E44AD),
                     bgColor: const Color(0xFFF4ECF7),
@@ -583,7 +645,8 @@ class _AdminDashboard extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _MenuCard(
                     title: 'Peta Sebaran Jentik',
-                    subtitle: 'Visualisasi penyebaran jentik per wilayah secara real-time',
+                    subtitle:
+                        'Visualisasi penyebaran jentik per wilayah secara real-time',
                     icon: Icons.explore_rounded,
                     iconColor: const Color(0xFFE67E22),
                     bgColor: const Color(0xFFFEF5E7),
@@ -591,7 +654,8 @@ class _AdminDashboard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   const _InfoCard(
-                    text: 'Pastikan data yang ditampilkan selalu diperbarui untuk monitoring yang akurat.',
+                    text:
+                        'Pastikan data yang ditampilkan selalu diperbarui untuk monitoring yang akurat.',
                   ),
                 ],
               ),
@@ -602,4 +666,3 @@ class _AdminDashboard extends ConsumerWidget {
     );
   }
 }
-

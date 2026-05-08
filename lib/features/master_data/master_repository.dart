@@ -49,7 +49,7 @@ class MasterRepository {
 
   Future<String> insertVillage(String name) async {
     final resp = await _client.from('villages').insert({'name': name}).select('id').single();
-    return (resp as Map<String, dynamic>)['id'] as String;
+    return (resp)['id'] as String;
   }
 
   Future<String> insertRw({required String villageId, required String rwNumber}) async {
@@ -57,7 +57,7 @@ class MasterRepository {
       'village_id': villageId,
       'rw_number': rwNumber,
     }).select('id').single();
-    return (resp as Map<String, dynamic>)['id'] as String;
+    return (resp)['id'] as String;
   }
 
   Future<String> insertPosyandu({
@@ -71,12 +71,12 @@ class MasterRepository {
     final resp = await _client.from('posyandus').insert({
       'rw_id': rwId,
       'name': name,
-      if (year != null) 'tahun_pendirian': year,
-      if (address != null) 'alamat': address,
-      if (chairName != null) 'nama_ketua': chairName,
-      if (phone != null) 'nomor_hp': phone,
+      'tahun_pendirian': ?year,
+      'alamat': ?address,
+      'nama_ketua': ?chairName,
+      'nomor_hp': ?phone,
     }).select('id').single();
-    return (resp as Map<String, dynamic>)['id'] as String;
+    return (resp)['id'] as String;
   }
 
   Future<List<Map<String, dynamic>>> getBreedingPlaces() async {

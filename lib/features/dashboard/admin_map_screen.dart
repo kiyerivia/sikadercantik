@@ -234,7 +234,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.business),
                 ),
-                value: _selectedPosyandu,
+                initialValue: _selectedPosyandu,
                 items: posyandus.map((p) {
                   return DropdownMenuItem(
                     value: p,

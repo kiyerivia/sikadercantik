@@ -245,7 +245,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                               SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
                                 child: DataTable(
-                                  headingRowColor: MaterialStateProperty.all(const Color(0xFFEBF5FB)),
+                                  headingRowColor: WidgetStateProperty.all(const Color(0xFFEBF5FB)),
                                   dataRowHeight: 60,
                                   columnSpacing: 24,
                                   columns: [

@@ -10,11 +10,13 @@ final posyanduListProvider = FutureProvider<List<Posyandu>>((ref) async {
 });
 
 // Provider untuk data ABJ per Posyandu (diambil dari laporan terbaru)
-final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
+final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((
+  ref,
+) async {
   final supabase = ref.watch(supabaseClientProvider);
-  
+
   // Ambil laporan terbaru untuk setiap posyandu
-  // Dalam realita, kita mungkin butuh query yang lebih kompleks (group by), 
+  // Dalam realita, kita mungkin butuh query yang lebih kompleks (group by),
   // tapi untuk awal kita ambil semua laporan dan proses di client.
   final response = await supabase
       .from('reports')
@@ -29,8 +31,10 @@ final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((r
     if (!stats.containsKey(id)) {
       final inspected = item['houses_inspected'] as int;
       final positive = item['houses_positive'] as int;
-      final abj = inspected > 0 ? ((inspected - positive) / inspected) * 100 : 100.0;
-      
+      final abj = inspected > 0
+          ? ((inspected - positive) / inspected) * 100
+          : 100.0;
+
       stats[id] = {
         'abj': abj,
         'inspected': inspected,
@@ -39,6 +43,6 @@ final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((r
       };
     }
   }
-  
+
   return stats;
 });

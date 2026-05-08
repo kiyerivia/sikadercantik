@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
@@ -68,8 +67,9 @@ class ReportFormScreen extends HookConsumerWidget {
             final lines = block.split('\n');
             for (var line in lines) {
               final t = line.trim();
-              if (t.startsWith('Nama KK: ')) entry.kkNameController.text = t.substring(9);
-              else if (t.startsWith('RT/RW: ')) {
+              if (t.startsWith('Nama KK: ')) {
+                entry.kkNameController.text = t.substring(9);
+              } else if (t.startsWith('RT/RW: ')) {
                 final parts = t.substring(7).split('/');
                 if (parts.length == 2) {
                   entry.rtController.text = parts[0];
