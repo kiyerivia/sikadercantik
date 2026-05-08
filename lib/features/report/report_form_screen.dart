@@ -297,7 +297,10 @@ class ReportFormScreen extends HookConsumerWidget {
                               
                               return interventionsAsync.when(
                                 data: (items) {
-                                  if (items.isEmpty) return const SizedBox.shrink();
+                                  // DEBUG: Show if we found items
+                                  if (items.isEmpty) {
+                                    return Text('DEBUG: No interventions found in DB for ID: ${initialReport?.id}', style: TextStyle(fontSize: 10, color: Colors.grey));
+                                  }
                                   final latest = items.last; // Use last for newest instruction
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 20),
