@@ -14,13 +14,20 @@ class ReportHistoryScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reportsAsync = ref.watch(myReportsProvider);
+    final profileAsync = ref.watch(userProfileProvider);
     final villagesAsync = ref.watch(villagesProvider);
     
     final selectedVillageId = useState<String?>(null);
     final selectedPosyanduId = useState<String?>(null);
+
+    final reportsAsync = profileAsync.maybeWhen(
+      data: (profile) => profile?.role == 'admin' 
+          ? ref.watch(allReportsProvider) 
+          : ref.watch(myReportsProvider),
+      orElse: () => const AsyncValue.loading(),
+    );
     
-    final posyandusAsync = selectedVillageId.value != null
+    final posyandusAsync = selectedVillageId.value != null && selectedVillageId.value != 'all'
         ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
         : const AsyncValue.data(<Posyandu>[]);
 
@@ -216,8 +223,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
                           final filteredReports = reports.where((r) {
                             bool matchesVillage = true;
                             if (selectedVillageId.value != null && selectedVillageId.value != 'all') {
-                              final village = villagesAsync.value?.firstWhere((v) => v.id == selectedVillageId.value);
-                              matchesVillage = r.villageName == village?.name;
+                              final village = villagesAsync.value?.firstWhere(
+                                (v) => v.id == selectedVillageId.value,
+                                orElse: () => Village(id: '', name: ''),
+                              );
+                              if (village?.name.isNotEmpty ?? false) {
+                                matchesVillage = r.villageName?.toLowerCase() == village?.name.toLowerCase();
+                              }
                             }
                             
                             bool matchesPosyandu = true;

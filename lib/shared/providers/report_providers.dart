@@ -12,3 +12,8 @@ final myReportsProvider = FutureProvider<List<Report>>((ref) async {
   final repo = ref.watch(reportRepositoryProvider);
   return await repo.getMyReports();
 });
+
+final allReportsProvider = FutureProvider<List<Report>>((ref) async {
+  final repo = ref.watch(reportRepositoryProvider);
+  return await repo.getAllReports();
+});
