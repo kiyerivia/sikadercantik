@@ -155,8 +155,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     const SizedBox(height: 8),
                                     _buildDropdown(
                                       value: selectedVillageId.value,
-                                      hint: 'Pilih Desa',
-                                      onChanged: (val) {
+                                      hint: villagesAsync.isLoading ? 'Memuat...' : 'Pilih Desa',
+                                      onChanged: villagesAsync.isLoading ? null : (val) {
                                         selectedVillageId.value = val;
                                         selectedPosyanduId.value = null;
                                       },
@@ -186,8 +186,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     const SizedBox(height: 8),
                                     _buildDropdown(
                                       value: selectedPosyanduId.value,
-                                      hint: 'Pilih Posyandu',
-                                      onChanged: (val) => selectedPosyanduId.value = val,
+                                      hint: posyandusAsync.isLoading ? 'Memuat...' : 'Pilih Posyandu',
+                                      onChanged: (posyandusAsync.isLoading || (selectedVillageId.value == null || selectedVillageId.value == 'all')) ? null : (val) => selectedPosyanduId.value = val,
                                       items: posyandusAsync.maybeWhen(
                                         data: (posyandus) {
                                           final sorted = List<Posyandu>.from(posyandus)
@@ -421,12 +421,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
     required String? value,
     required String hint,
     required List<DropdownMenuItem<String>> items,
-    required void Function(String?) onChanged,
+    required void Function(String?)? onChanged,
   }) {
+    final isDisabled = onChanged == null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDisabled ? Colors.grey[100] : Colors.white,
         border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -435,7 +436,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
           value: value,
           hint: Text(hint, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+          icon: isDisabled && hint == 'Memuat...' 
+            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.keyboard_arrow_down, size: 18),
           items: items,
           onChanged: onChanged,
          ),

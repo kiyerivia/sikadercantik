@@ -32,7 +32,7 @@ class MasterRepository {
   Future<List<Posyandu>> getPosyandusByVillage(String villageId) async {
     final response = await _client
         .from('posyandus')
-        .select('*, rws!inner(*)')
+        .select('*, rws!inner(village_id)')
         .eq('rws.village_id', villageId)
         .order('name');
     return (response as List).map((m) => Posyandu.fromMap(m)).toList();
