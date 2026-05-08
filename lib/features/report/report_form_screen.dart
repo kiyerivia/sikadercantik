@@ -223,22 +223,41 @@ class ReportFormScreen extends HookConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  Stack(
-                    children: [
-                      const Icon(Icons.notifications, color: Colors.white),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.yellow,
-                            shape: BoxShape.circle,
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final count = ref.watch(interventionCountProvider);
+                      if (count == 0) return const Icon(Icons.notifications_outlined, color: Colors.white, size: 24);
+                      
+                      return Stack(
+                        children: [
+                          const Icon(Icons.notifications, color: Colors.white, size: 24),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 12,
+                                minHeight: 12,
+                              ),
+                              child: Text(
+                                '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   PopupMenuButton<String>(

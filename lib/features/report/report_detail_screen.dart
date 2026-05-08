@@ -23,6 +23,47 @@ class ReportDetailScreen extends ConsumerWidget {
         title: Text('Detail Laporan', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
+        actions: [
+          Consumer(
+            builder: (context, ref, child) {
+              final count = ref.watch(interventionCountProvider);
+              if (count == 0) return const Icon(Icons.notifications_outlined, color: Colors.white, size: 24);
+              
+              return Center(
+                child: Stack(
+                  children: [
+                    const Icon(Icons.notifications, color: Colors.white, size: 24),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 12,
+                          minHeight: 12,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
