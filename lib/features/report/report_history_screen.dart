@@ -268,7 +268,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                   padding: EdgeInsets.only(right: 4),
                                                   child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
                                                 ),
-                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? Colors.orange[900] : Colors.black)),
+                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? (Colors.orange[900] ?? Colors.orange) : Colors.black)),
                                             ],
                                           ),
                                         )),

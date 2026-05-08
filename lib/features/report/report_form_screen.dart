@@ -330,19 +330,19 @@ class ReportFormScreen extends HookConsumerWidget {
                                             const SizedBox(width: 8),
                                             Text(
                                               'Instruksi Intervensi Admin',
-                                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.orange[900]),
+                                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.orange[900] ?? Colors.orange),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           latest['description'] ?? '-',
-                                          style: GoogleFonts.outfit(fontSize: 14, color: Colors.orange[800]),
+                                          style: GoogleFonts.outfit(fontSize: 14, color: Colors.orange[800] ?? Colors.orange),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin'}',
-                                          style: GoogleFonts.outfit(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange[700]),
+                                          style: GoogleFonts.outfit(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.orange[700] ?? Colors.orange),
                                         ),
                                       ],
                                     ),

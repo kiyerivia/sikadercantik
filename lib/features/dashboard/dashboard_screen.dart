@@ -367,8 +367,8 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bgColor = isWarning ? const Color(0xFFFFF3E0) : const Color(0xFFE1F5FE);
-    final iconColor = isWarning ? Colors.orange[800] : const Color(0xFF0288D1);
-    final titleColor = isWarning ? Colors.orange[900] : const Color(0xFF01579B);
+    final iconColor = (isWarning ? Colors.orange[800] : const Color(0xFF0288D1)) ?? Colors.orange;
+    final titleColor = (isWarning ? Colors.orange[900] : const Color(0xFF01579B)) ?? Colors.blue;
 
     return Container(
       padding: const EdgeInsets.all(20),
