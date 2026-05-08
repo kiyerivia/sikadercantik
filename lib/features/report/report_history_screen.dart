@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
 
 class ReportHistoryScreen extends HookConsumerWidget {
@@ -74,42 +75,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final count = ref.watch(interventionCountProvider);
-                      if (count == 0) return const Icon(Icons.notifications_outlined, color: Colors.white, size: 24);
-                      
-                      return Stack(
-                        children: [
-                          const Icon(Icons.notifications, color: Colors.white, size: 24),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 12,
-                                minHeight: 12,
-                              ),
-                              child: Text(
-                                '$count',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  const NotificationBadge(),
                   const SizedBox(width: 12),
                   PopupMenuButton<String>(
                     onSelected: (val) async {

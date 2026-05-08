@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/report_providers.dart';
+import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -72,45 +73,7 @@ class _KaderDashboard extends ConsumerWidget {
           ],
         ),
         actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(
-                Icons.notifications_outlined,
-                color: Colors.white,
-                size: 28,
-              ),
-              Positioned(
-                top: 12,
-                right: 2,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: Colors.orange,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final count = ref.watch(interventionCountProvider);
-                      return Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
+          const NotificationBadge(),
           const SizedBox(width: 12),
           PopupMenuButton<String>(
             onSelected: (val) async {
