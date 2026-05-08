@@ -66,93 +66,123 @@ class NotificationBadge extends ConsumerWidget {
           orElse: () => [],
         );
 
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.notifications_active, color: Colors.orange),
-            const SizedBox(width: 12),
-            Text('Pemberitahuan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: reports.isEmpty
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_outline, size: 48, color: Colors.green[200]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Tidak ada notifikasi baru.\nSemua laporan Anda sudah aman!',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(color: Colors.grey[600]),
-                    ),
+      barrierDismissible: true,
+      barrierLabel: 'Notification',
+      barrierColor: Colors.black.withOpacity(0.05),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Align(
+          alignment: Alignment.topRight,
+          child: Container(
+            margin: const EdgeInsets.only(top: 60, right: 20),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: 300,
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
-                )
-              : Column(
+                  border: Border.all(color: Colors.blue[50]!),
+                ),
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Anda memiliki ${reports.length} laporan yang memerlukan intervensi/perbaikan:',
-                      style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey[800]),
-                    ),
-                    const SizedBox(height: 16),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: reports.length,
-                        separatorBuilder: (context, index) => const Divider(),
-                        itemBuilder: (context, index) {
-                          final report = reports[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.orange[50],
-                              child: const Icon(Icons.edit_note, color: Colors.orange),
-                            ),
-                            title: Text(
-                              report.posyanduName ?? 'Laporan PSN',
-                              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              'Klik untuk memperbaiki data ini',
-                              style: GoogleFonts.outfit(fontSize: 12, color: Colors.blue),
-                            ),
-                            onTap: () {
-                              Navigator.pop(context);
-                              context.push('/report-form', extra: report);
-                            },
-                          );
-                        },
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, color: Colors.orange, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Pemberitahuan',
+                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange[900]),
+                          ),
+                          const Spacer(),
+                          InkWell(
+                            onTap: () => Navigator.pop(context),
+                            child: Icon(Icons.close, size: 18, color: Colors.orange[300]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // List
+                    Flexible(
+                      child: reports.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle_outline, size: 32, color: Colors.green[200]),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Semua laporan aman!',
+                                    style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.all(8),
+                              itemCount: reports.length,
+                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final report = reports[index];
+                                return ListTile(
+                                  dense: true,
+                                  leading: CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: Colors.orange[100],
+                                    child: const Icon(Icons.edit, size: 14, color: Colors.orange),
+                                  ),
+                                  title: Text(
+                                    report.posyanduName ?? 'Laporan',
+                                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(
+                                    'Klik untuk memperbaiki data',
+                                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.blue),
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    context.push('/report', extra: report);
+                                  },
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Tutup', style: GoogleFonts.outfit(color: Colors.grey)),
-          ),
-          if (reports.isNotEmpty)
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1F618D),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              onPressed: () {
-                Navigator.pop(context);
-                context.push('/history');
-              },
-              child: const Text('Lihat Semua Riwayat'),
             ),
-        ],
-      ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.2, -0.1),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutBack)),
+          child: FadeTransition(
+            opacity: anim1,
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
