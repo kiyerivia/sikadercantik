@@ -1,31 +1,52 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-const String supabaseUrl = 'https://iyznzyqhsbjgtvxgiewe.supabase.co';
-const String supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5em56eXFoc2JqZ3R2eGdpZXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTQzMzUsImV4cCI6MjA5MjY5MDMzNX0.JaaXQd9n8uJPZwO-WQ7m06Kvf1Rw35itu07MAAOBKyQ';
-
-final Map<String, String> headers = {
-  'apikey': supabaseKey,
-  'Authorization': 'Bearer $supabaseKey',
-  'Content-Type': 'application/json',
-};
+import 'dart:io';
 
 void main() async {
-  // 1. Fetch all villages
-  final villagesUrl = Uri.parse('$supabaseUrl/rest/v1/villages?select=id,name');
-  final villagesRes = await http.get(villagesUrl, headers: headers);
-  final villages = jsonDecode(villagesRes.body) as List;
+  final envFile = File('.env');
+  final envLines = envFile.readAsLinesSync();
+  String? supabaseUrl;
+  String? supabaseKey;
 
-  print('Villages in DB:');
-  for (var v in villages) {
-    final id = v['id'];
-    final name = v['name'];
+  for (var line in envLines) {
+    if (line.contains('=')) {
+      final parts = line.split('=');
+      final key = parts[0].trim();
+      final value = parts.sublist(1).join('=').trim();
+      if (key == 'SUPABASE_URL') supabaseUrl = value;
+      if (key == 'SUPABASE_ANON_KEY') supabaseKey = value;
+    }
+  }
+
+  final client = HttpClient();
+  try {
+    final vReq = await client.getUrl(Uri.parse('$supabaseUrl/rest/v1/villages?select=id,name'));
+    vReq.headers.set('apikey', supabaseKey!);
+    vReq.headers.set('Authorization', 'Bearer $supabaseKey');
+    final vRes = await vReq.close();
+    final List villages = jsonDecode(await vRes.transform(utf8.decoder).join());
     
-    // Check RW count
-    final rwUrl = Uri.parse('$supabaseUrl/rest/v1/rws?village_id=eq.$id&select=id');
-    final rwRes = await http.get(rwUrl, headers: headers);
-    final rws = jsonDecode(rwRes.body) as List;
-    
-    print('  ID: $id, Name: $name, RW Count: ${rws.length}');
+    Map<String, List<String>> nameToIds = {};
+    for (var v in villages) {
+      final name = v['name'].toString().toUpperCase();
+      nameToIds.putIfAbsent(name, () => []).add(v['id']);
+    }
+
+    print('--- DUPLICATE VILLAGES ---');
+    nameToIds.forEach((name, ids) {
+      if (ids.length > 1) {
+        print('Village "$name" has ${ids.length} entries: $ids');
+      }
+    });
+
+    print('\n--- ALL VILLAGES (Sorted) ---');
+    villages.sort((a, b) => a['name'].toString().toLowerCase().compareTo(b['name'].toString().toLowerCase()));
+    for (var v in villages) {
+      print('${v['name']}');
+    }
+
+  } catch (e) {
+    print('Error: $e');
+  } finally {
+    client.close();
   }
 }

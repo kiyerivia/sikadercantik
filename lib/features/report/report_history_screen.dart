@@ -146,22 +146,20 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                   children: [
                                     _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
                                     const SizedBox(height: 8),
-                                    _buildDropdown(
-                                      value: selectedVillageId.value,
-                                      hint: 'Pilih Desa',
+                                      onChanged: (val) {
+                                        selectedVillageId.value = val;
+                                        selectedPosyanduId.value = null;
+                                      },
                                       items: villagesAsync.maybeWhen(
                                         data: (villages) {
-                                          final list = villages.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
+                                          final sorted = List<Village>.from(villages)
+                                            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                                          final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
                                           list.insert(0, const DropdownMenuItem(value: 'all', child: Text('Semua')));
                                           return list;
                                         },
                                         orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
                                       ),
-                                      onChanged: (val) {
-                                        selectedVillageId.value = val;
-                                        selectedPosyanduId.value = null;
-                                      },
-                                    ),
                                   ],
                                 ),
                               ),
@@ -175,19 +173,17 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       label: 'Posyandu',
                                     ),
                                     const SizedBox(height: 8),
-                                    _buildDropdown(
-                                      value: selectedPosyanduId.value,
-                                      hint: 'Pilih Posyandu',
+                                      onChanged: (val) => selectedPosyanduId.value = val,
                                       items: posyandusAsync.maybeWhen(
                                         data: (posyandus) {
-                                          final list = posyandus.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
+                                          final sorted = List<Posyandu>.from(posyandus)
+                                            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                                          final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
                                           list.insert(0, const DropdownMenuItem(value: 'all', child: Text('Semua')));
                                           return list;
                                         },
                                         orElse: () => [const DropdownMenuItem(value: 'all', child: Text('Semua'))],
                                       ),
-                                      onChanged: (val) => selectedPosyanduId.value = val,
-                                    ),
                                   ],
                                 ),
                               ),

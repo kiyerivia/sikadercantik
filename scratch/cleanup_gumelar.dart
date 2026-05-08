@@ -1,54 +1,125 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-const String supabaseUrl = 'https://iyznzyqhsbjgtvxgiewe.supabase.co';
-const String supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5em56eXFoc2JqZ3R2eGdpZXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTQzMzUsImV4cCI6MjA5MjY5MDMzNX0.JaaXQd9n8uJPZwO-WQ7m06Kvf1Rw35itu07MAAOBKyQ';
-
-final Map<String, String> headers = {
-  'apikey': supabaseKey,
-  'Authorization': 'Bearer $supabaseKey',
-  'Content-Type': 'application/json',
-};
+import 'dart:io';
 
 void main() async {
-  final badVillageId = 'b3a6b8a5-d984-445a-9aff-ee3b1b2898e8';
-  
-  // Fetch RWs
-  final rwUrl = Uri.parse('$supabaseUrl/rest/v1/rws?village_id=eq.$badVillageId&select=id,rw_number');
-  final rwRes = await http.get(rwUrl, headers: headers);
-  final rws = jsonDecode(rwRes.body) as List;
-  
-  print('RWs in bad Gumelar ($badVillageId):');
-  for (var rw in rws) {
-    print('  ID: ${rw["id"]}, Number: ${rw["rw_number"]}');
-    
-    // Check Posyandus
-    final posyanduUrl = Uri.parse('$supabaseUrl/rest/v1/posyandus?rw_id=eq.${rw["id"]}&select=id,name');
-    final posyanduRes = await http.get(posyanduUrl, headers: headers);
-    final posyandus = jsonDecode(posyanduRes.body) as List;
-    for (var p in posyandus) {
-        print('    - Posyandu: ${p["name"]}');
+  final envFile = File('.env');
+  final envLines = envFile.readAsLinesSync();
+  String? supabaseUrl;
+  String? supabaseKey;
+
+  for (var line in envLines) {
+    if (line.contains('=')) {
+      final parts = line.split('=');
+      final key = parts[0].trim();
+      final value = parts.sublist(1).join('=').trim();
+      if (key == 'SUPABASE_URL') supabaseUrl = value;
+      if (key == 'SUPABASE_ANON_KEY') supabaseKey = value;
     }
   }
 
-  // Cleanup script
-  print('\nCleaning up...');
-  for (var rw in rws) {
-    // Delete Posyandus first
-    final delP = Uri.parse('$supabaseUrl/rest/v1/posyandus?rw_id=eq.${rw["id"]}');
-    await http.delete(delP, headers: headers);
-    print('Deleted Posyandus for RW ${rw["rw_number"]}');
-    
-    // Delete RW
-    final delRw = Uri.parse('$supabaseUrl/rest/v1/rws?id=eq.${rw["id"]}');
-    await http.delete(delRw, headers: headers);
-    print('Deleted RW ${rw["rw_number"]}');
+  final client = HttpClient();
+  try {
+    print('🧹 Cleaning up Gumelar data...');
+
+    // 1. Get all Posyandus
+    final pReq = await client.getUrl(Uri.parse('$supabaseUrl/rest/v1/posyandus?select=id,name,rw_id'));
+    pReq.headers.set('apikey', supabaseKey!);
+    pReq.headers.set('Authorization', 'Bearer $supabaseKey');
+    final pRes = await pReq.close();
+    final List posyandus = jsonDecode(await pRes.transform(utf8.decoder).join());
+
+    // 2. Get all reports to know which posyandus to keep
+    final rReq = await client.getUrl(Uri.parse('$supabaseUrl/rest/v1/reports?select=posyandu_id'));
+    rReq.headers.set('apikey', supabaseKey);
+    rReq.headers.set('Authorization', 'Bearer $supabaseKey');
+    final rRes = await rReq.close();
+    final List reports = jsonDecode(await rRes.transform(utf8.decoder).join());
+    final Set<String> posyanduWithReports = reports.map((r) => r['posyandu_id'].toString()).toSet();
+
+    // 3. Find duplicates
+    Map<String, List<String>> nameRwToIds = {};
+    for (var p in posyandus) {
+      final key = '${p['name']}_${p['rw_id']}';
+      nameRwToIds.putIfAbsent(key, () => []).add(p['id']);
+    }
+
+    int deletedCount = 0;
+    for (var entry in nameRwToIds.entries) {
+      final ids = entry.value;
+      if (ids.length > 1) {
+        // Keep one that has reports if possible
+        String? toKeep;
+        for (var id in ids) {
+          if (posyanduWithReports.contains(id)) {
+            toKeep = id;
+            break;
+          }
+        }
+        toKeep ??= ids[0];
+
+        for (var id in ids) {
+          if (id != toKeep) {
+            if (posyanduWithReports.contains(id)) {
+              print('⚠️ Cannot delete $id because it has reports even though it is a duplicate.');
+              continue;
+            }
+            final delReq = await client.deleteUrl(Uri.parse('$supabaseUrl/rest/v1/posyandus?id=eq.$id'));
+            delReq.headers.set('apikey', supabaseKey);
+            delReq.headers.set('Authorization', 'Bearer $supabaseKey');
+            await delReq.close();
+            deletedCount++;
+          }
+        }
+      }
+    }
+    print('✅ Deleted $deletedCount duplicate posyandus.');
+
+    // 4. Do the same for RWs
+    final rwReq = await client.getUrl(Uri.parse('$supabaseUrl/rest/v1/rws?select=id,rw_number,village_id'));
+    rwReq.headers.set('apikey', supabaseKey);
+    rwReq.headers.set('Authorization', 'Bearer $supabaseKey');
+    final List rws = jsonDecode(await (await rwReq.close()).transform(utf8.decoder).join());
+
+    Map<String, List<String>> numVillageToIds = {};
+    for (var rw in rws) {
+      final key = '${rw['rw_number']}_${rw['village_id']}';
+      numVillageToIds.putIfAbsent(key, () => []).add(rw['id']);
+    }
+
+    int deletedRwCount = 0;
+    for (var entry in numVillageToIds.entries) {
+      final ids = entry.value;
+      if (ids.length > 1) {
+        // Cek if any posyandus are linked to these RWs
+        String? toKeep;
+        for (var id in ids) {
+          final checkP = await client.getUrl(Uri.parse('$supabaseUrl/rest/v1/posyandus?rw_id=eq.$id&select=id&limit=1'));
+          checkP.headers.set('apikey', supabaseKey);
+          checkP.headers.set('Authorization', 'Bearer $supabaseKey');
+          final List pList = jsonDecode(await (await checkP.close()).transform(utf8.decoder).join());
+          if (pList.isNotEmpty) {
+            toKeep = id;
+            break;
+          }
+        }
+        toKeep ??= ids[0];
+
+        for (var id in ids) {
+          if (id != toKeep) {
+            final delReq = await client.deleteUrl(Uri.parse('$supabaseUrl/rest/v1/rws?id=eq.$id'));
+            delReq.headers.set('apikey', supabaseKey);
+            delReq.headers.set('Authorization', 'Bearer $supabaseKey');
+            final res = await delReq.close();
+            if (res.statusCode < 400) deletedRwCount++;
+          }
+        }
+      }
+    }
+    print('✅ Deleted $deletedRwCount duplicate RWs.');
+
+  } catch (e) {
+    print('Error: $e');
+  } finally {
+    client.close();
   }
-  
-  // Delete Village
-  final delV = Uri.parse('$supabaseUrl/rest/v1/villages?id=eq.$badVillageId');
-  await http.delete(delV, headers: headers);
-  print('Deleted Village Gumelar ($badVillageId)');
-  
-  print('Cleanup Done!');
 }

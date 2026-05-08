@@ -49,6 +49,11 @@ class ReportFormScreen extends HookConsumerWidget {
         housesInspectedController.text = initialReport!.housesInspected.toString();
         housesPositiveController.text = initialReport!.housesPositive.toString();
         
+        // Fetch village ID
+        ref.read(masterRepositoryProvider).getVillageIdByPosyandu(initialReport!.posyanduId).then((vId) {
+          selectedVillageId.value = vId;
+        });
+
         // Parse notes
         if (initialReport!.notes != null) {
           final parsed = <HouseReportEntry>[];
@@ -318,7 +323,11 @@ class ReportFormScreen extends HookConsumerWidget {
                             selectedPosyanduId.value = null;
                           },
                           items: villagesAsync.maybeWhen(
-                            data: (villages) => villages.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList(),
+                            data: (villages) {
+                              final sorted = List<Village>.from(villages)
+                                ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                              return sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList();
+                            },
                             orElse: () => [],
                           ),
                         ),
@@ -331,7 +340,11 @@ class ReportFormScreen extends HookConsumerWidget {
                           hint: posyandusAsync.maybeWhen(loading: () => 'Memuat posyandu...', orElse: () => 'Pilih Posyandu'),
                           onChanged: (val) => selectedPosyanduId.value = val,
                           items: posyandusAsync.maybeWhen(
-                            data: (posyandus) => posyandus.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
+                            data: (posyandus) {
+                              final sorted = List<Posyandu>.from(posyandus)
+                                ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                              return sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList();
+                            },
                             orElse: () => [],
                           ),
                         ),
