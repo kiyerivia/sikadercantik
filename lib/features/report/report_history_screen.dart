@@ -267,9 +267,32 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               if (report.status == 'need_intervention')
-                                                const Padding(
-                                                  padding: EdgeInsets.only(right: 4),
-                                                  child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
+                                                Padding(
+                                                  padding: const EdgeInsets.only(right: 4),
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => Consumer(
+                                                          builder: (context, ref, child) {
+                                                            final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
+                                                            return AlertDialog(
+                                                              title: Text('Instruksi Perbaikan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                                                              content: interventionsAsync.when(
+                                                                data: (items) => Text(items.isEmpty ? 'Tidak ada detail instruksi.' : items.last['description'] ?? '-', style: GoogleFonts.outfit()),
+                                                                loading: () => const LinearProgressIndicator(),
+                                                                error: (e, _) => Text('Error: $e'),
+                                                              ),
+                                                              actions: [
+                                                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('TUTUP')),
+                                                              ],
+                                                            );
+                                                          },
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: const Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                                                  ),
                                                 ),
                                               Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? (Colors.orange[900] ?? Colors.orange) : Colors.black)),
                                             ],

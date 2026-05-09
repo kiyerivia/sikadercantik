@@ -100,6 +100,60 @@ class ReportDetailScreen extends ConsumerWidget {
                     ),
                   ),
 
+                  // Admin Interventions History
+                  if (report.status == 'need_intervention') ...[
+                    const SizedBox(height: 16),
+                    _buildSectionTitle('INSTRUKSI PERBAIKAN ADMIN'),
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
+                        return interventionsAsync.when(
+                          data: (items) {
+                            if (items.isEmpty) return const SizedBox.shrink();
+                            final latest = items.last;
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.orange[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Catatan Perubahan:',
+                                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange[900]),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    latest['description'] ?? '-',
+                                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.orange[900]),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin'}',
+                                    style: GoogleFonts.outfit(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.orange[700]),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          loading: () => const Center(child: LinearProgressIndicator()),
+                          error: (e, _) => Text('Error loading instruction: $e', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                        );
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 32),
 
                   // Admin Actions
