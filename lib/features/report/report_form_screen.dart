@@ -657,13 +657,15 @@ class ReportFormScreen extends HookConsumerWidget {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  ),
+);
+}
 
   Widget _buildSmallLabel(String text) {
     return Container(
