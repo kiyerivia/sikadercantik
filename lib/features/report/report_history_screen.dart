@@ -327,16 +327,10 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                 PopupMenuItem(
                                                   value: 'edit',
                                                   child: Row(
-                                                    children: [
-                                                      Icon(Icons.edit, size: 18, color: report.status == 'verified' ? Colors.grey : Colors.blue),
+                                                    children: const [
+                                                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
                                                       const SizedBox(width: 8),
-                                                      Text(
-                                                        'Edit', 
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 13, 
-                                                          color: report.status == 'verified' ? Colors.grey : Colors.black,
-                                                        ),
-                                                      ),
+                                                      Text('Edit Laporan', style: TextStyle(fontSize: 13)),
                                                     ],
                                                   ),
                                                 ),
@@ -407,7 +401,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                 Text('Informasi', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Anda dapat mengedit laporan yang sudah dikirim selama belum diverifikasi oleh admin.',
+                                  'Anda dapat mengedit laporan yang sudah dikirim kapan saja jika diperlukan perubahan data.',
                                   style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700]),
                                 ),
                               ],

@@ -156,53 +156,23 @@ class ReportDetailScreen extends ConsumerWidget {
 
                   const SizedBox(height: 32),
 
-                  // Admin Actions
-                  if (report.status == 'submitted') ...[
-                    _buildSectionTitle('TINDAKAN ADMIN'),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.verified_user),
-                        label: Text('VERIFIKASI DATA (OK)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF27AE60),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => _handleUpdateStatus(context, ref, 'verified'),
+                  // Admin Actions (Always show Intervention button for Admin)
+                  _buildSectionTitle('TINDAKAN ADMIN'),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.assignment_late),
+                      label: Text('MINTA PERBAIKAN DATA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange[800],
+                        side: BorderSide(color: Colors.orange[800]!),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
+                      onPressed: () => _showInterventionDialog(context, ref),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.assignment_late),
-                        label: Text('BUTUH INTERVENSI / PSN ULANG', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.orange[800],
-                          side: BorderSide(color: Colors.orange[800]!),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => _showInterventionDialog(context, ref),
-                      ),
-                    ),
-                  ] else if (report.status == 'verified') ...[
-                    Center(
-                      child: Column(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 48),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Laporan sudah terverifikasi',
-                            style: GoogleFonts.outfit(color: Colors.green, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -245,14 +215,10 @@ class ReportDetailScreen extends ConsumerWidget {
     String label = status.toUpperCase();
     IconData icon = Icons.info;
 
-    if (status == 'submitted') {
-      color = Colors.orange;
-      label = 'MENUNGGU VERIFIKASI';
-      icon = Icons.pending;
-    } else if (status == 'verified') {
+    if (status == 'submitted' || status == 'verified') {
       color = Colors.green;
-      label = 'TERVERIFIKASI';
-      icon = Icons.verified;
+      label = 'TERKIRIM';
+      icon = Icons.check_circle;
     } else if (status == 'need_intervention') {
       color = Colors.red;
       label = 'PERLU INTERVENSI';
@@ -275,40 +241,6 @@ class ReportDetailScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _handleUpdateStatus(BuildContext context, WidgetRef ref, String status) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Konfirmasi Verifikasi', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin data ini sudah benar dan layak diverifikasi?', style: GoogleFonts.outfit()),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('BATAL')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('YA, VERIFIKASI'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    try {
-      await ref.read(reportRepositoryProvider).updateReportStatus(report.id, status);
-      ref.invalidate(allReportsProvider);
-      ref.invalidate(adminStatsProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Laporan Berhasil Diverifikasi!'), backgroundColor: Colors.green),
-        );
-        context.pop();
-      }
-    } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
   }
 
   void _showInterventionDialog(BuildContext context, WidgetRef ref) {
