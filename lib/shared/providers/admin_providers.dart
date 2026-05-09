@@ -18,7 +18,7 @@ final adminStatsProvider = Provider<AsyncValue<Map<String, dynamic>>>((ref) {
       'totalPositive': totalPositive,
       'abj': abj,
       'reportCount': reports.length,
-      'needVerification': reports.where((r) => r.status == 'submitted').length,
+      'needVerification': reports.where((r) => r.status == 'need_intervention').length,
     };
   });
 });

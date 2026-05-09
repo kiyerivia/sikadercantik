@@ -171,7 +171,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
             // Filter list to only pending?
           },
           child: _StatCard(
-            label: 'Menunggu Verifikasi',
+            label: 'Menunggu Perbaikan',
             value: '${stats['needVerification']}',
             icon: Icons.pending_actions,
             color: Colors.purple,
@@ -236,9 +236,9 @@ class _StatCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              if (label == 'Menunggu Verifikasi' && int.parse(value) > 0)
+              if (label == 'Menunggu Perbaikan' && int.parse(value) > 0)
                 const Spacer(),
-              if (label == 'Menunggu Verifikasi' && int.parse(value) > 0)
+              if (label == 'Menunggu Perbaikan' && int.parse(value) > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
@@ -268,15 +268,12 @@ class _AdminReportTile extends StatelessWidget {
     Color statusColor = Colors.grey;
     String statusLabel = report.status.toUpperCase();
 
-    if (report.status == 'submitted') {
-      statusColor = Colors.orange;
-      statusLabel = 'PENDING';
-    } else if (report.status == 'verified') {
+    if (report.status == 'submitted' || report.status == 'verified') {
       statusColor = Colors.green;
-      statusLabel = 'VERIFIED';
+      statusLabel = 'TERKIRIM';
     } else if (report.status == 'need_intervention') {
       statusColor = Colors.red;
-      statusLabel = 'INTERVENTION';
+      statusLabel = 'PERLU PERBAIKAN';
     }
 
     return Card(

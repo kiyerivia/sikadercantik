@@ -221,7 +221,7 @@ class ReportDetailScreen extends ConsumerWidget {
       icon = Icons.check_circle;
     } else if (status == 'need_intervention') {
       color = Colors.red;
-      label = 'PERLU INTERVENSI';
+      label = 'PERLU PERBAIKAN';
       icon = Icons.warning;
     }
 
