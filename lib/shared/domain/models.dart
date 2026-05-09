@@ -104,6 +104,7 @@ class Report {
   final List<String> breedingPlaceIds;
   final String? villageName;
   final String? posyanduName;
+  final String? latestIntervention;
 
   Report({
     required this.id,
@@ -117,6 +118,7 @@ class Report {
     this.breedingPlaceIds = const [],
     this.villageName,
     this.posyanduName,
+    this.latestIntervention,
   });
 
   factory Report.fromMap(Map<String, dynamic> map, {List<String>? breedingPlaceIds}) {
@@ -143,6 +145,9 @@ class Report {
       breedingPlaceIds: breedingPlaceIds ?? [],
       villageName: vName,
       posyanduName: pName,
+      latestIntervention: (map['interventions'] != null && (map['interventions'] as List).isNotEmpty)
+          ? (map['interventions'] as List).last['description'] as String?
+          : null,
     );
   }
 }

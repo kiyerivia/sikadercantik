@@ -278,104 +278,74 @@ class ReportFormScreen extends HookConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    if (isEdit && initialReport != null)
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final interventionsAsync = ref.watch(interventionsByReportProvider(initialReport!.id));
-                          
-                          return interventionsAsync.when(
-                            data: (items) {
-                              if (items.isEmpty || initialReport?.status != 'need_intervention') {
-                                return const SizedBox.shrink();
-                              }
-                              final latest = items.last; 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[50],
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.red[200]!, width: 2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.red.withOpacity(0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.warning_rounded, color: Colors.white, size: 16),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          'INSTRUKSI PERBAIKAN ADMIN',
-                                          style: GoogleFonts.outfit(
-                                            fontWeight: FontWeight.w900, 
-                                            color: Colors.red[900],
-                                            letterSpacing: 1.2,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      latest['description'] ?? '-',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 15, 
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.red[800],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red[100],
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        'Oleh: ${latest['profiles']?['full_name'] ?? 'Admin Puskesmas'}',
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 11, 
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.red[900],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            loading: () => const Padding(
-                              padding: EdgeInsets.only(bottom: 16),
-                              child: LinearProgressIndicator(),
+                    if (isEdit && initialReport != null && initialReport!.status == 'need_intervention')
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.red[200]!, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            error: (err, _) => Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.warning_rounded, color: Colors.white, size: 16),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'INSTRUKSI PERBAIKAN ADMIN',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w900, 
+                                    color: Colors.red[900],
+                                    letterSpacing: 1.2,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              initialReport?.latestIntervention ?? '-',
+                              style: GoogleFonts.outfit(
+                                fontSize: 15, 
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red[800],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.red[50],
-                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.red[100],
+                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                'Gagal memuat instruksi: $err',
-                                style: TextStyle(color: Colors.red[900], fontSize: 12),
+                                'Oleh: Admin Puskesmas',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11, 
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[900],
+                                ),
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     Container(
                       padding: const EdgeInsets.all(20),

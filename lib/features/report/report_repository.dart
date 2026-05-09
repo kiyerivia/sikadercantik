@@ -47,7 +47,7 @@ class ReportRepository {
 
     final response = await _client
         .from('reports')
-        .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
+        .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id), interventions(description, created_at)')
         .eq('kader_id', userId!)
         .order('report_date', ascending: false);
 
@@ -136,7 +136,7 @@ class ReportRepository {
   Future<List<Map<String, dynamic>>> getInterventionsByReport(String reportId) async {
     final response = await _client
         .from('interventions')
-        .select('*, profiles!admin_id(full_name)')
+        .select('*')
         .eq('report_id', reportId)
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
