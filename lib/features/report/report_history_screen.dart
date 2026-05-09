@@ -273,12 +273,21 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                     onTap: () {
                                                       showDialog(
                                                         context: context,
-                                                        builder: (context) => AlertDialog(
-                                                          title: Text('Instruksi Perbaikan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                                                          content: Text(report.latestIntervention ?? 'Tidak ada detail instruksi.', style: GoogleFonts.outfit()),
-                                                          actions: [
-                                                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('TUTUP')),
-                                                          ],
+                                                        builder: (context) => Consumer(
+                                                          builder: (context, ref, child) {
+                                                            final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
+                                                            return AlertDialog(
+                                                              title: Text('Instruksi Perbaikan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                                                              content: interventionsAsync.when(
+                                                                data: (items) => Text(items.isEmpty ? 'Tidak ada detail instruksi.' : items.last['description'] ?? '-', style: GoogleFonts.outfit()),
+                                                                loading: () => const SizedBox(height: 50, child: Center(child: CircularProgressIndicator())),
+                                                                error: (e, _) => Text('Error: $e'),
+                                                              ),
+                                                              actions: [
+                                                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('TUTUP')),
+                                                              ],
+                                                            );
+                                                          },
                                                         ),
                                                       );
                                                     },
