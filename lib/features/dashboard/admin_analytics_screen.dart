@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../shared/domain/models.dart';
-import '../../shared/providers/auth_providers.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../shared/providers/admin_providers.dart';
-import '../../shared/providers/report_providers.dart';
-import 'package:intl/intl.dart';
 import '../../shared/widgets/admin_nav_bar.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
@@ -13,246 +10,252 @@ class AdminAnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(adminStatsProvider);
-    final reportsAsync = ref.watch(allReportsProvider);
+    final selectedMonth = ref.watch(selectedMonthProvider);
+    final selectedYear = ref.watch(selectedYearProvider);
+    final abjByVillageAsync = ref.watch(abjByVillageProvider);
+    final dashboardStatsAsync = ref.watch(dashboardStatsProvider);
+
+    final monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
-        backgroundColor: const Color(0xFF1F618D),
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 10),
-            const Text('SI KADER PSN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-          ],
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (val) async {
-              if (val == 'logout') {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) context.go('/login');
-              }
-            },
-            offset: const Offset(0, 50),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.red, size: 20),
-                    const SizedBox(width: 12),
-                    const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
-                  ],
-                ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        children: [
+          // Sidebar (As seen in image)
+          if (MediaQuery.of(context).size.width > 900)
+            const _Sidebar(),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Nav Bar (The horizontal one we added previously for consistency)
+                  const AdminNavBar(activePage: 'analytics'),
+                  const SizedBox(height: 24),
+                  
+                  Text(
+                    'Dashboard ABJ',
+                    style: GoogleFonts.outfit(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pantau capaian Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN kader.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Filter Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _FilterDropdown(
+                          label: 'Pilih Puskesmas',
+                          value: 'Puskesmas Gumelar',
+                          icon: Icons.local_hospital_outlined,
+                          onChanged: (val) {},
+                          items: const ['Puskesmas Gumelar'],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _FilterDropdown(
+                          label: 'Pilih Bulan',
+                          value: monthNames[selectedMonth - 1],
+                          icon: Icons.calendar_today_outlined,
+                          onChanged: (val) {
+                            if (val != null) {
+                              ref.read(selectedMonthProvider.notifier).state = monthNames.indexOf(val) + 1;
+                            }
+                          },
+                          items: monthNames,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _FilterDropdown(
+                          label: 'Pilih Tahun',
+                          value: selectedYear.toString(),
+                          icon: Icons.calendar_month_outlined,
+                          onChanged: (val) {
+                            if (val != null) {
+                              ref.read(selectedYearProvider.notifier).state = int.parse(val);
+                            }
+                          },
+                          items: List.generate(5, (i) => (DateTime.now().year - 2 + i).toString()),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Chart Section
+                  _ChartCard(
+                    monthName: monthNames[selectedMonth - 1],
+                    year: selectedYear,
+                    data: abjByVillageAsync,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Stats Section
+                  _StatsSection(
+                    monthName: monthNames[selectedMonth - 1],
+                    year: selectedYear,
+                    data: dashboardStatsAsync,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Info Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Data diperbarui secara otomatis berdasarkan laporan PSN kader. Pastikan intervensi dilakukan untuk meningkatkan capaian ABJ.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: const Color(0xFF1E40AF),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
             ),
           ),
-          const SizedBox(width: 16),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(allReportsProvider);
-        },
-        child: statsAsync.when(
-          data: (stats) => SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AdminNavBar(activePage: 'analytics'),
-                const SizedBox(height: 16),
-                _buildSummaryCards(context, stats),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Laporan Terbaru',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        // This could navigate to a full report list with filters
-                      },
-                      child: const Text('Lihat Semua'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                reportsAsync.when(
-                  data: (reports) {
-                    if (reports.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40),
-                          child: Text('Belum ada laporan masuk', style: TextStyle(color: Colors.grey[500])),
-                        ),
-                      );
-                    }
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: reports.length > 5 ? 5 : reports.length,
-                      itemBuilder: (context, index) {
-                        final report = reports[index];
-                        return _AdminReportTile(report: report);
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => Text('Error: $e'),
-                ),
-              ],
-            ),
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, s) => Center(child: Text('Error: $e')),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards(BuildContext context, Map<String, dynamic> stats) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                label: 'Angka Bebas Jentik',
-                value: '${stats['abj'].toStringAsFixed(1)}%',
-                icon: Icons.pie_chart,
-                color: stats['abj'] >= 95 ? Colors.green : Colors.orange,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                label: 'Total Rumah',
-                value: '${stats['totalInspected']}',
-                icon: Icons.home,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _StatCard(
-                label: 'Rumah Positif',
-                value: '${stats['totalPositive']}',
-                icon: Icons.bug_report,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        InkWell(
-          onTap: () {
-            // Filter list to only pending?
-          },
-          child: _StatCard(
-            label: 'Menunggu Perbaikan',
-            value: '${stats['needVerification']}',
-            icon: Icons.pending_actions,
-            color: Colors.purple,
-            isFullWidth: true,
-          ),
-        ),
-      ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _Sidebar extends StatelessWidget {
+  const _Sidebar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      color: Colors.white,
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          _SidebarItem(label: 'Beranda', icon: Icons.home_outlined, isActive: false),
+          _SidebarItem(label: 'Data Monitoring Laporan PSN', icon: Icons.assignment_outlined, isActive: false),
+          _SidebarItem(label: 'Dashboard ABJ', icon: Icons.bar_chart_outlined, isActive: true),
+          _SidebarItem(label: 'Manajemen Wilayah', icon: Icons.map_outlined, isActive: false),
+          const Spacer(),
+          _SidebarItem(label: 'Keluar', icon: Icons.logout, isActive: false, isDestructive: true),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final bool isDestructive;
+
+  const _SidebarItem({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFF1F5F9) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: Icon(icon, color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)), size: 20),
+          title: Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
+            ),
+          ),
+          dense: true,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final Color color;
-  final bool isFullWidth;
+  final List<String> items;
+  final Function(String?) onChanged;
 
-  const _StatCard({
+  const _FilterDropdown({
     required this.label,
     required this.value,
     required this.icon,
-    required this.color,
-    this.isFullWidth = false,
+    required this.items,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: isFullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (label == 'Menunggu Perbaikan' && int.parse(value) > 0)
-                const Spacer(),
-              if (label == 'Menunggu Perbaikan' && int.parse(value) > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
-                  child: const Text('PERLU TINDAKAN', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                ),
+              Icon(icon, size: 14, color: const Color(0xFF64748B)),
+              const SizedBox(width: 4),
+              Text(label, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              isDense: true,
+              style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1E293B), fontWeight: FontWeight.bold),
+              items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: onChanged,
+            ),
           ),
         ],
       ),
@@ -260,76 +263,321 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _AdminReportTile extends StatelessWidget {
-  final Report report;
+class _ChartCard extends StatelessWidget {
+  final String monthName;
+  final int year;
+  final AsyncValue<Map<String, double>> data;
 
-  const _AdminReportTile({required this.report});
+  const _ChartCard({required this.monthName, required this.year, required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd MMM yyyy', 'id_ID').format(report.reportDate);
-    Color statusColor = Colors.grey;
-    String statusLabel = report.status.toUpperCase();
-
-    if (report.status == 'submitted' || report.status == 'verified') {
-      statusColor = Colors.green;
-      statusLabel = 'TERKIRIM';
-    } else if (report.status == 'need_intervention') {
-      statusColor = Colors.red;
-      statusLabel = 'PERLU PERBAIKAN';
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            shape: BoxShape.circle,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Capaian ABJ per Desa',
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
           ),
-          child: Icon(Icons.description, color: statusColor),
-        ),
-        title: Text(
-          report.posyanduName ?? 'Laporan PSN',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        subtitle: Column(
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, size: 14, color: Color(0xFF3B82F6)),
+              const SizedBox(width: 4),
+              Text('Bulan $monthName $year', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 300,
+            child: data.when(
+              data: (map) {
+                if (map.isEmpty) return const Center(child: Text('Tidak ada data'));
+                
+                final villages = map.keys.toList();
+                return BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: 100,
+                    barTouchData: BarTouchData(enabled: true),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            if (value.toInt() < villages.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Transform.rotate(
+                                  angle: -0.5,
+                                  child: Text(
+                                    villages[value.toInt()],
+                                    style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B)),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                          reservedSize: 60,
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) => Text('${value.toInt()}%', style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
+                        ),
+                      ),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      drawHorizontalLine: true,
+                      horizontalInterval: 20,
+                      getDrawingHorizontalLine: (value) => FlLine(color: const Color(0xFFE2E8F0), strokeWidth: 1),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: List.generate(villages.length, (index) {
+                      final abj = map[villages[index]]!;
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: abj,
+                            color: abj >= 90 ? const Color(0xFF22C55E) : (abj >= 80 ? const Color(0xFF3B82F6) : const Color(0xFFF97316)),
+                            width: 16,
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+                          ),
+                        ],
+                      );
+                    }),
+                    extraLinesData: ExtraLinesData(
+                      horizontalLines: [
+                        HorizontalLine(
+                          y: 90,
+                          color: const Color(0xFF22C55E).withOpacity(0.5),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                          label: HorizontalLineLabel(
+                            show: true,
+                            alignment: Alignment.topRight,
+                            style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF22C55E), fontWeight: FontWeight.bold),
+                            labelResolver: (line) => 'Target ABJ ≥ 90%',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Error: $e')),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _LegendItem(color: const Color(0xFF22C55E), label: 'Desa dengan ABJ ≥ 90%', count: data.maybeWhen(data: (m) => m.values.where((v) => v >= 90).length, orElse: () => 0)),
+              const SizedBox(width: 24),
+              _LegendItem(color: const Color(0xFFF97316), label: 'Desa dengan ABJ < 90%', count: data.maybeWhen(data: (m) => m.values.where((v) => v < 90).length, orElse: () => 0)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final int count;
+
+  const _LegendItem({required this.color, required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(dateStr, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            const SizedBox(height: 4),
-            Text(
-              'Positif: ${report.housesPositive}/${report.housesInspected} rumah',
-              style: const TextStyle(fontSize: 12),
-            ),
+            Text(label, style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
+            Text('$count Desa', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                statusLabel,
-                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-          ],
-        ),
-        onTap: () => context.push('/report-detail', extra: report),
+      ],
+    );
+  }
+}
+
+class _StatsSection extends StatelessWidget {
+  final String monthName;
+  final int year;
+  final AsyncValue<Map<String, dynamic>> data;
+
+  const _StatsSection({required this.monthName, required this.year, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Laporan PSN Kader',
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, size: 14, color: Color(0xFF3B82F6)),
+              const SizedBox(width: 4),
+              Text('Bulan $monthName $year', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
+            ],
+          ),
+          const SizedBox(height: 24),
+          data.when(
+            data: (stats) => Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.assignment_outlined,
+                        iconColor: const Color(0xFF3B82F6),
+                        bgColor: const Color(0xFFEFF6FF),
+                        label: 'Jumlah Laporan PSN',
+                        value: stats['totalReports'].toString(),
+                        subLabel: 'Total laporan PSN yang dikirim oleh kader',
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.check_circle_outline,
+                        iconColor: const Color(0xFF22C55E),
+                        bgColor: const Color(0xFFF0FDF4),
+                        label: 'Sudah Intervensi',
+                        value: stats['intervened'].toString(),
+                        subLabel: 'Laporan yang sudah dilakukan intervensi petugas',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _InterventionProgress(rate: stats['interventionRate'] as double),
+              ],
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Text('Error: $e'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
+  final String label;
+  final String value;
+  final String subLabel;
+
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+    required this.label,
+    required this.value,
+    required this.subLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                Text(subLabel, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InterventionProgress extends StatelessWidget {
+  final double rate;
+  const _InterventionProgress({required this.rate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Tingkat Intervensi', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                Text('(Sudah Intervensi / Total Laporan)', style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
+              ],
+            ),
+            Text('${rate.toStringAsFixed(1)}%', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF22C55E))),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: rate / 100,
+            minHeight: 12,
+            backgroundColor: const Color(0xFFE2E8F0),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF22C55E)),
+          ),
+        ),
+      ],
     );
   }
 }
