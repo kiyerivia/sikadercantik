@@ -8,6 +8,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../../shared/widgets/admin_nav_bar.dart';
 import '../../shared/domain/models.dart';
 
 class ReportHistoryScreen extends HookConsumerWidget {
@@ -132,9 +133,15 @@ class ReportHistoryScreen extends HookConsumerWidget {
               ),
             ),
 
+            // Admin Navigation Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: const AdminNavBar(activePage: 'monitoring'),
+            ),
+
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Column(
                   children: [
                     // Filter Section (Same as before)
@@ -266,7 +273,6 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     _buildTableHeader('Rumah\nDiperiksa'),
                                     _buildTableHeader('Rumah\nPositif'),
                                     _buildTableHeader('ABJ'),
-                                    _buildTableHeader('Jenis\nIntervensi'),
                                     _buildTableHeader('Aksi'),
                                   ],
                                   rows: filteredReports.map((report) {
@@ -314,7 +320,6 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
                                         DataCell(Center(child: Text('${report.housesPositive}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
                                         DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFF39C12))))),
-                                        DataCell(Center(child: Text(report.latestIntervention ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
                                         DataCell(
                                           Center(
                                             child: PopupMenuButton<String>(
@@ -529,3 +534,4 @@ class ReportHistoryScreen extends HookConsumerWidget {
     }
   }
 }
+

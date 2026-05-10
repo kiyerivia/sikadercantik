@@ -6,6 +6,7 @@ import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/admin_providers.dart';
 import '../../shared/providers/report_providers.dart';
 import 'package:intl/intl.dart';
+import '../../shared/widgets/admin_nav_bar.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
@@ -70,10 +71,12 @@ class AdminAnalyticsScreen extends ConsumerWidget {
         child: statsAsync.when(
           data: (stats) => SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AdminNavBar(activePage: 'analytics'),
+                const SizedBox(height: 16),
                 _buildSummaryCards(context, stats),
                 const SizedBox(height: 32),
                 Row(

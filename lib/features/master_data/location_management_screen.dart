@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
+import '../../shared/widgets/admin_nav_bar.dart';
 
 class LocationManagementScreen extends ConsumerWidget {
   const LocationManagementScreen({super.key});
@@ -60,17 +61,27 @@ class LocationManagementScreen extends ConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
-      body: villagesAsync.when(
-        data: (villages) => ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: villages.length,
-          itemBuilder: (context, index) {
-            final village = villages[index];
-            return _VillageExpandable(village: village);
-          },
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Gagal memuat data: $e')),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: AdminNavBar(activePage: 'locations'),
+          ),
+          Expanded(
+            child: villagesAsync.when(
+              data: (villages) => ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: villages.length,
+                itemBuilder: (context, index) {
+                  final village = villages[index];
+                  return _VillageExpandable(village: village);
+                },
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Gagal memuat data: $e')),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

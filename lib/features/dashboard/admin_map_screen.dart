@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/widgets/admin_nav_bar.dart';
 import 'map_providers.dart';
 
 class AdminMapScreen extends ConsumerStatefulWidget {
@@ -140,17 +141,27 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
           return Stack(
             children: [
-              GoogleMap(
-                onMapCreated: _onMapCreated,
-                onTap: _handleMapTap,
-                initialCameraPosition: const CameraPosition(
-                  target: _center,
-                  zoom: 14.0,
-                ),
-                markers: markers,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: true,
-                mapType: MapType.normal,
+              Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: AdminNavBar(activePage: 'map'),
+                  ),
+                  Expanded(
+                    child: GoogleMap(
+                      onMapCreated: _onMapCreated,
+                      onTap: _handleMapTap,
+                      initialCameraPosition: const CameraPosition(
+                        target: _center,
+                        zoom: 14.0,
+                      ),
+                      markers: markers,
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: true,
+                      mapType: MapType.normal,
+                    ),
+                  ),
+                ],
               ),
               
               if (_isEditMode)
