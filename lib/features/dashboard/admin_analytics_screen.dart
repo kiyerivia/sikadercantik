@@ -223,8 +223,6 @@ class AdminAnalyticsScreen extends ConsumerWidget {
   }
 }
 
-  }
-}
 
 
 class _FilterDropdown extends StatelessWidget {
