@@ -76,7 +76,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                           icon: Icons.calendar_today_outlined,
                           onChanged: (val) {
                             if (val != null) {
-                              ref.read(selectedMonthProvider.notifier).state = monthNames.indexOf(val) + 1;
+                              ref.read(selectedMonthProvider.notifier).set(monthNames.indexOf(val) + 1);
                             }
                           },
                           items: monthNames,
@@ -90,7 +90,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                           icon: Icons.calendar_month_outlined,
                           onChanged: (val) {
                             if (val != null) {
-                              ref.read(selectedYearProvider.notifier).state = int.parse(val);
+                              ref.read(selectedYearProvider.notifier).set(int.parse(val));
                             }
                           },
                           items: List.generate(5, (i) => (DateTime.now().year - 2 + i).toString()),

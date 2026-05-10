@@ -4,8 +4,18 @@ import '../domain/models.dart';
 
 // allReportsProvider is now moved to report_providers.dart to avoid duplication
 
-final selectedMonthProvider = StateProvider<int>((ref) => DateTime.now().month);
-final selectedYearProvider = StateProvider<int>((ref) => DateTime.now().year);
+class MonthNotifier extends Notifier<int> {
+  @override
+  int build() => DateTime.now().month;
+  void set(int val) => state = val;
+}
+final selectedMonthProvider = NotifierProvider<MonthNotifier, int>(MonthNotifier.new);
+class YearNotifier extends Notifier<int> {
+  @override
+  int build() => DateTime.now().year;
+  void set(int val) => state = val;
+}
+final selectedYearProvider = NotifierProvider<YearNotifier, int>(YearNotifier.new);
 
 final abjByVillageProvider = Provider<AsyncValue<Map<String, double>>>((ref) {
   final reportsAsync = ref.watch(allReportsProvider);
