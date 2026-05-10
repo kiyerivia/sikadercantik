@@ -2,14 +2,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'report_providers.dart';
 import '../domain/models.dart';
 
-// allReportsProvider is now moved to report_providers.dart to avoid duplication
-
 class MonthNotifier extends Notifier<int> {
   @override
   int build() => DateTime.now().month;
   void set(int val) => state = val;
 }
 final selectedMonthProvider = NotifierProvider<MonthNotifier, int>(MonthNotifier.new);
+
 class YearNotifier extends Notifier<int> {
   @override
   int build() => DateTime.now().year;
@@ -23,7 +22,11 @@ final abjByVillageProvider = Provider<AsyncValue<Map<String, double>>>((ref) {
   final year = ref.watch(selectedYearProvider);
 
   return reportsAsync.whenData((reports) {
-    final filtered = reports.where((r) => r.reportDate.month == month && r.reportDate.year == year).toList();
+    final filtered = reports.where((r) {
+      final matchMonth = month == 0 || r.reportDate.month == month;
+      final matchYear = year == 0 || r.reportDate.year == year;
+      return matchMonth && matchYear;
+    }).toList();
     
     final Map<String, List<Report>> grouped = {};
     for (var r in filtered) {
@@ -53,13 +56,14 @@ final dashboardStatsProvider = Provider<AsyncValue<Map<String, dynamic>>>((ref) 
   final year = ref.watch(selectedYearProvider);
 
   return reportsAsync.whenData((reports) {
-    final filtered = reports.where((r) => r.reportDate.month == month && r.reportDate.year == year).toList();
+    final filtered = reports.where((r) {
+      final matchMonth = month == 0 || r.reportDate.month == month;
+      final matchYear = year == 0 || r.reportDate.year == year;
+      return matchMonth && matchYear;
+    }).toList();
     
     int totalReports = filtered.length;
-    int intervened = filtered.where((r) => r.status == 'verified' || r.status == 'submitted').length; // Assuming verified/submitted means intervened? 
-    // Wait, let's look at the image: "Laporan yang sudah dilakukan intervensi petugas".
-    // In our app, status 'need_intervention' means needs fix. 
-    // Maybe we should check if there are any intervention records.
+    int intervened = filtered.where((r) => r.status == 'verified' || r.status == 'submitted').length; 
     
     double interventionRate = totalReports > 0 ? (intervened / totalReports) * 100 : 0;
 
@@ -70,7 +74,7 @@ final dashboardStatsProvider = Provider<AsyncValue<Map<String, dynamic>>>((ref) 
     };
   });
 });
-// For backward compatibility with screens using adminStatsProvider
+
 final adminStatsProvider = Provider<AsyncValue<Map<String, dynamic>>>((ref) {
   final reportsAsync = ref.watch(allReportsProvider);
   return reportsAsync.whenData((reports) {

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
-import '../../shared/widgets/admin_nav_bar.dart';
+import '../../shared/providers/auth_providers.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
@@ -20,8 +21,59 @@ class AdminAnalyticsScreen extends ConsumerWidget {
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
 
+    final monthOptions = ['Semua', ...monthNames];
+    final currentYear = DateTime.now().year;
+    final yearOptions = ['Semua', ...List.generate(5, (i) => (currentYear - 2 + i).toString())];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        leading: const BackButton(color: Colors.white),
+        backgroundColor: const Color(0xFF1F618D),
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
+            ),
+            const SizedBox(width: 10),
+            const Text('SI KADER PSN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (val) async {
+              if (val == 'logout') {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/login');
+              }
+            },
+            offset: const Offset(0, 50),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+            ],
+            child: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: Row(
         children: [
           // Sidebar (As seen in image)
@@ -34,10 +86,6 @@ class AdminAnalyticsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Nav Bar (The horizontal one we added previously for consistency)
-                  const AdminNavBar(activePage: 'analytics'),
-                  const SizedBox(height: 24),
-                  
                   Text(
                     'Dashboard ABJ',
                     style: GoogleFonts.outfit(
@@ -60,40 +108,63 @@ class AdminAnalyticsScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _FilterDropdown(
-                          label: 'Pilih Puskesmas',
-                          value: 'Puskesmas Gumelar',
-                          icon: Icons.local_hospital_outlined,
-                          onChanged: (val) {},
-                          items: const ['Puskesmas Gumelar'],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.local_hospital_outlined, size: 14, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 4),
+                                  Text('Puskesmas', style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text('Puskesmas Gumelar', style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _FilterDropdown(
                           label: 'Pilih Bulan',
-                          value: monthNames[selectedMonth - 1],
+                          value: selectedMonth == 0 ? 'Semua' : monthNames[selectedMonth - 1],
                           icon: Icons.calendar_today_outlined,
                           onChanged: (val) {
                             if (val != null) {
-                              ref.read(selectedMonthProvider.notifier).set(monthNames.indexOf(val) + 1);
+                              if (val == 'Semua') {
+                                ref.read(selectedMonthProvider.notifier).set(0);
+                              } else {
+                                ref.read(selectedMonthProvider.notifier).set(monthNames.indexOf(val) + 1);
+                              }
                             }
                           },
-                          items: monthNames,
+                          items: monthOptions,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _FilterDropdown(
                           label: 'Pilih Tahun',
-                          value: selectedYear.toString(),
+                          value: selectedYear == 0 ? 'Semua' : selectedYear.toString(),
                           icon: Icons.calendar_month_outlined,
                           onChanged: (val) {
                             if (val != null) {
-                              ref.read(selectedYearProvider.notifier).set(int.parse(val));
+                              if (val == 'Semua') {
+                                ref.read(selectedYearProvider.notifier).set(0);
+                              } else {
+                                ref.read(selectedYearProvider.notifier).set(int.parse(val));
+                              }
                             }
                           },
-                          items: List.generate(5, (i) => (DateTime.now().year - 2 + i).toString()),
+                          items: yearOptions,
                         ),
                       ),
                     ],
@@ -102,7 +173,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
 
                   // Chart Section
                   _ChartCard(
-                    monthName: monthNames[selectedMonth - 1],
+                    monthName: selectedMonth == 0 ? 'Semua Bulan' : monthNames[selectedMonth - 1],
                     year: selectedYear,
                     data: abjByVillageAsync,
                   ),
@@ -110,7 +181,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
 
                   // Stats Section
                   _StatsSection(
-                    monthName: monthNames[selectedMonth - 1],
+                    monthName: selectedMonth == 0 ? 'Semua Bulan' : monthNames[selectedMonth - 1],
                     year: selectedYear,
                     data: dashboardStatsAsync,
                   ),
@@ -291,7 +362,7 @@ class _ChartCard extends StatelessWidget {
             children: [
               const Icon(Icons.info_outline, size: 14, color: Color(0xFF3B82F6)),
               const SizedBox(width: 4),
-              Text('Bulan $monthName $year', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
+              Text('$monthName ${year == 0 ? "Semua Tahun" : year}', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
             ],
           ),
           const SizedBox(height: 32),
@@ -451,7 +522,7 @@ class _StatsSection extends StatelessWidget {
             children: [
               const Icon(Icons.info_outline, size: 14, color: Color(0xFF3B82F6)),
               const SizedBox(width: 4),
-              Text('Bulan $monthName $year', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
+              Text('$monthName ${year == 0 ? "Semua Tahun" : year}', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF64748B))),
             ],
           ),
           const SizedBox(height: 24),
