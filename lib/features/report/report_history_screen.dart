@@ -38,73 +38,82 @@ class ReportHistoryScreen extends HookConsumerWidget {
         child: Column(
           children: [
             // Custom App Bar
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1F618D), Color(0xFF2980B9)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+            AppBar(
+              backgroundColor: const Color(0xFF1F618D),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => context.pop(),
               ),
-              child: Row(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InkWell(
-                    onTap: () => context.pop(),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
-                  ),
-                  const SizedBox(width: 8),
                   RichText(
                     text: TextSpan(
-                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                       children: const [
-                        TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
-                        TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF82E0AA))),
+                        TextSpan(
+                          text: 'SI KADER ',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'PSN',
+                          style: TextStyle(color: Color(0xFF82E0AA)),
+                        ),
                       ],
                     ),
                   ),
-                  const Spacer(),
-                  const NotificationBadge(),
-                  const SizedBox(width: 12),
-                  PopupMenuButton<String>(
-                    onSelected: (val) async {
-                      if (val == 'logout') {
-                        await ref.read(authRepositoryProvider).signOut();
-                        if (context.mounted) context.go('/login');
-                      }
-                    },
-                    offset: const Offset(0, 50),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.logout, color: Colors.red, size: 20),
-                            const SizedBox(width: 12),
-                            Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+                  Text(
+                    'ADMIN PUSKESMAS',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1,
                     ),
                   ),
                 ],
               ),
+              actions: [
+                const NotificationBadge(),
+                const SizedBox(width: 12),
+                PopupMenuButton<String>(
+                  onSelected: (val) async {
+                    if (val == 'logout') {
+                      await ref.read(authRepositoryProvider).signOut();
+                      if (context.mounted) context.go('/login');
+                    }
+                  },
+                  offset: const Offset(0, 50),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout, color: Colors.red, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Logout',
+                            style: GoogleFonts.outfit(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+                  ),
+                ),
+                const SizedBox(width: 16),
+              ],
             ),
 
             // Breadcrumbs (Same as before)
@@ -247,8 +256,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                 scrollDirection: Axis.horizontal,
                                 child: DataTable(
                                   headingRowColor: WidgetStateProperty.all(const Color(0xFFEBF5FB)),
-                                  dataRowHeight: 60,
-                                  columnSpacing: 24,
+                                  dataRowHeight: 52,
+                                  columnSpacing: 16,
+                                  horizontalMargin: 12,
                                   columns: [
                                     _buildTableHeader('Tanggal\nPSN'),
                                     _buildTableHeader('Nama\nDesa'),
@@ -256,6 +266,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     _buildTableHeader('Rumah\nDiperiksa'),
                                     _buildTableHeader('Rumah\nPositif'),
                                     _buildTableHeader('ABJ'),
+                                    _buildTableHeader('Jenis\nIntervensi'),
                                     _buildTableHeader('Aksi'),
                                   ],
                                   rows: filteredReports.map((report) {
@@ -294,15 +305,16 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                     child: const Icon(Icons.info_outline, color: Colors.orange, size: 16),
                                                   ),
                                                 ),
-                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? (Colors.orange[900] ?? Colors.orange) : Colors.black)),
+                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? (Colors.orange[900] ?? Colors.orange) : Colors.black)),
                                             ],
                                           ),
                                         )),
-                                        DataCell(Center(child: Text(report.villageName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text(report.posyanduName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${report.housesPositive}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11)))),
-                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: abj >= 95 ? Colors.green : Colors.orange)))),
+                                        DataCell(Center(child: Text(report.villageName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
+                                        DataCell(Center(child: Text(report.posyanduName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
+                                        DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
+                                        DataCell(Center(child: Text('${report.housesPositive}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
+                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFF39C12))))),
+                                        DataCell(Center(child: Text(report.latestIntervention ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
                                         DataCell(
                                           Center(
                                             child: PopupMenuButton<String>(
@@ -427,7 +439,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
           ),
         ),
       ),
