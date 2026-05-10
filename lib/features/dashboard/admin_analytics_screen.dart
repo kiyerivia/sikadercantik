@@ -32,12 +32,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        leading: null, // Removed hamburger as requested
         title: Row(
           children: [
             Container(
@@ -404,10 +399,11 @@ class _ChartCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Row(
+          Wrap(
+            spacing: 24,
+            runSpacing: 12,
             children: [
               _LegendItem(color: const Color(0xFF22C55E), label: 'Desa dengan ABJ ≥ 90%', count: data.maybeWhen(data: (m) => m.values.where((v) => v >= 90).length, orElse: () => 0)),
-              const SizedBox(width: 24),
               _LegendItem(color: const Color(0xFFF97316), label: 'Desa dengan ABJ < 90%', count: data.maybeWhen(data: (m) => m.values.where((v) => v < 90).length, orElse: () => 0)),
             ],
           ),
@@ -540,24 +536,24 @@ class _StatCard extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-                Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-                Text(subLabel, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B))),
-              ],
-            ),
-          ),
+          const SizedBox(height: 12),
+          Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+          const SizedBox(height: 4),
+          Text(subLabel, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF64748B), height: 1.2)),
         ],
       ),
     );

@@ -383,43 +383,60 @@ class ReportHistoryScreen extends HookConsumerWidget {
               ),
               const Divider(),
               Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: houses.length,
-                  itemBuilder: (context, index) {
-                    final h = houses[index];
-                    final isPositive = h['hasil'] == 'Ada Jentik';
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isPositive ? Colors.red[50] : Colors.green[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isPositive ? Colors.red[100]! : Colors.green[100]!),
+                child: houses.isEmpty 
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Column(
+                          children: [
+                            Icon(Icons.notes_outlined, color: Colors.grey[400], size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Data detail KK tidak tersedia untuk laporan ini.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: houses.length,
+                      itemBuilder: (context, index) {
+                        final h = houses[index];
+                        final isPositive = h['hasil'] == 'Ada Jentik';
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isPositive ? Colors.red[50] : Colors.green[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isPositive ? Colors.red[100]! : Colors.green[100]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Data KK #${index + 1}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: isPositive ? Colors.red : Colors.green, borderRadius: BorderRadius.circular(20)),
-                                child: Text(isPositive ? 'Positif Jentik' : 'Negatif', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Data KK #${index + 1}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(color: isPositive ? Colors.red : Colors.green, borderRadius: BorderRadius.circular(20)),
+                                    child: Text(isPositive ? 'Positif Jentik' : 'Negatif', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
+                              _buildDetailRow('KK', h['kk'] ?? '-'),
+                              _buildDetailRow('RT/RW', '${h['rt'] ?? '-'}/${h['rw'] ?? '-'}'),
+                              _buildDetailRow('Tempat', h['tempat'] ?? '-'),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          _buildDetailRow('KK', h['kk'] ?? '-'),
-                          _buildDetailRow('RT/RW', '${h['rt'] ?? '-'}/${h['rw'] ?? '-'}'),
-                          _buildDetailRow('Tempat', h['tempat'] ?? '-'),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
               ),
               const SizedBox(height: 16),
               SizedBox(
