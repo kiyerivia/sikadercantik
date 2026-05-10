@@ -30,9 +30,14 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        leading: const BackButton(color: Colors.white),
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Row(
           children: [
             Container(
@@ -78,10 +83,12 @@ class AdminAnalyticsScreen extends ConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
+      drawer: const AdminSidebar(activePage: 'analytics'),
       body: Row(
         children: [
           // Sidebar (As seen in image)
-          const AdminSidebar(activePage: 'analytics'),
+          if (MediaQuery.of(context).size.width > 900)
+            const AdminSidebar(activePage: 'analytics'),
           
           Expanded(
             child: SingleChildScrollView(

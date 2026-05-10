@@ -19,8 +19,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
     final profileAsync = ref.watch(userProfileProvider);
     final villagesAsync = ref.watch(villagesProvider);
     
-    final selectedVillageId = useState<String?>(null);
-    final selectedPosyanduId = useState<String?>(null);
+    final selectedVillageId = useState<String?>('all');
+    final selectedPosyanduId = useState<String?>('all');
 
     final reportsAsync = profileAsync.maybeWhen(
       data: (profile) => profile?.role == 'admin' 
@@ -38,9 +38,11 @@ class ReportHistoryScreen extends HookConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,9 +114,11 @@ class ReportHistoryScreen extends HookConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
+      drawer: const AdminSidebar(activePage: 'monitoring'),
       body: Row(
         children: [
-          const AdminSidebar(activePage: 'monitoring'),
+          if (MediaQuery.of(context).size.width > 900)
+            const AdminSidebar(activePage: 'monitoring'),
           Expanded(
             child: Column(
               children: [
@@ -295,7 +299,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           DataCell(
                                             IconButton(
                                               icon: const Icon(Icons.chevron_right, color: Color(0xFF1F618D)),
-                                              onPressed: () => context.push('/report/${report.id}', extra: report),
+                                              onPressed: () => context.push('/report-detail', extra: report),
                                             ),
                                           ),
                                         ],
