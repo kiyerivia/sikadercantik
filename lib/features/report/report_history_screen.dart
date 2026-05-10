@@ -8,7 +8,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
-import '../../shared/widgets/admin_nav_bar.dart';
+import '../../shared/widgets/admin_sidebar.dart';
 import '../../shared/domain/models.dart';
 
 class ReportHistoryScreen extends HookConsumerWidget {
@@ -35,503 +35,361 @@ class ReportHistoryScreen extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFD4E6F1), // Light blue background
-      body: SafeArea(
-        child: Column(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1F618D),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Custom App Bar
-            AppBar(
-              backgroundColor: const Color(0xFF1F618D),
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      children: const [
-                        TextSpan(
-                          text: 'SI KADER ',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        TextSpan(
-                          text: 'PSN',
-                          style: TextStyle(color: Color(0xFF82E0AA)),
-                        ),
-                      ],
-                    ),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                children: const [
+                  TextSpan(
+                    text: 'SI KADER ',
+                    style: TextStyle(color: Colors.white),
                   ),
-                  Text(
-                    'ADMIN PUSKESMAS',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white70,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1,
-                    ),
+                  TextSpan(
+                    text: 'PSN',
+                    style: TextStyle(color: Color(0xFF82E0AA)),
                   ),
                 ],
               ),
-              actions: [
-                const NotificationBadge(),
-                const SizedBox(width: 12),
-                PopupMenuButton<String>(
-                  onSelected: (val) async {
-                    if (val == 'logout') {
-                      await ref.read(authRepositoryProvider).signOut();
-                      if (context.mounted) context.go('/login');
-                    }
-                  },
-                  offset: const Offset(0, 50),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.logout, color: Colors.red, size: 20),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Logout',
-                            style: GoogleFonts.outfit(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+            ),
+            Text(
+              'ADMIN PUSKESMAS',
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          const NotificationBadge(),
+          const SizedBox(width: 12),
+          PopupMenuButton<String>(
+            onSelected: (val) async {
+              if (val == 'logout') {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/login');
+              }
+            },
+            offset: const Offset(0, 50),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Logout',
+                      style: GoogleFonts.outfit(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
-                  child: const CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+                ),
+              ),
+            ],
+            child: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: Row(
+        children: [
+          const AdminSidebar(activePage: 'monitoring'),
+          Expanded(
+            child: Column(
+              children: [
+                // Breadcrumbs
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: () => context.pop(),
+                        child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
+                      ),
+                      const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
+                      Text('Riwayat Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 16),
-              ],
-            ),
 
-            // Breadcrumbs (Same as before)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => context.pop(),
-                    child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
-                  ),
-                  const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
-                  Text('Riwayat Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-
-            // Admin Navigation Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: const AdminNavBar(activePage: 'monitoring'),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  children: [
-                    // Filter Section (Same as before)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'RIWAYAT LAPORAN PSN',
-                            style: GoogleFonts.outfit(color: const Color(0xFF154360), fontSize: 18, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      children: [
+                        // Filter Section
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Berikut adalah daftar laporan PSN yang sudah Anda kirim.',
-                            style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 12),
-                          ),
-                          const SizedBox(height: 20),
-                          Column(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
                                 children: [
-                                  _buildLabel(icon: Icons.location_on, label: 'Desa', color: Colors.blue),
-                                  const SizedBox(height: 8),
-                                  _buildDropdown(
-                                    key: ValueKey('village_history_${selectedVillageId.value}'),
-                                    value: selectedVillageId.value,
-                                    hint: villagesAsync.isLoading ? 'Memuat...' : 'Pilih Desa',
-                                    onChanged: villagesAsync.isLoading ? null : (val) {
-                                      selectedVillageId.value = val;
-                                      selectedPosyanduId.value = 'all';
-                                    },
-                                    items: villagesAsync.maybeWhen(
-                                      data: (villages) {
-                                        final sorted = List<Village>.from(villages)
-                                          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                        final list = sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
-                                        list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
-                                        return list;
-                                      },
-                                      orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
+                                  const Icon(Icons.filter_list, color: Color(0xFF1F618D), size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'FILTER DATA',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1F618D),
+                                      letterSpacing: 1,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
                                 children: [
-                                  _buildLabel(
-                                    iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 18, height: 18),
-                                    label: 'Posyandu',
-                                  ),
-                                  const SizedBox(height: 8),
-                                  _buildDropdown(
-                                    key: ValueKey('posyandu_history_${selectedVillageId.value}_${selectedPosyanduId.value}'),
-                                    value: selectedPosyanduId.value,
-                                    hint: posyandusAsync.isLoading ? 'Memuat...' : 'Pilih Posyandu',
-                                    onChanged: (posyandusAsync.isLoading || (selectedVillageId.value == null || selectedVillageId.value == 'all')) ? null : (val) => selectedPosyanduId.value = val,
-                                    items: posyandusAsync.maybeWhen(
-                                      data: (posyandus) {
-                                        final sorted = List<Posyandu>.from(posyandus)
-                                          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                                        final list = sorted.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
-                                        list.insert(0, DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12))));
-                                        return list;
+                                  Expanded(
+                                    child: _buildFilterDropdown(
+                                      label: 'Desa/Kelurahan',
+                                      value: selectedVillageId.value,
+                                      items: villagesAsync.maybeWhen(
+                                        data: (list) => [
+                                          const DropdownMenuItem(value: 'all', child: Text('Semua Desa')),
+                                          ...list.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))),
+                                        ],
+                                        orElse: () => [const DropdownMenuItem(value: null, child: Text('Loading...'))],
+                                      ),
+                                      onChanged: (val) {
+                                        selectedVillageId.value = val;
+                                        selectedPosyanduId.value = null;
                                       },
-                                      orElse: () => [DropdownMenuItem(value: 'all', child: Text('Semua', style: GoogleFonts.outfit(fontSize: 12)))],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildFilterDropdown(
+                                      label: 'Posyandu',
+                                      value: selectedPosyanduId.value,
+                                      items: posyandusAsync.maybeWhen(
+                                        data: (list) => [
+                                          const DropdownMenuItem(value: 'all', child: Text('Semua Posyandu')),
+                                          ...list.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
+                                        ],
+                                        orElse: () => [const DropdownMenuItem(value: null, child: Text('Pilih Desa Dulu'))],
+                                      ),
+                                      onChanged: (val) => selectedPosyanduId.value = val,
                                     ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
 
-                    const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
-                    // Table Section
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: reportsAsync.when(
-                        data: (reports) {
-                          // Apply filters
-                          final filteredReports = reports.where((r) {
-                            bool matchesVillage = true;
-                            if (selectedVillageId.value != null && selectedVillageId.value != 'all') {
-                              final village = villagesAsync.value?.firstWhere(
-                                (v) => v.id == selectedVillageId.value,
-                                orElse: () => Village(id: '', name: ''),
-                              );
-                              if (village?.name.isNotEmpty ?? false) {
-                                matchesVillage = r.villageName?.trim().toLowerCase() == village?.name.trim().toLowerCase();
-                              }
-                            }
-                            
-                            bool matchesPosyandu = true;
-                            if (selectedPosyanduId.value != null && selectedPosyanduId.value != 'all') {
-                              matchesPosyandu = r.posyanduId == selectedPosyanduId.value;
-                            }
-                            
-                            return matchesVillage && matchesPosyandu;
-                          }).toList();
+                        // Reports Table
+                        reportsAsync.when(
+                          data: (reports) {
+                            final filtered = reports.where((r) {
+                              final matchVillage = selectedVillageId.value == null || 
+                                                 selectedVillageId.value == 'all' || 
+                                                 r.villageId == selectedVillageId.value;
+                              final matchPosyandu = selectedPosyanduId.value == null || 
+                                                  selectedPosyanduId.value == 'all' || 
+                                                  r.posyanduId == selectedPosyanduId.value;
+                              return matchVillage && matchPosyandu;
+                            }).toList();
 
-                          return Column(
-                            children: [
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: DataTable(
-                                  headingRowColor: WidgetStateProperty.all(const Color(0xFFEBF5FB)),
-                                  dataRowHeight: 52,
-                                  columnSpacing: 16,
-                                  horizontalMargin: 12,
-                                  columns: [
-                                    _buildTableHeader('Tanggal\nPSN'),
-                                    _buildTableHeader('Nama\nDesa'),
-                                    _buildTableHeader('Nama\nPosyandu'),
-                                    _buildTableHeader('Rumah\nDiperiksa'),
-                                    _buildTableHeader('Rumah\nPositif'),
-                                    _buildTableHeader('ABJ'),
-                                    _buildTableHeader('Aksi'),
+                            if (filtered.isEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(vertical: 60),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.assignment_late_outlined, size: 64, color: Colors.blueGrey[200]),
+                                    const SizedBox(height: 16),
+                                    Text('Belum ada data laporan', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 16)),
                                   ],
-                                  rows: filteredReports.map((report) {
-                                    final abj = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
-                                    return DataRow(
-                                      cells: [
-                                        DataCell(Center(
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (report.status == 'need_intervention')
-                                                Padding(
-                                                  padding: const EdgeInsets.only(right: 4),
-                                                  child: InkWell(
-                                                    onTap: () {
-                                                      showDialog(
-                                                        context: context,
-                                                        builder: (context) => Consumer(
-                                                          builder: (context, ref, child) {
-                                                            final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
-                                                            return AlertDialog(
-                                                              title: Text('Instruksi Perbaikan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                                                              content: interventionsAsync.when(
-                                                                data: (items) => Text(items.isEmpty ? 'Tidak ada detail instruksi.' : items.last['description'] ?? '-', style: GoogleFonts.outfit()),
-                                                                loading: () => const SizedBox(height: 50, child: Center(child: CircularProgressIndicator())),
-                                                                error: (e, _) => Text('Error: $e'),
-                                                              ),
-                                                              actions: [
-                                                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('TUTUP')),
-                                                              ],
-                                                            );
-                                                          },
-                                                        ),
-                                                      );
-                                                    },
-                                                    child: const Icon(Icons.info_outline, color: Colors.orange, size: 16),
-                                                  ),
-                                                ),
-                                              Text(DateFormat('d MMM\nyyyy', 'id_ID').format(report.reportDate), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, fontWeight: report.status == 'need_intervention' ? FontWeight.bold : FontWeight.normal, color: report.status == 'need_intervention' ? (Colors.orange[900] ?? Colors.orange) : Colors.black)),
-                                            ],
-                                          ),
-                                        )),
-                                        DataCell(Center(child: Text(report.villageName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
-                                        DataCell(Center(child: Text(report.posyanduName ?? '-', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
-                                        DataCell(Center(child: Text('${report.housesInspected}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
-                                        DataCell(Center(child: Text('${report.housesPositive}', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10)))),
-                                        DataCell(Center(child: Text('${abj.toStringAsFixed(1)}%', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFF39C12))))),
-                                        DataCell(
-                                          Center(
-                                            child: PopupMenuButton<String>(
-                                              icon: const Icon(Icons.more_vert, size: 20, color: Colors.blue),
-                                              onSelected: (val) {
-                                                if (val == 'edit') {
-                                                  if (report.status == 'verified') {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('Laporan sudah terverifikasi dan tidak dapat diedit'),
-                                                        backgroundColor: Colors.orange,
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    context.push('/report', extra: report);
-                                                  }
-                                                } else if (val == 'delete') {
-                                                  _showDeleteConfirm(context, ref, report);
-                                                }
-                                              },
-                                              itemBuilder: (context) => [
-                                                PopupMenuItem(
-                                                  value: 'edit',
-                                                  child: Row(
-                                                    children: const [
-                                                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
-                                                      const SizedBox(width: 8),
-                                                      Text('Edit Laporan', style: TextStyle(fontSize: 13)),
-                                                    ],
-                                                  ),
-                                                ),
-                                                PopupMenuItem(
-                                                  value: 'delete',
-                                                  child: Row(
-                                                    children: [
-                                                      const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                                      const SizedBox(width: 8),
-                                                      Text('Hapus', style: GoogleFonts.outfit(fontSize: 13, color: Colors.red)),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
+                                ),
+                              );
+                            }
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: DataTable(
+                                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9F9)),
+                                    columnSpacing: 24,
+                                    columns: [
+                                      DataColumn(label: _buildTableHeader('TANGGAL')),
+                                      DataColumn(label: _buildTableHeader('DESA')),
+                                      DataColumn(label: _buildTableHeader('POSYANDU')),
+                                      DataColumn(label: _buildTableHeader('INSPEKSI')),
+                                      DataColumn(label: _buildTableHeader('POSITIF')),
+                                      DataColumn(label: _buildTableHeader('ABJ')),
+                                      DataColumn(label: _buildTableHeader('STATUS')),
+                                      DataColumn(label: _buildTableHeader('AKSI')),
+                                    ],
+                                    rows: filtered.map((report) {
+                                      final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(Text(DateFormat('dd/MM/yy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 13))),
+                                          DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                                          DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                                          DataCell(Center(child: Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 13)))),
+                                          DataCell(Center(child: Text('${report.housesPositive}', style: GoogleFonts.outfit(fontSize: 13, color: report.housesPositive > 0 ? Colors.red : null, fontWeight: report.housesPositive > 0 ? FontWeight.bold : null)))),
+                                          DataCell(
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: (abjValue >= 95 ? Colors.green : Colors.orange).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                '${abjValue.toStringAsFixed(1)}%',
+                                                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: abjValue >= 95 ? Colors.green[700] : Colors.orange[700]),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
+                                          DataCell(_buildStatusBadge(report.status)),
+                                          DataCell(
+                                            IconButton(
+                                              icon: const Icon(Icons.chevron_right, color: Color(0xFF1F618D)),
+                                              onPressed: () => context.push('/report/${report.id}', extra: report),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Menampilkan ${filteredReports.length} data dari ${reports.length} laporan',
-                                      style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(4)),
-                                      child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Error: $e')),
-                      ),
+                            );
+                          },
+                          loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
+                          error: (e, s) => Center(child: Text('Error: $e')),
+                        ),
+                      ],
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Info Box
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEBF5FB),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.info, color: Colors.blue, size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Informasi', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Anda dapat mengedit laporan yang sudah dikirim kapan saja jika diperlukan perubahan data.',
-                                  style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700]),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  DataColumn _buildTableHeader(String label) {
-    return DataColumn(
-      label: Expanded(
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLabel({IconData? icon, Widget? iconWidget, required String label, Color? color}) {
-    return Row(
-      children: [
-        if (iconWidget != null) iconWidget else Icon(icon, size: 16, color: color),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown({
-    Key? key,
-    required String? value,
-    required String hint,
-    required List<DropdownMenuItem<String>> items,
-    required void Function(String?)? onChanged,
-  }) {
-    final isDisabled = onChanged == null;
-    return Container(
-      key: key,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: isDisabled ? Colors.grey[100] : Colors.white,
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          hint: Text(hint, style: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 12)),
-          isExpanded: true,
-          isDense: true,
-          icon: isDisabled && hint == 'Memuat...' 
-            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-            : const Icon(Icons.keyboard_arrow_down, size: 18),
-          items: items,
-          onChanged: onChanged,
-         ),
-      ),
-    );
-  }
-
-  Future<void> _showDeleteConfirm(BuildContext context, WidgetRef ref, Report report) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Laporan?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin ingin menghapus laporan ini? Data yang dihapus tidak dapat dikembalikan.', style: GoogleFonts.outfit()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.outfit(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
 
-    if (confirmed == true) {
-      try {
-        await ref.read(reportRepositoryProvider).deleteReport(report.id);
-        ref.invalidate(myReportsProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Laporan berhasil dihapus'), backgroundColor: Colors.green),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red),
-          );
-        }
-      }
+  Widget _buildTableHeader(String label) {
+    return Text(
+      label,
+      style: GoogleFonts.outfit(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF566573),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color = Colors.grey;
+    String label = status.toUpperCase();
+    if (status == 'submitted' || status == 'verified') {
+      color = Colors.green;
+      label = 'TERKIRIM';
+    } else if (status == 'need_intervention') {
+      color = Colors.red;
+      label = 'PERLU PERBAIKAN';
     }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5), width: 0.5),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<DropdownMenuItem<String>> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9F9),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: value,
+              items: items,
+              onChanged: onChanged,
+              style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 13),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1F618D)),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
-

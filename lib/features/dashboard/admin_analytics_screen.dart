@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../../shared/widgets/admin_sidebar.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
@@ -80,8 +81,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
       body: Row(
         children: [
           // Sidebar (As seen in image)
-          if (MediaQuery.of(context).size.width > 900)
-            const _Sidebar(),
+          const AdminSidebar(activePage: 'analytics'),
           
           Expanded(
             child: SingleChildScrollView(
@@ -223,106 +223,9 @@ class AdminAnalyticsScreen extends ConsumerWidget {
   }
 }
 
-class _Sidebar extends StatelessWidget {
-  const _Sidebar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 260,
-      color: Colors.white,
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          _SidebarItem(
-            label: 'Beranda',
-            icon: Icons.home_outlined,
-            isActive: false,
-            onTap: () => context.go('/'),
-          ),
-          _SidebarItem(
-            label: 'Data Monitoring Laporan PSN',
-            icon: Icons.assignment_outlined,
-            isActive: false,
-            onTap: () => context.go('/history'),
-          ),
-          _SidebarItem(
-            label: 'Dashboard ABJ',
-            icon: Icons.bar_chart_outlined,
-            isActive: true,
-            onTap: () {},
-          ),
-          _SidebarItem(
-            label: 'Manajemen Wilayah',
-            icon: Icons.map_outlined,
-            isActive: false,
-            onTap: () => context.go('/locations'),
-          ),
-          const Spacer(),
-          Consumer(
-            builder: (context, ref, child) => _SidebarItem(
-              label: 'Keluar',
-              icon: Icons.logout,
-              isActive: false,
-              isDestructive: true,
-              onTap: () async {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) context.go('/login');
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
   }
 }
 
-class _SidebarItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isActive;
-  final bool isDestructive;
-  final VoidCallback onTap;
-
-  const _SidebarItem({
-    required this.label,
-    required this.icon,
-    required this.isActive,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFF1F5F9) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            leading: Icon(icon, color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)), size: 20),
-            title: Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
-              ),
-            ),
-            dense: true,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _FilterDropdown extends StatelessWidget {
   final String label;
