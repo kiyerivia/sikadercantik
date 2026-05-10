@@ -277,7 +277,17 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
                                       return DataRow(
                                         cells: [
-                                          DataCell(Text(DateFormat('dd/MM/yy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 13))),
+                                          DataCell(
+                                            Row(
+                                              children: [
+                                                if (report.status == 'need_intervention')
+                                                  const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
+                                                if (report.status == 'need_intervention')
+                                                  const SizedBox(width: 4),
+                                                Text(DateFormat('dd/MM/yy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 13)),
+                                              ],
+                                            ),
+                                          ),
                                           DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
                                           DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
                                           DataCell(Center(child: Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 13)))),
