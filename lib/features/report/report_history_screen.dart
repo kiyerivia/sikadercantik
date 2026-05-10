@@ -191,7 +191,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       ),
                                       onChanged: (val) {
                                         selectedVillageId.value = val;
-                                        selectedPosyanduId.value = null;
+                                        selectedPosyanduId.value = 'all';
                                       },
                                     ),
                                   ),
@@ -309,7 +309,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           DataCell(
                                             IconButton(
                                               icon: const Icon(Icons.chevron_right, color: Color(0xFF1F618D)),
-                                              onPressed: () => context.push('/report-detail', extra: report),
+                                              onPressed: () => _showReportSummaryDialog(context, report),
                                             ),
                                           ),
                                         ],
@@ -331,6 +331,142 @@ class ReportHistoryScreen extends HookConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showReportSummaryDialog(BuildContext context, Report report) {
+    // Parse notes to extract KK data
+    final houses = <Map<String, String>>[];
+    if (report.notes != null) {
+      final blocks = report.notes!.split('--- KK');
+      for (var block in blocks) {
+        if (block.trim().isEmpty) continue;
+        final data = <String, String>{};
+        final lines = block.split('\n');
+        for (var line in lines) {
+          final t = line.trim();
+          if (t.startsWith('Nama KK: ')) data['kk'] = t.substring(9);
+          else if (t.startsWith('RT/RW: ')) {
+            final parts = t.substring(7).split('/');
+            if (parts.length == 2) {
+              data['rt'] = parts[0];
+              data['rw'] = parts[1];
+            }
+          } else if (t.startsWith('Tempat: ')) data['tempat'] = t.substring(8);
+          else if (t.startsWith('Hasil: ')) data['hasil'] = t.substring(7);
+        }
+        if (data.isNotEmpty) houses.add(data);
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Detail Laporan PSN',
+                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D)),
+                  ),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                ],
+              ),
+              const Divider(),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    child: DataTable(
+                      headingRowColor: WidgetStateProperty.all(const Color(0xFFEBF5FB)),
+                      columns: [
+                        DataColumn(label: _buildTableHeader('No')),
+                        DataColumn(label: _buildTableHeader('Bulan')),
+                        DataColumn(label: _buildTableHeader('Nama Desa')),
+                        DataColumn(label: _buildTableHeader('Nama Posyandu')),
+                        DataColumn(label: _buildTableHeader('RT')),
+                        DataColumn(label: _buildTableHeader('RW')),
+                        DataColumn(label: _buildTableHeader('NAMA KK')),
+                        DataColumn(label: _buildTableHeader('Tempat Positif')),
+                        DataColumn(label: _buildTableHeader('Intervensi')),
+                        DataColumn(label: _buildTableHeader('Jenis Intervensi')),
+                      ],
+                      rows: houses.asMap().entries.map((entry) {
+                        final idx = entry.key + 1;
+                        final house = entry.value;
+                        final isPositive = house['hasil'] == 'Ada Jentik';
+                        
+                        return DataRow(
+                          cells: [
+                            DataCell(Text('$idx', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(DateFormat('MMMM').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(house['rt'] ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(house['rw'] ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(house['kk'] ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(Text(house['tempat'] ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isPositive ? Colors.red : Colors.green,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      isPositive ? 'Belum' : 'Selesai',
+                                      style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 14),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            DataCell(Text(report.latestIntervention ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('TUTUP', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.push('/report-detail', extra: report);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F618D)),
+                    child: Text('DETAIL LENGKAP', style: GoogleFonts.outfit(color: Colors.white)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
