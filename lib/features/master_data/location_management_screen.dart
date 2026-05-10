@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
-import '../../shared/widgets/admin_nav_bar.dart';
+import '../../shared/widgets/admin_sidebar.dart';
+import '../../shared/widgets/notification_badge.dart';
 
 class LocationManagementScreen extends ConsumerWidget {
   const LocationManagementScreen({super.key});
@@ -32,6 +33,8 @@ class LocationManagementScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          const NotificationBadge(),
+          const SizedBox(width: 8),
           PopupMenuButton<String>(
             onSelected: (val) async {
               if (val == 'logout') {
@@ -61,33 +64,31 @@ class LocationManagementScreen extends ConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: AdminNavBar(activePage: 'locations'),
-          ),
+          const AdminSidebar(activePage: 'locations'),
           Expanded(
-            child: villagesAsync.when(
-              data: (villages) => ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: villages.length,
-                itemBuilder: (context, index) {
-                  final village = villages[index];
-                  return _VillageExpandable(village: village);
-                },
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Gagal memuat data: $e')),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Expanded(
+                  child: villagesAsync.when(
+                    data: (villages) => ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: villages.length,
+                      itemBuilder: (context, index) {
+                        final village = villages[index];
+                        return _VillageExpandable(village: village);
+                      },
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, s) => Center(child: Text('Gagal memuat data: $e')),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Implement Add Village
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
