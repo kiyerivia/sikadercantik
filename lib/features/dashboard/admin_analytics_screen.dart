@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/widgets/notification_badge.dart';
 
 class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
@@ -45,6 +46,8 @@ class AdminAnalyticsScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          const NotificationBadge(),
+          const SizedBox(width: 8),
           PopupMenuButton<String>(
             onSelected: (val) async {
               if (val == 'logout') {
@@ -231,12 +234,43 @@ class _Sidebar extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 40),
-          _SidebarItem(label: 'Beranda', icon: Icons.home_outlined, isActive: false),
-          _SidebarItem(label: 'Data Monitoring Laporan PSN', icon: Icons.assignment_outlined, isActive: false),
-          _SidebarItem(label: 'Dashboard ABJ', icon: Icons.bar_chart_outlined, isActive: true),
-          _SidebarItem(label: 'Manajemen Wilayah', icon: Icons.map_outlined, isActive: false),
+          _SidebarItem(
+            label: 'Beranda',
+            icon: Icons.home_outlined,
+            isActive: false,
+            onTap: () => context.go('/'),
+          ),
+          _SidebarItem(
+            label: 'Data Monitoring Laporan PSN',
+            icon: Icons.assignment_outlined,
+            isActive: false,
+            onTap: () => context.go('/history'),
+          ),
+          _SidebarItem(
+            label: 'Dashboard ABJ',
+            icon: Icons.bar_chart_outlined,
+            isActive: true,
+            onTap: () {},
+          ),
+          _SidebarItem(
+            label: 'Manajemen Wilayah',
+            icon: Icons.map_outlined,
+            isActive: false,
+            onTap: () => context.go('/locations'),
+          ),
           const Spacer(),
-          _SidebarItem(label: 'Keluar', icon: Icons.logout, isActive: false, isDestructive: true),
+          Consumer(
+            builder: (context, ref, child) => _SidebarItem(
+              label: 'Keluar',
+              icon: Icons.logout,
+              isActive: false,
+              isDestructive: true,
+              onTap: () async {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/login');
+              },
+            ),
+          ),
           const SizedBox(height: 20),
         ],
       ),
@@ -249,11 +283,13 @@ class _SidebarItem extends StatelessWidget {
   final IconData icon;
   final bool isActive;
   final bool isDestructive;
+  final VoidCallback onTap;
 
   const _SidebarItem({
     required this.label,
     required this.icon,
     required this.isActive,
+    required this.onTap,
     this.isDestructive = false,
   });
 
@@ -261,23 +297,27 @@ class _SidebarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFF1F5F9) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: ListTile(
-          leading: Icon(icon, color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)), size: 20),
-          title: Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFFF1F5F9) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
-          dense: true,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: ListTile(
+            leading: Icon(icon, color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)), size: 20),
+            title: Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
+              ),
+            ),
+            dense: true,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
         ),
       ),
     );
