@@ -23,6 +23,21 @@ final interventionsByReportProvider = FutureProvider.family<List<Map<String, dyn
   return await repo.getInterventionsByReport(reportId);
 });
 
+final allAdminNotesProvider = FutureProvider<Map<String, String>>((ref) async {
+  final client = ref.watch(supabaseClientProvider);
+  final response = await client
+      .from('interventions')
+      .select('report_id, description')
+      .eq('type', 'Tindakan')
+      .order('created_at', ascending: true);
+  
+  Map<String, String> map = {};
+  for (var row in (response as List)) {
+    map[row['report_id'] as String] = row['description'] as String;
+  }
+  return map;
+});
+
 final interventionCountProvider = Provider<int>((ref) {
   final reportsAsync = ref.watch(myReportsProvider);
   return reportsAsync.maybeWhen(

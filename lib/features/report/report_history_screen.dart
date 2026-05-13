@@ -9,6 +9,7 @@ import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReportHistoryScreen extends HookConsumerWidget {
   const ReportHistoryScreen({super.key});
@@ -16,10 +17,16 @@ class ReportHistoryScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
+    final isAdmin = profileAsync.maybeWhen(data: (p) => p?.role == 'admin', orElse: () => false);
     final villagesAsync = ref.watch(villagesProvider);
     
+    final selectedMonth = useState<String>('Semua');
+    final selectedYear = useState<String>('Semua');
+    final searchQuery = useState<String>('');
     final selectedVillageId = useState<String?>('all');
     final selectedPosyanduId = useState<String?>('all');
+    final scrollController = useScrollController();
+    final tempNotes = useRef<Map<String, String>>({});
 
     final reportsAsync = profileAsync.maybeWhen(
       data: (profile) => profile?.role == 'admin' 
@@ -32,6 +39,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
         ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
         : const AsyncValue.data(<Posyandu>[]);
 
+    final adminNotesAsync = ref.watch(allAdminNotesProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFD4E6F1),
       appBar: AppBar(
@@ -41,9 +50,19 @@ class ReportHistoryScreen extends HookConsumerWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             RichText(
               text: TextSpan(
                 style: GoogleFonts.outfit(
@@ -70,6 +89,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1,
               ),
+            ),
+              ],
             ),
           ],
         ),
@@ -126,189 +147,417 @@ class ReportHistoryScreen extends HookConsumerWidget {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                children: [
-                  // Filter Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text('DATA MONITORING LAPORAN PSN', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                    const SizedBox(height: 4),
+                    Text('Berikut adalah data laporan PSN yang dikirim oleh kader.', style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey)),
+                    const SizedBox(height: 24),
+
+                    // Filters
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.filter_list, color: Color(0xFF1F618D), size: 18),
-                            const SizedBox(width: 8),
-                            Text('FILTER DATA', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D), letterSpacing: 1)),
-                          ],
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.domain, color: Colors.blueGrey, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Pilih Puskesmas', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                      Text('Puskesmas Gumelar', style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildFilterDropdown(
-                                label: 'Desa/Kelurahan',
-                                value: selectedVillageId.value,
-                                items: villagesAsync.maybeWhen(
-                                  data: (list) => [
-                                    const DropdownMenuItem(value: 'all', child: Text('Semua Desa')),
-                                    ...list.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))),
-                                  ],
-                                  orElse: () => [const DropdownMenuItem(value: null, child: Text('Loading...'))],
-                                ),
-                                onChanged: (val) {
-                                  selectedVillageId.value = val;
-                                  selectedPosyanduId.value = 'all';
-                                },
-                              ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildFilterDropdown(
-                                label: 'Posyandu',
-                                value: selectedPosyanduId.value,
-                                items: posyandusAsync.maybeWhen(
-                                  data: (list) => [
-                                    const DropdownMenuItem(value: 'all', child: Text('Semua Posyandu')),
-                                    ...list.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
-                                  ],
-                                  orElse: () => [const DropdownMenuItem(value: null, child: Text('Pilih Desa Dulu'))],
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today, color: Colors.blueGrey, size: 18),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Pilih Bulan', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<String>(
+                                            value: selectedMonth.value,
+                                            isDense: true,
+                                            isExpanded: true,
+                                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
+                                            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
+                                            onChanged: (val) { if(val!=null) selectedMonth.value = val; },
+                                            items: ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+                                              .map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                onChanged: (val) => selectedPosyanduId.value = val,
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_month, color: Colors.blueGrey, size: 18),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Pilih Tahun', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<String>(
+                                            value: selectedYear.value,
+                                            isDense: true,
+                                            isExpanded: true,
+                                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
+                                            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
+                                            onChanged: (val) { if(val!=null) selectedYear.value = val; },
+                                            items: ['Semua','2024','2025','2026','2027'].map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 16),
 
-                  const SizedBox(height: 20),
-
-                  // Reports Table
-                  reportsAsync.when(
-                    data: (reports) {
-                      final filtered = reports.where((r) {
-                        final matchVillage = selectedVillageId.value == null || 
-                                           selectedVillageId.value == 'all' || 
-                                           r.villageId == selectedVillageId.value;
-                        final matchPosyandu = selectedPosyanduId.value == null || 
-                                            selectedPosyanduId.value == 'all' || 
-                                            r.posyanduId == selectedPosyanduId.value;
-                        return matchVillage && matchPosyandu;
-                      }).toList();
-
-                      if (filtered.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 60),
-                          child: Column(
-                            children: [
-                              Icon(Icons.assignment_late_outlined, size: 64, color: Colors.blueGrey[200]),
-                              const SizedBox(height: 16),
-                              Text('Belum ada data laporan', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 16)),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9F9)),
-                              columnSpacing: 24,
-                              showCheckboxColumn: false,
-                              columns: [
-                                DataColumn(label: _buildTableHeader('TANGGAL')),
-                                DataColumn(label: _buildTableHeader('DESA')),
-                                DataColumn(label: _buildTableHeader('POSYANDU')),
-                                DataColumn(label: _buildTableHeader('INSPEKSI')),
-                                DataColumn(label: _buildTableHeader('POSITIF')),
-                                DataColumn(label: _buildTableHeader('ABJ')),
-                                DataColumn(label: _buildTableHeader('STATUS')),
-                                DataColumn(label: _buildTableHeader('AKSI')),
-                              ],
-                              rows: filtered.map((report) {
-                                final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
-                                return DataRow(
-                                  onSelectChanged: (selected) {
-                                    if (selected != null && selected) {
-                                      _showReportSummaryDialog(context, report);
-                                    }
-                                  },
-                                  cells: [
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          if (report.status == 'need_intervention')
-                                            InkWell(
-                                              onTap: () => _showInterventionDialog(context, report),
-                                              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
-                                            ),
-                                          if (report.status == 'need_intervention')
-                                            const SizedBox(width: 6),
-                                          Text(DateFormat('dd/MM/yy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 13)),
-                                        ],
-                                      ),
-                                    ),
-                                    DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
-                                    DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 13))),
-                                    DataCell(Center(child: Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 13)))),
-                                    DataCell(Center(child: Text('${report.housesPositive}', style: GoogleFonts.outfit(fontSize: 13, color: report.housesPositive > 0 ? Colors.red : null, fontWeight: report.housesPositive > 0 ? FontWeight.bold : null)))),
-                                    DataCell(
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: (abjValue >= 95 ? Colors.green : Colors.orange).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '${abjValue.toStringAsFixed(1)}%',
-                                          style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: abjValue >= 95 ? Colors.green[700] : Colors.orange[700]),
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(_buildStatusBadge(report.status)),
-                                    DataCell(
-                                      PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, color: Color(0xFF1F618D)),
-                                        onSelected: (val) {
-                                          if (val == 'edit') {
-                                            context.push('/report-form', extra: report);
-                                          } else if (val == 'detail') {
-                                            _showReportSummaryDialog(context, report);
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(value: 'detail', child: Text('Detail')),
-                                          const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
+                    // Search
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            onChanged: (val) => searchQuery.value = val,
+                            decoration: InputDecoration(
+                              hintText: 'Ketik untuk mencari...',
+                              hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 13),
+                              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
                             ),
                           ),
                         ),
-                      );
-                    },
-                    loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
-                    error: (e, s) => Center(child: Text('Error: $e')),
-                  ),
-                ],
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.search, size: 18, color: Colors.white),
+                          label: Text('Cari', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1976D2),
+                            minimumSize: const Size(120, 54), // Override infinity width global theme
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Table
+                    reportsAsync.when(
+                      data: (reports) {
+                        var filtered = reports;
+                        
+                        // Month filter
+                        if (selectedMonth.value != 'Semua') {
+                          final monthIndex = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].indexOf(selectedMonth.value) + 1;
+                          filtered = filtered.where((r) => r.reportDate.month == monthIndex).toList();
+                        }
+                        
+                        // Year filter
+                        if (selectedYear.value != 'Semua') {
+                          filtered = filtered.where((r) => r.reportDate.year.toString() == selectedYear.value).toList();
+                        }
+                        
+                        // Search filter
+                        if (searchQuery.value.isNotEmpty) {
+                          filtered = filtered.where((r) => 
+                            (r.villageName ?? '').toLowerCase().contains(searchQuery.value.toLowerCase()) ||
+                            (r.posyanduName ?? '').toLowerCase().contains(searchQuery.value.toLowerCase())
+                          ).toList();
+                        }
+                        
+                        return Column(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[200]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Scrollbar(
+                                  controller: scrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 8,
+                                  child: SingleChildScrollView(
+                                    controller: scrollController,
+                                    scrollDirection: Axis.horizontal,
+                                  child: DataTable(
+                                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF4F6F9)),
+                                    columnSpacing: 20,
+                                    dataRowMinHeight: 50,
+                                    dataRowMaxHeight: 60,
+                                    headingTextStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+                                    columns: [
+                                      const DataColumn(label: Text('No')),
+                                      const DataColumn(label: Text('Tanggal PSN')),
+                                      const DataColumn(label: Text('Nama Desa')),
+                                      const DataColumn(label: Text('Posyandu')),
+                                      const DataColumn(label: Text('Rumah Diperiksa'), numeric: true),
+                                      const DataColumn(label: Text('Positif Jentik'), numeric: true),
+                                      const DataColumn(label: Text('ABJ')),
+                                      const DataColumn(label: Text('Aksi')),
+                                      if (isAdmin) const DataColumn(label: Text('Intervensi')),
+                                      if (isAdmin) const DataColumn(label: Text('Keterangan')),
+                                    ],
+                                    rows: filtered.asMap().entries.map<DataRow>((entry) {
+                                      final index = entry.key;
+                                      final report = entry.value;
+                                      final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
+                                      final isSudah = report.status == 'verified';
+                                      
+                                      final adminNote = adminNotesAsync.maybeWhen(
+                                        data: (map) => map[report.id],
+                                        orElse: () => null,
+                                      );
+                                      
+                                      return DataRow(
+                                        color: WidgetStateProperty.all(index % 2 == 0 ? Colors.white : const Color(0xFFF8F9F9)),
+                                        cells: [
+                                          DataCell(Text('${index + 1}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text(DateFormat('dd MMMM yyyy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text('${report.housesInspected}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text('${report.housesPositive}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
+                                          DataCell(Text('${abjValue.toStringAsFixed(1)}%', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: abjValue >= 95 ? Colors.green[600] : Colors.orange[600]))),
+                                          DataCell(
+                                            OutlinedButton.icon(
+                                              onPressed: () => context.push('/report', extra: report),
+                                              icon: const Icon(Icons.edit, size: 14, color: Color(0xFF1976D2)),
+                                              label: Text('Edit Laporan', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF1976D2))),
+                                              style: OutlinedButton.styleFrom(
+                                                side: const BorderSide(color: Color(0xFF1976D2)),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                              ),
+                                            ),
+                                          ),
+                                          if (isAdmin)
+                                            DataCell(
+                                              Container(
+                                                height: 28,
+                                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: isSudah ? Colors.green : Colors.red),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: DropdownButtonHideUnderline(
+                                                  child: DropdownButton<String>(
+                                                    value: isSudah ? 'Sudah' : 'Belum',
+                                                    isDense: true,
+                                                    icon: const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
+                                                    items: ['Belum', 'Sudah'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.outfit(fontSize: 11, color: e == 'Sudah' ? Colors.green : Colors.red)))).toList(),
+                                                    onChanged: (val) async {
+                                                      if (val == 'Sudah' && !isSudah) {
+                                                        await Supabase.instance.client.from('reports').update({'status': 'verified'}).eq('id', report.id);
+                                                        ref.invalidate(allReportsProvider);
+                                                      } else if (val == 'Belum' && isSudah) {
+                                                        await Supabase.instance.client.from('reports').update({'status': 'submitted'}).eq('id', report.id);
+                                                        ref.invalidate(allReportsProvider);
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          if (isAdmin)
+                                            DataCell(
+                                              SizedBox(
+                                                width: 150,
+                                                child: Focus(
+                                                  onFocusChange: (hasFocus) async {
+                                                    if (!hasFocus && tempNotes.value.containsKey(report.id)) {
+                                                      final val = tempNotes.value[report.id]!;
+                                                      if (val == (adminNote ?? '')) return; // No change
+                                                      
+                                                      try {
+                                                        await Supabase.instance.client.from('interventions').delete().eq('report_id', report.id).eq('type', 'Tindakan');
+                                                        if (val.trim().isNotEmpty) {
+                                                          await Supabase.instance.client.from('interventions').insert({
+                                                            'report_id': report.id,
+                                                            'type': 'Tindakan',
+                                                            'description': val.trim(),
+                                                            'admin_id': Supabase.instance.client.auth.currentUser!.id,
+                                                          });
+                                                        }
+                                                        ref.invalidate(allAdminNotesProvider);
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catatan otomatis disimpan!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
+                                                        }
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan otomatis: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  child: TextFormField(
+                                                    initialValue: (adminNote == null || adminNote.trim().isEmpty) ? '-' : adminNote,
+                                                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey),
+                                                    textInputAction: TextInputAction.done,
+                                                    onChanged: (val) => tempNotes.value[report.id] = val,
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Ketik lalu klik luar...',
+                                                      hintStyle: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                                                      isDense: true,
+                                                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                                                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                                                      focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF1976D2)), borderRadius: BorderRadius.circular(4)),
+                                                    ),
+                                                    onFieldSubmitted: (val) async {
+                                                      try {
+                                                        await Supabase.instance.client.from('interventions').delete().eq('report_id', report.id).eq('type', 'Keterangan');
+                                                        if (val.trim().isNotEmpty) {
+                                                          await Supabase.instance.client.from('interventions').insert({
+                                                            'report_id': report.id,
+                                                            'type': 'Keterangan',
+                                                            'description': val.trim(),
+                                                            'admin_id': Supabase.instance.client.auth.currentUser!.id,
+                                                          });
+                                                        }
+                                                        ref.invalidate(allAdminNotesProvider);
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catatan berhasil disimpan!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
+                                                        }
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
+                                                        }
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Menampilkan ${filtered.length} data dari ${reports.length} laporan', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(color: const Color(0xFF1976D2), borderRadius: BorderRadius.circular(4)),
+                                  child: Text('1', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
+                      error: (e, s) => Center(child: Text('Error: $e')),
+                    ),
+                  ],
+                ),
               ),
+            ),
+          ),
+          
+          // Bottom Info
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F8FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue[100]!),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(color: Color(0xFF1976D2), shape: BoxShape.circle),
+                  child: const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Informasi', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                      const SizedBox(height: 4),
+                      Text('Data diperbarui secara otomatis berdasarkan laporan PSN kader. Pastikan intervensi dilakukan untuk meningkatkan capaian ABJ.', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],

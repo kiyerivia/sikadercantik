@@ -49,7 +49,8 @@ class ReportRepository {
         .from('reports')
         .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
         .eq('kader_id', userId!)
-        .order('report_date', ascending: false);
+        .order('report_date', ascending: false)
+        .order('id', ascending: true);
 
     return (response as List).map((data) {
       final breedingPlaces = (data['report_breeding_places'] as List)
@@ -63,9 +64,11 @@ class ReportRepository {
     final response = await _client
         .from('reports')
         .select('*, profiles(full_name), posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
-        .order('report_date', ascending: false);
+        .order('report_date', ascending: false)
+        .order('id', ascending: true);
 
     return (response as List).map((data) {
+      print("KEYS: ${data.keys.toList()}");
       final breedingPlaces = (data['report_breeding_places'] as List)
           .map((bp) => bp['breeding_place_id'] as String)
           .toList();

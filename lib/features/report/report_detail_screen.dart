@@ -95,7 +95,9 @@ class ReportDetailScreen extends ConsumerWidget {
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
                     ),
                     child: Text(
-                      report.notes ?? 'Tidak ada catatan tambahan.',
+                      (report.notes == null || report.notes!.trim().isEmpty || report.notes == '-') 
+                          ? 'Tidak ada catatan tambahan.' 
+                          : report.notes!,
                       style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[800], height: 1.5),
                     ),
                   ),

@@ -68,7 +68,7 @@ class NotificationBadge extends ConsumerWidget {
   void _showNotificationDialog(BuildContext context, WidgetRef ref, bool isAdmin) {
     final reports = isAdmin
         ? ref.read(allReportsProvider).maybeWhen(
-              data: (list) => list.where((r) => r.status == 'submitted').toList(),
+              data: (list) => list.take(15).toList(),
               orElse: () => [],
             )
         : ref.read(myReportsProvider).maybeWhen(
@@ -119,7 +119,7 @@ class NotificationBadge extends ConsumerWidget {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            isAdmin ? 'Verifikasi Laporan' : 'Pemberitahuan',
+                            isAdmin ? 'Laporan Baru' : 'Pemberitahuan',
                             style: GoogleFonts.outfit(
                               fontWeight: FontWeight.bold, 
                               fontSize: 16, 
@@ -158,34 +158,79 @@ class NotificationBadge extends ConsumerWidget {
                               itemCount: reports.length,
                               separatorBuilder: (context, index) => const Divider(height: 1),
                               itemBuilder: (context, index) {
-                                final report = reports[index];
-                                return ListTile(
-                                  dense: true,
-                                  leading: CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: isAdmin ? Colors.blue[100] : Colors.orange[100],
-                                    child: Icon(
-                                      isAdmin ? Icons.rate_review : Icons.edit, 
-                                      size: 14, 
-                                      color: isAdmin ? Colors.blue : Colors.orange
+                                  final report = reports[index];
+                                  final isUnread = isAdmin ? report.status == 'submitted' : true;
+                                  final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
+                                  
+                                  String subtitleText;
+                                  if (isAdmin) {
+                                    subtitleText = report.housesPositive > 0 
+                                        ? 'Terdapat ${report.housesPositive} rumah positif jentik (ABJ: ${abjValue.toStringAsFixed(1)}%)'
+                                        : 'Laporan aman (ABJ: ${abjValue.toStringAsFixed(1)}%)';
+                                  } else {
+                                    subtitleText = 'Silakan cek dan lakukan intervensi/perbaikan';
+                                  }
+                                
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: isUnread ? Colors.blue.withOpacity(0.05) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ListTile(
+                                    dense: true,
+                                    leading: CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: isUnread 
+                                          ? (isAdmin ? Colors.blue[100] : Colors.orange[100])
+                                          : Colors.grey[200],
+                                      child: Icon(
+                                        isAdmin ? Icons.rate_review : Icons.edit, 
+                                        size: 14, 
+                                        color: isUnread 
+                                            ? (isAdmin ? Colors.blue : Colors.orange)
+                                            : Colors.grey[500]
+                                      ),
                                     ),
+                                    title: Text(
+                                      '${report.posyanduName ?? 'Laporan'} (${report.villageName ?? '-'})',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13, 
+                                        fontWeight: isUnread ? FontWeight.bold : FontWeight.w500,
+                                        color: isUnread ? Colors.black87 : Colors.grey[700],
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      subtitleText,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 11, 
+                                        color: isUnread ? Colors.blue : Colors.grey[500],
+                                        fontStyle: isUnread ? FontStyle.normal : FontStyle.italic,
+                                      ),
+                                    ),
+                                    trailing: isUnread 
+                                        ? Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.blue,
+                                            ),
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      if (isAdmin && report.status == 'submitted') {
+                                        ref.read(reportRepositoryProvider).updateReportStatus(report.id, 'verified').then((_) {
+                                          ref.invalidate(allReportsProvider);
+                                        });
+                                      }
+                                      Navigator.pop(context);
+                                      if (isAdmin) {
+                                        context.push('/report-detail', extra: report);
+                                      } else {
+                                        context.push('/report', extra: report);
+                                      }
+                                    },
                                   ),
-                                  title: Text(
-                                    '${report.posyanduName ?? 'Laporan'} (${report.villageName ?? '-'})',
-                                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Text(
-                                    isAdmin ? 'Klik untuk verifikasi data' : 'Klik untuk memperbaiki data',
-                                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.blue),
-                                  ),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    if (isAdmin) {
-                                      context.push('/report-detail', extra: report);
-                                    } else {
-                                      context.push('/report', extra: report);
-                                    }
-                                  },
                                 );
                               },
                             ),

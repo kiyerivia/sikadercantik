@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
-import '../../shared/widgets/admin_sidebar.dart';
+
 import '../../shared/widgets/notification_badge.dart';
 
 class LocationManagementScreen extends ConsumerWidget {
@@ -64,12 +64,8 @@ class LocationManagementScreen extends ConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
-      body: Row(
+      body: Column(
         children: [
-          const AdminSidebar(activePage: 'locations'),
-          Expanded(
-            child: Column(
-              children: [
                 const SizedBox(height: 16),
                 Expanded(
                   child: villagesAsync.when(
@@ -85,9 +81,6 @@ class LocationManagementScreen extends ConsumerWidget {
                     error: (e, s) => Center(child: Text('Gagal memuat data: $e')),
                   ),
                 ),
-              ],
-            ),
-          ),
         ],
       ),
     );

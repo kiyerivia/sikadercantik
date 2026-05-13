@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
-import '../../shared/widgets/admin_sidebar.dart';
+
 
 class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
@@ -32,7 +32,10 @@ class AdminAnalyticsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1F618D),
         elevation: 0,
-        leading: null, // Removed hamburger as requested
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
         title: Row(
           children: [
             Container(
@@ -78,13 +81,8 @@ class AdminAnalyticsScreen extends ConsumerWidget {
           const SizedBox(width: 16),
         ],
       ),
-      drawer: const AdminSidebar(activePage: 'analytics'),
       body: Row(
         children: [
-          // Sidebar (As seen in image)
-          if (MediaQuery.of(context).size.width > 900)
-            const AdminSidebar(activePage: 'analytics'),
-          
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
