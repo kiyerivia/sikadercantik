@@ -2,15 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/report_providers.dart';
 import '../providers/auth_providers.dart';
+import 'package:intl/intl.dart';
 
-class NotificationBadge extends ConsumerWidget {
+class NotificationBadge extends ConsumerStatefulWidget {
   final Color color;
   const NotificationBadge({super.key, this.color = Colors.white});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationBadge> createState() => _NotificationBadgeState();
+}
+
+class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
+  RealtimeChannel? _reportsChannel;
+  RealtimeChannel? _interventionsChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _initRealtime();
+  }
+
+  void _initRealtime() {
+    _reportsChannel = Supabase.instance.client
+        .channel('realtime:reports')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'reports',
+          callback: (payload) {
+            ref.invalidate(allReportsProvider);
+            ref.invalidate(myReportsProvider);
+            ref.invalidate(pendingVerificationCountProvider);
+            ref.invalidate(interventionCountProvider);
+          },
+        )
+        .subscribe();
+
+    _interventionsChannel = Supabase.instance.client
+        .channel('realtime:interventions')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'interventions',
+          callback: (payload) {
+            ref.invalidate(allReportsProvider);
+            ref.invalidate(myReportsProvider);
+            ref.invalidate(pendingVerificationCountProvider);
+            ref.invalidate(interventionCountProvider);
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    if (_reportsChannel != null) Supabase.instance.client.removeChannel(_reportsChannel!);
+    if (_interventionsChannel != null) Supabase.instance.client.removeChannel(_interventionsChannel!);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).value;
     final isAdmin = profile?.role == 'admin';
 
@@ -30,7 +85,7 @@ class NotificationBadge extends ConsumerWidget {
           children: [
             Icon(
               count > 0 ? Icons.notifications : Icons.notifications_outlined,
-              color: color,
+              color: widget.color,
               size: 24,
             ),
             if (count > 0)
@@ -159,36 +214,53 @@ class NotificationBadge extends ConsumerWidget {
                               separatorBuilder: (context, index) => const Divider(height: 1),
                               itemBuilder: (context, index) {
                                   final report = reports[index];
+                                  final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
+                                  final hasRevision = interventionsAsync.maybeWhen(
+                                    data: (list) => list.any((item) => item['type'] == 'psn_ulang'),
+                                    orElse: () => false,
+                                  );
+
                                   final isUnread = isAdmin ? report.status == 'submitted' : true;
                                   final abjValue = ((report.housesInspected - report.housesPositive) / (report.housesInspected > 0 ? report.housesInspected : 1) * 100);
+                                  final timeFormatted = DateFormat('EEE, dd MMM • HH:mm', 'id_ID').format(report.createdAt);
                                   
                                   String subtitleText;
                                   if (isAdmin) {
-                                    subtitleText = report.housesPositive > 0 
-                                        ? 'Terdapat ${report.housesPositive} rumah positif jentik (ABJ: ${abjValue.toStringAsFixed(1)}%)'
-                                        : 'Laporan aman (ABJ: ${abjValue.toStringAsFixed(1)}%)';
+                                    if (hasRevision && report.status == 'submitted') {
+                                      subtitleText = 'Laporan sudah diperbaiki kader. Silakan verifikasi ulang.';
+                                    } else {
+                                      subtitleText = report.housesPositive > 0 
+                                          ? 'Terdapat ${report.housesPositive} rumah positif jentik (ABJ: ${abjValue.toStringAsFixed(1)}%)'
+                                          : 'Laporan aman (ABJ: ${abjValue.toStringAsFixed(1)}%)';
+                                    }
                                   } else {
-                                    subtitleText = 'Silakan cek dan lakukan intervensi/perbaikan';
+                                    subtitleText = 'Silakan cek dan lakukan instruksi perbaikan dari admin';
                                   }
+
+                                  final isRepaired = isAdmin && hasRevision && report.status == 'submitted';
                                 
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: isUnread ? Colors.blue.withOpacity(0.05) : Colors.transparent,
+                                    color: isRepaired 
+                                        ? Colors.green.withOpacity(0.08)
+                                        : (isUnread ? Colors.blue.withOpacity(0.05) : Colors.transparent),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: ListTile(
                                     dense: true,
                                     leading: CircleAvatar(
                                       radius: 14,
-                                      backgroundColor: isUnread 
-                                          ? (isAdmin ? Colors.blue[100] : Colors.orange[100])
-                                          : Colors.grey[200],
+                                      backgroundColor: isRepaired 
+                                          ? Colors.green[100]
+                                          : (isUnread ? (isAdmin ? Colors.blue[100] : Colors.orange[100]) : Colors.grey[200]),
                                       child: Icon(
-                                        isAdmin ? Icons.rate_review : Icons.edit, 
+                                        isRepaired 
+                                            ? Icons.done_all 
+                                            : (isAdmin ? Icons.rate_review : Icons.edit), 
                                         size: 14, 
-                                        color: isUnread 
-                                            ? (isAdmin ? Colors.blue : Colors.orange)
-                                            : Colors.grey[500]
+                                        color: isRepaired 
+                                            ? Colors.green[800]
+                                            : (isUnread ? (isAdmin ? Colors.blue : Colors.orange) : Colors.grey[500])
                                       ),
                                     ),
                                     title: Text(
@@ -199,21 +271,38 @@ class NotificationBadge extends ConsumerWidget {
                                         color: isUnread ? Colors.black87 : Colors.grey[700],
                                       ),
                                     ),
-                                    subtitle: Text(
-                                      subtitleText,
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 11, 
-                                        color: isUnread ? Colors.blue : Colors.grey[500],
-                                        fontStyle: isUnread ? FontStyle.normal : FontStyle.italic,
-                                      ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          subtitleText,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 11, 
+                                            color: isRepaired ? Colors.green[800] : (isUnread ? Colors.blue : Colors.grey[500]),
+                                            fontWeight: isRepaired ? FontWeight.w600 : (isUnread ? FontWeight.normal : FontWeight.normal),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.access_time, size: 10, color: Colors.grey[500]),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              timeFormatted,
+                                              style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500]),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                     trailing: isUnread 
                                         ? Container(
                                             width: 8,
                                             height: 8,
-                                            decoration: const BoxDecoration(
+                                            decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: Colors.blue,
+                                              color: isRepaired ? Colors.green : Colors.blue,
                                             ),
                                           )
                                         : null,

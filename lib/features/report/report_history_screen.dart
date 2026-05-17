@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/report_providers.dart';
-import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
@@ -18,15 +17,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
     final isAdmin = profileAsync.maybeWhen(data: (p) => p?.role == 'admin', orElse: () => false);
-    final villagesAsync = ref.watch(villagesProvider);
     
     final selectedMonth = useState<String>('Semua');
     final selectedYear = useState<String>('Semua');
     final searchQuery = useState<String>('');
-    final selectedVillageId = useState<String?>('all');
-    final selectedPosyanduId = useState<String?>('all');
     final scrollController = useScrollController();
     final tempNotes = useRef<Map<String, String>>({});
+    final savingLocks = useRef<Map<String, bool>>({});
 
     final reportsAsync = profileAsync.maybeWhen(
       data: (profile) => profile?.role == 'admin' 
@@ -34,10 +31,6 @@ class ReportHistoryScreen extends HookConsumerWidget {
           : ref.watch(myReportsProvider),
       orElse: () => const AsyncValue.loading(),
     );
-    
-    final posyandusAsync = selectedVillageId.value != null && selectedVillageId.value != 'all'
-        ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
-        : const AsyncValue.data(<Posyandu>[]);
 
     final adminNotesAsync = ref.watch(allAdminNotesProvider);
 
@@ -164,113 +157,135 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     const SizedBox(height: 24),
 
                     // Filters
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.domain, color: Colors.blueGrey, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Pilih Puskesmas', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
-                                      Text('Puskesmas Gumelar', style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMobile = constraints.maxWidth < 600;
+                        
+                        final puskesmasWidget = Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today, color: Colors.blueGrey, size: 18),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Pilih Bulan', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: selectedMonth.value,
-                                            isDense: true,
-                                            isExpanded: true,
-                                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
-                                            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
-                                            onChanged: (val) { if(val!=null) selectedMonth.value = val; },
-                                            items: ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
-                                              .map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.domain, color: Colors.blueGrey, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Pilih Puskesmas', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                    Text('Puskesmas Gumelar', style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        final bulanWidget = Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today, color: Colors.blueGrey, size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Pilih Bulan', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          value: selectedMonth.value,
+                                          isDense: true,
+                                          isExpanded: true,
+                                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
+                                          style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
+                                          onChanged: (val) { if(val!=null) selectedMonth.value = val; },
+                                          items: ['Semua','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+                                            .map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_month, color: Colors.blueGrey, size: 18),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Pilih Tahun', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: selectedYear.value,
-                                            isDense: true,
-                                            isExpanded: true,
-                                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
-                                            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
-                                            onChanged: (val) { if(val!=null) selectedYear.value = val; },
-                                            items: ['Semua','2024','2025','2026','2027'].map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                          ),
+                        );
+
+                        final tahunWidget = Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month, color: Colors.blueGrey, size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Pilih Tahun', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500])),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          value: selectedYear.value,
+                                          isDense: true,
+                                          isExpanded: true,
+                                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 18),
+                                          style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF2C3E50), fontWeight: FontWeight.w500),
+                                          onChanged: (val) { if(val!=null) selectedYear.value = val; },
+                                          items: ['Semua','2024','2025','2026','2027'].map<DropdownMenuItem<String>>((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        );
+
+                        if (isMobile) {
+                          return Column(
+                            children: [
+                              puskesmasWidget,
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(child: bulanWidget),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: tahunWidget),
+                                ],
+                              ),
+                            ],
+                          );
+                        } else {
+                          return Row(
+                            children: [
+                              Expanded(child: puskesmasWidget),
+                              const SizedBox(width: 16),
+                              Expanded(child: bulanWidget),
+                              const SizedBox(width: 16),
+                              Expanded(child: tahunWidget),
+                            ],
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -349,6 +364,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     controller: scrollController,
                                     scrollDirection: Axis.horizontal,
                                   child: DataTable(
+                                    showCheckboxColumn: false,
                                     headingRowColor: WidgetStateProperty.all(const Color(0xFFF4F6F9)),
                                     columnSpacing: 20,
                                     dataRowMinHeight: 50,
@@ -365,6 +381,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       const DataColumn(label: Text('Aksi')),
                                       if (isAdmin) const DataColumn(label: Text('Intervensi')),
                                       if (isAdmin) const DataColumn(label: Text('Keterangan')),
+                                      if (isAdmin) const DataColumn(label: Text('Hapus')),
                                     ],
                                     rows: filtered.asMap().entries.map<DataRow>((entry) {
                                       final index = entry.key;
@@ -379,6 +396,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       
                                       return DataRow(
                                         color: WidgetStateProperty.all(index % 2 == 0 ? Colors.white : const Color(0xFFF8F9F9)),
+                                        onSelectChanged: (_) => _showReportSummaryDialog(context, ref, report, isAdmin),
                                         cells: [
                                           DataCell(Text('${index + 1}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
                                           DataCell(Text(DateFormat('dd MMMM yyyy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))),
@@ -429,72 +447,117 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                             ),
                                           if (isAdmin)
                                             DataCell(
-                                              SizedBox(
-                                                width: 150,
-                                                child: Focus(
-                                                  onFocusChange: (hasFocus) async {
-                                                    if (!hasFocus && tempNotes.value.containsKey(report.id)) {
-                                                      final val = tempNotes.value[report.id]!;
-                                                      if (val == (adminNote ?? '')) return; // No change
-                                                      
-                                                      try {
-                                                        await Supabase.instance.client.from('interventions').delete().eq('report_id', report.id).eq('type', 'Tindakan');
-                                                        if (val.trim().isNotEmpty) {
-                                                          await Supabase.instance.client.from('interventions').insert({
-                                                            'report_id': report.id,
-                                                            'type': 'Tindakan',
-                                                            'description': val.trim(),
-                                                            'admin_id': Supabase.instance.client.auth.currentUser!.id,
-                                                          });
-                                                        }
-                                                        ref.invalidate(allAdminNotesProvider);
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catatan otomatis disimpan!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
-                                                        }
-                                                      } catch (e) {
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan otomatis: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
-                                                        }
+                                              Builder(
+                                                builder: (context) {
+                                                  Future<void> saveNote(String val) async {
+                                                    if (savingLocks.value[report.id] == true) return;
+                                                    if (val == (adminNote ?? '')) return;
+                                                    if (val == '-' && (adminNote == null || adminNote.trim().isEmpty)) return;
+                                                    
+                                                    savingLocks.value[report.id] = true;
+                                                    try {
+                                                      await Supabase.instance.client.from('interventions').delete().eq('report_id', report.id).eq('type', 'kunjungan_rumah');
+                                                      if (val.trim().isNotEmpty && val.trim() != '-') {
+                                                        await Supabase.instance.client.from('interventions').insert({
+                                                          'report_id': report.id,
+                                                          'type': 'kunjungan_rumah',
+                                                          'description': val.trim(),
+                                                          'admin_id': Supabase.instance.client.auth.currentUser!.id,
+                                                        });
                                                       }
+                                                      ref.invalidate(allAdminNotesProvider);
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catatan berhasil disimpan!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
+                                                      }
+                                                    } catch (e) {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
+                                                      }
+                                                    } finally {
+                                                      Future.delayed(const Duration(milliseconds: 500), () {
+                                                        savingLocks.value[report.id] = false;
+                                                      });
                                                     }
-                                                  },
-                                                  child: TextFormField(
-                                                    initialValue: (adminNote == null || adminNote.trim().isEmpty) ? '-' : adminNote,
-                                                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey),
-                                                    textInputAction: TextInputAction.done,
-                                                    onChanged: (val) => tempNotes.value[report.id] = val,
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Ketik lalu klik luar...',
-                                                      hintStyle: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                                                      isDense: true,
-                                                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                                      border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
-                                                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
-                                                      focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF1976D2)), borderRadius: BorderRadius.circular(4)),
+                                                  }
+
+                                                  return SizedBox(
+                                                    width: 150,
+                                                    child: Focus(
+                                                      onFocusChange: (hasFocus) async {
+                                                        if (!hasFocus && tempNotes.value.containsKey(report.id)) {
+                                                          await saveNote(tempNotes.value[report.id]!);
+                                                        }
+                                                      },
+                                                      child: TextFormField(
+                                                        initialValue: (adminNote == null || adminNote.trim().isEmpty) ? '-' : adminNote,
+                                                        style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey),
+                                                        textInputAction: TextInputAction.done,
+                                                        onChanged: (val) => tempNotes.value[report.id] = val,
+                                                        decoration: InputDecoration(
+                                                          hintText: 'Ketik lalu klik luar...',
+                                                          hintStyle: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                                                          isDense: true,
+                                                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                          border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                                                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                                                          focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF1976D2)), borderRadius: BorderRadius.circular(4)),
+                                                        ),
+                                                        onFieldSubmitted: (val) async {
+                                                          await saveNote(val);
+                                                        },
+                                                      ),
                                                     ),
-                                                    onFieldSubmitted: (val) async {
-                                                      try {
-                                                        await Supabase.instance.client.from('interventions').delete().eq('report_id', report.id).eq('type', 'Keterangan');
-                                                        if (val.trim().isNotEmpty) {
-                                                          await Supabase.instance.client.from('interventions').insert({
-                                                            'report_id': report.id,
-                                                            'type': 'Keterangan',
-                                                            'description': val.trim(),
-                                                            'admin_id': Supabase.instance.client.auth.currentUser!.id,
-                                                          });
-                                                        }
-                                                        ref.invalidate(allAdminNotesProvider);
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Catatan berhasil disimpan!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)));
-                                                        }
-                                                      } catch (e) {
-                                                        if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
-                                                        }
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          if (isAdmin)
+                                            DataCell(
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                onPressed: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => AlertDialog(
+                                                      title: Text('Konfirmasi Hapus', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                                                      content: Text('Apakah Anda yakin ingin menghapus data laporan ini?', style: GoogleFonts.outfit()),
+                                                      actionsAlignment: MainAxisAlignment.end,
+                                                      actions: [
+                                                        ElevatedButton(
+                                                          onPressed: () async {
+                                                            Navigator.pop(context);
+                                                            try {
+                                                              await ref.read(reportRepositoryProvider).deleteReport(report.id);
+                                                              ref.invalidate(allReportsProvider);
+                                                              if (context.mounted) {
+                                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Laporan berhasil dihapus!'), backgroundColor: Colors.green));
+                                                              }
+                                                            } catch (e) {
+                                                              if (context.mounted) {
+                                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
+                                                              }
+                                                            }
+                                                          },
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.red,
+                                                            minimumSize: const Size(80, 40),
+                                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                          ),
+                                                          child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        TextButton(
+                                                          onPressed: () => Navigator.pop(context),
+                                                          style: TextButton.styleFrom(
+                                                            minimumSize: const Size(80, 40),
+                                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                          ),
+                                                          child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                             ),
                                         ],
@@ -565,29 +628,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
     );
   }
 
-  void _showInterventionDialog(BuildContext context, Report report) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red),
-            const SizedBox(width: 8),
-            Text('Instruksi Perbaikan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(
-          report.latestIntervention ?? 'Silakan lakukan PSN ulang dan perbaiki data laporan.',
-          style: GoogleFonts.outfit(),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('MENGERTI')),
-        ],
-      ),
-    );
-  }
-
-  void _showReportSummaryDialog(BuildContext context, Report report) {
+  void _showReportSummaryDialog(BuildContext context, WidgetRef ref, Report report, bool isAdmin) {
     final houses = <Map<String, String>>[];
     if (report.notes != null) {
       final blocks = report.notes!.split('--- KK');
@@ -617,7 +658,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -631,6 +672,113 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 ],
               ),
               const Divider(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F8FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[100]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Tanggal', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text(DateFormat('dd MMMM yyyy').format(report.reportDate), style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Desa', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text(report.villageName ?? '-', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Posyandu', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text(report.posyanduName ?? '-', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Diperiksa', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text('${report.housesInspected} Rumah', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Positif Jentik', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text('${report.housesPositive} Rumah', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: report.housesPositive > 0 ? Colors.red : Colors.green))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 80, child: Text('Status', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500))),
+                        const Text(': ', style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                        Expanded(child: Text(report.status == 'verified' ? 'TERKIRIM' : (report.status == 'need_intervention' ? 'PERLU PERBAIKAN' : 'MENUNGGU VERIFIKASI'), style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (report.status == 'need_intervention') ...[
+                Consumer(
+                  builder: (context, ref, child) {
+                    final interventionsAsync = ref.watch(interventionsByReportProvider(report.id));
+                    return interventionsAsync.when(
+                      data: (items) {
+                        if (items.isEmpty) return const SizedBox.shrink();
+                        final latest = items.first;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.orange.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.warning_rounded, color: Colors.orange.shade800, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text('CATATAN PERBAIKAN DARI ADMIN:', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.orange.shade900)),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(latest['description'] ?? '-', style: GoogleFonts.outfit(fontSize: 13, color: Colors.orange.shade900, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        );
+                      },
+                      loading: () => const Padding(padding: EdgeInsets.only(bottom: 16), child: LinearProgressIndicator()),
+                      error: (e, _) => const SizedBox.shrink(),
+                    );
+                  },
+                ),
+              ],
+              Text('Data Detail KK:', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+              const SizedBox(height: 8),
               Flexible(
                 child: houses.isEmpty 
                   ? Center(
@@ -688,17 +836,105 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     ),
               ),
               const SizedBox(height: 16),
+              if (isAdmin) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.assignment_late, color: Colors.white, size: 18),
+                    label: Text('MINTA PERBAIKAN LAPORAN', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade800,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context); // Tutup popup summary
+                      _showInterventionNoteDialog(context, ref, report);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F618D), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F618D), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                   child: Text('TUTUP', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showInterventionNoteDialog(BuildContext context, WidgetRef ref, Report report) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Permintaan Perbaikan Laporan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Kirimkan catatan perbaikan kepada kader terkait laporan di ${report.posyanduName ?? report.villageName ?? "fasilitas ini"}.', style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              maxLines: 4,
+              style: GoogleFonts.outfit(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Tuliskan bagian mana yang salah dan apa yang harus diperbaiki oleh kader...',
+                hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('BATAL', style: GoogleFonts.outfit(color: Colors.grey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              final desc = controller.text.trim();
+              Navigator.pop(context); // Tutup modal input
+              
+              try {
+                await ref.read(reportRepositoryProvider).addIntervention(
+                  reportId: report.id,
+                  type: 'psn_ulang',
+                  description: desc,
+                );
+                ref.invalidate(allReportsProvider);
+                ref.invalidate(myReportsProvider);
+                ref.invalidate(allAdminNotesProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Permintaan perbaikan berhasil dikirim ke kader!'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal mengirim permintaan: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: Text('KIRIM PERMINTAAN', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -717,46 +953,4 @@ class ReportHistoryScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildTableHeader(String label) {
-    return Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF566573)));
-  }
-
-  Widget _buildStatusBadge(String status) {
-    Color color = Colors.grey;
-    String label = status.toUpperCase();
-    if (status == 'submitted' || status == 'verified') {
-      color = Colors.green; label = 'TERKIRIM';
-    } else if (status == 'need_intervention') {
-      color = Colors.red; label = 'PERLU PERBAIKAN';
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.5), width: 0.5)),
-      child: Text(label, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
-    );
-  }
-
-  Widget _buildFilterDropdown({required String label, required String? value, required List<DropdownMenuItem<String>> items, required Function(String?) onChanged}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(color: const Color(0xFFF8F9F9), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey[300]!)),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: value,
-              items: items,
-              onChanged: onChanged,
-              style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 13),
-              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1F618D)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

@@ -213,16 +213,13 @@ class ReportDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildStatusBadge(String status) {
-    Color color = Colors.grey;
     String label = status.toUpperCase();
     IconData icon = Icons.info;
 
     if (status == 'submitted' || status == 'verified') {
-      color = Colors.green;
       label = 'TERKIRIM';
       icon = Icons.check_circle;
     } else if (status == 'need_intervention') {
-      color = Colors.red;
       label = 'PERLU PERBAIKAN';
       icon = Icons.warning;
     }

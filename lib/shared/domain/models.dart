@@ -97,6 +97,7 @@ class Report {
   final String kaderId;
   final String posyanduId;
   final DateTime reportDate;
+  final DateTime createdAt;
   final int housesInspected;
   final int housesPositive;
   final String? notes;
@@ -105,12 +106,14 @@ class Report {
   final String? villageName;
   final String? posyanduName;
   final String? latestIntervention;
+  final bool hasInterventionHistory;
 
   Report({
     required this.id,
     required this.kaderId,
     required this.posyanduId,
     required this.reportDate,
+    required this.createdAt,
     required this.housesInspected,
     required this.housesPositive,
     this.notes,
@@ -119,6 +122,7 @@ class Report {
     this.villageName,
     this.posyanduName,
     this.latestIntervention,
+    this.hasInterventionHistory = false,
   });
 
   factory Report.fromMap(Map<String, dynamic> map, {List<String>? breedingPlaceIds}) {
@@ -138,6 +142,7 @@ class Report {
       kaderId: map['kader_id'] as String,
       posyanduId: map['posyandu_id'] as String,
       reportDate: DateTime.parse(map['report_date'] as String),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
       housesInspected: map['houses_inspected'] as int,
       housesPositive: map['houses_positive'] as int,
       notes: map['notes'] as String?,
@@ -145,9 +150,8 @@ class Report {
       breedingPlaceIds: breedingPlaceIds ?? [],
       villageName: vName,
       posyanduName: pName,
-      latestIntervention: (map['interventions'] != null && (map['interventions'] as List).isNotEmpty)
-          ? (map['interventions'] as List).last['description'] as String?
-          : null,
+      latestIntervention: null,
+      hasInterventionHistory: false,
     );
   }
 }

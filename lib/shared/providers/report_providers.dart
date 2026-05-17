@@ -28,7 +28,7 @@ final allAdminNotesProvider = FutureProvider<Map<String, String>>((ref) async {
   final response = await client
       .from('interventions')
       .select('report_id, description')
-      .eq('type', 'Tindakan')
+      .eq('type', 'kunjungan_rumah')
       .order('created_at', ascending: true);
   
   Map<String, String> map = {};

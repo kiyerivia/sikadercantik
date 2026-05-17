@@ -16,6 +16,12 @@ CREATE TABLE posyandus (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     rw_id UUID REFERENCES rws(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    tahun_pendirian TEXT,
+    alamat TEXT,
+    nama_ketua TEXT,
+    nomor_hp TEXT,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

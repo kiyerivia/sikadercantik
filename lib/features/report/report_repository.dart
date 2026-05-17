@@ -141,6 +141,7 @@ class ReportRepository {
         .from('interventions')
         .select('*')
         .eq('report_id', reportId)
+        .eq('type', 'psn_ulang')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }

@@ -18,12 +18,6 @@ void main() async {
     }
   }
 
-  final headers = {
-    'apikey': supabaseKey!,
-    'Authorization': 'Bearer $supabaseKey',
-    'Content-Type': 'application/json',
-  };
-
   final client = HttpClient();
 
   try {

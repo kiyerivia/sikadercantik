@@ -123,7 +123,8 @@ class ReportFormScreen extends HookConsumerWidget {
           notesBuffer.writeln('RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}');
           notesBuffer.writeln('Hasil: ${entry.selectedResult ?? "-"}');
           
-          final places = entry.selectedPlaceIds.where((id) => id != null).cast<String>().toList();
+          final isNihil = entry.selectedResult == 'Nihil';
+          final places = isNihil ? <String>[] : entry.selectedPlaceIds.where((id) => id != null).cast<String>().toList();
           
           // Map IDs to Names for display in notes
           final breedingPlaces = breedingPlacesAsync.value ?? [];
@@ -135,8 +136,8 @@ class ReportFormScreen extends HookConsumerWidget {
             return found['name'] as String;
           }).toList();
 
-          notesBuffer.writeln('Tempat: ${placeNames.join(", ")}');
-          notesBuffer.writeln('Jumlah: ${entry.positivePlacesCountController.text.trim()}');
+          notesBuffer.writeln('Tempat: ${isNihil || placeNames.isEmpty ? "-" : placeNames.join(", ")}');
+          notesBuffer.writeln('Jumlah: ${isNihil ? "-" : entry.positivePlacesCountController.text.trim()}');
           notesBuffer.writeln('');
 
           allBreedingPlaceIds.addAll(places);
@@ -162,9 +163,12 @@ class ReportFormScreen extends HookConsumerWidget {
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isEdit ? 'Laporan berhasil diperbarui!' : 'Laporan berhasil dikirim dan tersimpan di database!')),
+            SnackBar(content: Text(isEdit ? 'Laporan berhasil diperbarui dan dikirim ulang untuk verifikasi!' : 'Laporan berhasil dikirim dan tersimpan di database!')),
           );
           ref.invalidate(myReportsProvider);
+          ref.invalidate(allReportsProvider);
+          ref.invalidate(pendingVerificationCountProvider);
+          ref.invalidate(interventionCountProvider);
           context.pop();
         }
       } catch (e) {
@@ -288,7 +292,7 @@ class ReportFormScreen extends HookConsumerWidget {
                               if (items.isEmpty || initialReport?.status != 'need_intervention') {
                                 return const SizedBox.shrink();
                               }
-                              final latest = items.last; 
+                              final latest = items.first; 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 padding: const EdgeInsets.all(16),
@@ -522,6 +526,10 @@ class ReportFormScreen extends HookConsumerWidget {
                                 hint: 'Pilih Status',
                                 onChanged: (val) {
                                   entry.selectedResult = val;
+                                  if (val == 'Nihil') {
+                                    entry.selectedPlaceIds = [null];
+                                    entry.positivePlacesCountController.text = '0';
+                                  }
                                   houseEntries.value = [...houseEntries.value]; // Trigger rebuild
                                 },
                                 items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
@@ -544,63 +552,93 @@ class ReportFormScreen extends HookConsumerWidget {
                               ),
                               const SizedBox(height: 16),
                               
-                              // Multiple Breeding Places
-                              _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
-                              const SizedBox(height: 8),
-                              ...entry.selectedPlaceIds.asMap().entries.map((pIdxEntry) {
-                                final pIdx = pIdxEntry.key;
-                                final pValue = pIdxEntry.value;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
+                              Builder(
+                                builder: (context) {
+                                  final bool isNihil = entry.selectedResult == 'Nihil';
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: _buildDropdown(
-                                          value: pValue,
-                                          hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
-                                          onChanged: (val) {
-                                            entry.selectedPlaceIds[pIdx] = val;
-                                            houseEntries.value = [...houseEntries.value];
-                                          },
-                                          items: breedingPlacesAsync.maybeWhen(
-                                            data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
-                                            orElse: () => [],
+                                      // Multiple Breeding Places
+                                      _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
+                                      const SizedBox(height: 8),
+                                      if (isNihil)
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            border: Border.all(color: Colors.grey[300]!),
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      if (entry.selectedPlaceIds.length > 1)
-                                        InkWell(
-                                          onTap: () {
-                                            entry.selectedPlaceIds.removeAt(pIdx);
-                                            houseEntries.value = [...houseEntries.value];
-                                          },
-                                          borderRadius: BorderRadius.circular(20),
-                                          child: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 28),
-                                        ),
-                                      if (pIdx == entry.selectedPlaceIds.length - 1)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: InkWell(
-                                            onTap: () {
-                                              entry.selectedPlaceIds.add(null);
-                                              houseEntries.value = [...houseEntries.value];
-                                            },
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: const Icon(Icons.add_circle, color: Colors.green, size: 28),
+                                          child: Text('-', style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 14, fontWeight: FontWeight.bold)),
+                                        )
+                                      else
+                                        ...entry.selectedPlaceIds.asMap().entries.map((pIdxEntry) {
+                                          final pIdx = pIdxEntry.key;
+                                          final pValue = pIdxEntry.value;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 12),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildDropdown(
+                                                    value: pValue,
+                                                    hint: breedingPlacesAsync.maybeWhen(loading: () => 'Memuat tempat...', orElse: () => 'Pilih Tempat'),
+                                                    onChanged: (val) {
+                                                      entry.selectedPlaceIds[pIdx] = val;
+                                                      houseEntries.value = [...houseEntries.value];
+                                                    },
+                                                    items: breedingPlacesAsync.maybeWhen(
+                                                      data: (places) => places.map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
+                                                      orElse: () => [],
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                if (entry.selectedPlaceIds.length > 1)
+                                                  InkWell(
+                                                    onTap: () {
+                                                      entry.selectedPlaceIds.removeAt(pIdx);
+                                                      houseEntries.value = [...houseEntries.value];
+                                                    },
+                                                    borderRadius: BorderRadius.circular(20),
+                                                    child: const Icon(Icons.remove_circle_outline, color: Colors.red, size: 28),
+                                                  ),
+                                                if (pIdx == entry.selectedPlaceIds.length - 1)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 8),
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        entry.selectedPlaceIds.add(null);
+                                                        houseEntries.value = [...houseEntries.value];
+                                                      },
+                                                      borderRadius: BorderRadius.circular(20),
+                                                      child: const Icon(Icons.add_circle, color: Colors.green, size: 28),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          );
+                                        }),
+                                      const SizedBox(height: 16),
+                                      _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
+                                      const SizedBox(height: 8),
+                                      if (isNihil)
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            border: Border.all(color: Colors.grey[300]!),
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
-                                        ),
+                                          child: Text('-', style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 14, fontWeight: FontWeight.bold)),
+                                        )
+                                      else
+                                        SizedBox(width: double.infinity, child: _buildNumericInput(entry.positivePlacesCountController)),
                                     ],
-                                  ),
-                                );
-                              }),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
-                                  const SizedBox(height: 8),
-                                  SizedBox(width: double.infinity, child: _buildNumericInput(entry.positivePlacesCountController)),
-                                ],
+                                  );
+                                },
                               ),
                               const SizedBox(height: 16),
                               if (idx == houseEntries.value.length - 1)
