@@ -5,18 +5,26 @@ void main() async {
   print('📝 Membaca konfigurasi .env...');
   final envFile = File('.env');
   final envLines = envFile.readAsLinesSync();
-  String? supabaseUrl;
-  String? supabaseKey;
+  String? rawSupabaseUrl;
+  String? rawSupabaseKey;
 
   for (var line in envLines) {
     if (line.contains('=')) {
       final parts = line.split('=');
       final key = parts[0].trim();
       final value = parts.sublist(1).join('=').trim();
-      if (key == 'SUPABASE_URL') supabaseUrl = value;
-      if (key == 'SUPABASE_ANON_KEY') supabaseKey = value;
+      if (key == 'SUPABASE_URL') rawSupabaseUrl = value;
+      if (key == 'SUPABASE_ANON_KEY') rawSupabaseKey = value;
     }
   }
+
+  if (rawSupabaseUrl == null || rawSupabaseKey == null) {
+    print('❌ Konfigurasi SUPABASE_URL atau SUPABASE_ANON_KEY tidak ditemukan di .env');
+    return;
+  }
+
+  final supabaseUrl = rawSupabaseUrl;
+  final supabaseKey = rawSupabaseKey;
 
   final client = HttpClient();
 

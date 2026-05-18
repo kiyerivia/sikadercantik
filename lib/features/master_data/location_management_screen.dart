@@ -122,26 +122,48 @@ class LocationManagementScreen extends HookConsumerWidget {
               ],
             ),
           ),
-          // Search & Filter Bar
+          // Search & Filter Bar & Add Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: TextField(
-                onChanged: (val) => searchQuery.value = val,
-                decoration: InputDecoration(
-                  hintText: 'Cari nama desa atau wilayah...',
-                  hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 14),
-                  prefixIcon: const Icon(Icons.search, color: Colors.blueGrey, size: 20),
-                  border: InputBorder.none,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+                    ),
+                    child: TextField(
+                      onChanged: (val) => searchQuery.value = val,
+                      decoration: InputDecoration(
+                        hintText: 'Cari nama desa atau wilayah...',
+                        hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 14),
+                        prefixIcon: const Icon(Icons.search, color: Colors.blueGrey, size: 20),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showAddVillageDialog(context, ref),
+                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                    label: Text('Tambah Desa', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1F618D),
+                      minimumSize: const Size(120, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -181,6 +203,78 @@ class LocationManagementScreen extends HookConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  void _showAddVillageDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    final isLoading = ValueNotifier(false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Tambah Desa Baru', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF1F618D))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Masukkan nama desa atau kelurahan baru:', style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Nama Desa / Kelurahan',
+                labelStyle: GoogleFonts.outfit(color: Colors.blueGrey),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F618D), width: 2)),
+              ),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.end,
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              isLoading.value = true;
+              try {
+                await ref.read(masterRepositoryProvider).insertVillage(name);
+                ref.invalidate(villagesProvider);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Desa "$name" berhasil ditambahkan!'), backgroundColor: Colors.green));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menambahkan: $e'), backgroundColor: Colors.red));
+                }
+              } finally {
+                isLoading.value = false;
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1F618D),
+              minimumSize: const Size(90, 42),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isLoading,
+              builder: (context, loading, _) => loading
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Text('Simpan', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(minimumSize: const Size(80, 42)),
+            child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
@@ -234,15 +328,30 @@ class _VillageExpandable extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('DAFTAR RW', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    OutlinedButton.icon(
-                      onPressed: () => _showAddRwDialog(context, ref, village),
-                      icon: const Icon(Icons.add, size: 16, color: Color(0xFF1F618D)),
-                      label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        side: const BorderSide(color: Color(0xFF1F618D)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _confirmDeleteVillage(context, ref, village),
+                          icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                          label: Text('Hapus Desa', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => _showAddRwDialog(context, ref, village),
+                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF1F618D)),
+                          label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            side: const BorderSide(color: Color(0xFF1F618D)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -250,6 +359,41 @@ class _VillageExpandable extends ConsumerWidget {
                 _RWList(villageId: village.id),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteVillage(BuildContext context, WidgetRef ref, Village village) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Hapus Desa / Wilayah?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text('Apakah Anda yakin ingin menghapus "${village.name}" beserta semua data RW dan Posyandu di dalamnya? Tindakan ini tidak dapat dibatalkan.', style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              minimumSize: const Size(90, 42),
+            ),
+            onPressed: () async {
+              try {
+                await ref.read(masterRepositoryProvider).deleteVillage(village.id);
+                ref.invalidate(villagesProvider);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Desa "${village.name}" berhasil dihapus'), backgroundColor: Colors.green));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -389,10 +533,20 @@ class _RWExpandable extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('POSYANDU DI RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    TextButton.icon(
-                      onPressed: () => _showAddPosyanduDialog(context, ref, rw),
-                      icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFF2E86C1)),
-                      label: Text('Tambah Posyandu', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF2E86C1))),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _confirmDeleteRw(context, ref, rw),
+                          icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                          label: Text('Hapus RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => _showAddPosyanduDialog(context, ref, rw),
+                          icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFF2E86C1)),
+                          label: Text('Tambah Posyandu', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF2E86C1))),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -400,6 +554,41 @@ class _RWExpandable extends ConsumerWidget {
                 _PosyanduList(rwId: rw.id),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteRw(BuildContext context, WidgetRef ref, RW rw) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Hapus RW ${rw.rwNumber}?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text('Apakah Anda yakin ingin menghapus RW ${rw.rwNumber} beserta semua Posyandu di dalamnya? Tindakan ini tidak dapat dibatalkan.', style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              minimumSize: const Size(90, 42),
+            ),
+            onPressed: () async {
+              try {
+                await ref.read(masterRepositoryProvider).deleteRw(rw.id);
+                ref.invalidate(rwsProvider(rw.villageId));
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('RW ${rw.rwNumber} berhasil dihapus'), backgroundColor: Colors.green));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -551,12 +740,52 @@ class _PosyanduList extends ConsumerWidget {
                 decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(6)),
                 child: const Icon(Icons.local_hospital, color: Color(0xFF2980B9), size: 18),
               ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                tooltip: 'Hapus Posyandu',
+                onPressed: () => _confirmDeletePosyandu(context, ref, p, rwId),
+              ),
             ),
           )).toList(),
         );
       },
       loading: () => const Padding(padding: EdgeInsets.all(8.0), child: Center(child: CircularProgressIndicator())),
       error: (e, s) => Text('Error: $e'),
+    );
+  }
+
+  void _confirmDeletePosyandu(BuildContext context, WidgetRef ref, Posyandu p, String rwId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Hapus Posyandu?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text('Apakah Anda yakin ingin menghapus "${p.name}"? Tindakan ini tidak dapat dibatalkan.', style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              minimumSize: const Size(90, 42),
+            ),
+            onPressed: () async {
+              try {
+                await ref.read(masterRepositoryProvider).deletePosyandu(p.id);
+                ref.invalidate(posyandusProvider(rwId));
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Posyandu "${p.name}" berhasil dihapus'), backgroundColor: Colors.green));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: Text('Hapus', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }

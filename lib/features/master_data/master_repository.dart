@@ -79,6 +79,18 @@ class MasterRepository {
     return (resp)['id'] as String;
   }
 
+  Future<void> deleteVillage(String id) async {
+    await _client.from('villages').delete().eq('id', id);
+  }
+
+  Future<void> deleteRw(String id) async {
+    await _client.from('rws').delete().eq('id', id);
+  }
+
+  Future<void> deletePosyandu(String id) async {
+    await _client.from('posyandus').delete().eq('id', id);
+  }
+
   Future<List<Map<String, dynamic>>> getBreedingPlaces() async {
     final response = await _client
         .from('mosquito_breeding_places')

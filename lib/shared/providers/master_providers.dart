@@ -10,16 +10,7 @@ final masterRepositoryProvider = Provider<MasterRepository>((ref) {
 
 final villagesProvider = FutureProvider<List<Village>>((ref) async {
   final repo = ref.watch(masterRepositoryProvider);
-  final allVillages = await repo.getVillages();
-  
-  // List of 10 villages in Gumelar sub-district
-  const gumelarVillages = [
-    'Gumelar', 'Cihonje', 'Cilangkap', 'Gancang', 
-    'Karangkemojing', 'Kedungurang', 'Paningkaban', 
-    'Samudra', 'Samudra Kulon', 'Tlaga'
-  ];
-
-  return allVillages.where((v) => gumelarVillages.contains(v.name)).toList();
+  return await repo.getVillages();
 });
 
 final rwsProvider = FutureProvider.family<List<RW>, String>((ref, villageId) async {
