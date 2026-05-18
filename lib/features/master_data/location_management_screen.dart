@@ -172,9 +172,25 @@ class LocationManagementScreen extends HookConsumerWidget {
           Expanded(
             child: villagesAsync.when(
               data: (villages) {
+                const gumelarVillages = [
+                  'cilangkap',
+                  'cihonje',
+                  'paningkaban',
+                  'karangkemojing',
+                  'gancang',
+                  'kedungurang',
+                  'gumelar',
+                  'tlaga',
+                  'samudra',
+                  'samudra kulon',
+                ];
+                final gumelarOnly = villages
+                    .where((v) => gumelarVillages.contains(v.name.trim().toLowerCase()))
+                    .toList();
+
                 final filtered = searchQuery.value.isEmpty
-                    ? villages
-                    : villages.where((v) => v.name.toLowerCase().contains(searchQuery.value.toLowerCase())).toList();
+                    ? gumelarOnly
+                    : gumelarOnly.where((v) => v.name.toLowerCase().contains(searchQuery.value.toLowerCase())).toList();
 
                 if (filtered.isEmpty) {
                   return Center(
