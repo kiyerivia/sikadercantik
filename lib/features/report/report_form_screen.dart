@@ -414,7 +414,22 @@ class ReportFormScreen extends HookConsumerWidget {
                           },
                           items: villagesAsync.maybeWhen(
                             data: (villages) {
-                              final sorted = List<Village>.from(villages)
+                              const gumelarVillages = [
+                                'cilangkap',
+                                'cihonje',
+                                'paningkaban',
+                                'karangkemojing',
+                                'gancang',
+                                'kedungurang',
+                                'gumelar',
+                                'tlaga',
+                                'samudra',
+                                'samudra kulon',
+                              ];
+                              final gumelarOnly = villages
+                                  .where((v) => gumelarVillages.contains(v.name.trim().toLowerCase()))
+                                  .toList();
+                              final sorted = List<Village>.from(gumelarOnly)
                                 ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
                               return sorted.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)))).toList();
                             },

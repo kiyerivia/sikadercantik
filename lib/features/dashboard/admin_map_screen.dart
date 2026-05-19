@@ -88,12 +88,17 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         _tempLocation = newLocation;
       });
 
-      _mapController.move(newLocation, 18.0); // Zoom lebih dekat agar mudah di-tap presisi
+      _mapController.move(
+        newLocation,
+        18.0,
+      ); // Zoom lebih dekat agar mudah di-tap presisi
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('📍 Lokasi GPS ditemukan! (Geser/klik langsung pada atap bangunan jika kurang pas)'),
+            content: Text(
+              '📍 Lokasi GPS ditemukan! (Geser/klik langsung pada atap bangunan jika kurang pas)',
+            ),
             backgroundColor: Colors.green.shade700,
           ),
         );
@@ -121,14 +126,22 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.from('posyandus').update({
-        'latitude': _tempLocation!.latitude,
-        'longitude': _tempLocation!.longitude,
-      }).eq('id', _selectedPosyandu!.id);
+      await supabase
+          .from('posyandus')
+          .update({
+            'latitude': _tempLocation!.latitude,
+            'longitude': _tempLocation!.longitude,
+          })
+          .eq('id', _selectedPosyandu!.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lokasi ${_selectedPosyandu!.name} berhasil disimpan!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text(
+              'Lokasi ${_selectedPosyandu!.name} berhasil disimpan!',
+            ),
+            backgroundColor: Colors.green,
+          ),
         );
         setState(() {
           _isEditMode = false;
@@ -163,12 +176,26 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Hapus Koordinat?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red.shade800)),
-        content: Text('Apakah Anda yakin ingin menghapus koordinat lokasi peta untuk "${target.name}"?'),
+        title: Text(
+          'Hapus Koordinat?',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.red.shade800,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus koordinat lokasi peta untuk "${target.name}"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Hapus'),
           ),
@@ -180,14 +207,17 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.from('posyandus').update({
-        'latitude': null,
-        'longitude': null,
-      }).eq('id', target.id);
+      await supabase
+          .from('posyandus')
+          .update({'latitude': null, 'longitude': null})
+          .eq('id', target.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Koordinat ${target.name} berhasil dihapus.'), backgroundColor: Colors.green.shade700),
+          SnackBar(
+            content: Text('Koordinat ${target.name} berhasil dihapus.'),
+            backgroundColor: Colors.green.shade700,
+          ),
         );
         setState(() {
           _selectedToDelete = null;
@@ -198,7 +228,10 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghapus koordinat: $e'), backgroundColor: Colors.red.shade800),
+          SnackBar(
+            content: Text('Gagal menghapus koordinat: $e'),
+            backgroundColor: Colors.red.shade800,
+          ),
         );
       }
     }
@@ -217,7 +250,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: _isEditMode ? Colors.orange.shade800 : const Color(0xFF1F618D),
+        backgroundColor: _isEditMode
+            ? Colors.orange.shade800
+            : const Color(0xFF1F618D),
         title: _isSearching
             ? TextField(
                 controller: _searchController,
@@ -225,7 +260,10 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'Cari fasilitas / posyandu...',
-                  hintStyle: GoogleFonts.outfit(color: Colors.white70, fontSize: 15),
+                  hintStyle: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 15,
+                  ),
                   border: InputBorder.none,
                 ),
                 onChanged: (val) {
@@ -235,8 +273,13 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 },
               )
             : Text(
-                _isEditMode ? 'Klik Peta untuk Presisi Titik Lokasi' : 'Peta Sebaran Jentik (Leaflet)',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
+                _isEditMode
+                    ? 'Klik Peta untuk Presisi Titik Lokasi'
+                    : 'Peta Sebaran Jentik (Leaflet)',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -305,44 +348,60 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
           final String query = _searchQuery.trim().toLowerCase();
 
-          final List<Marker> markers = posyandus.where((p) {
-            final bool hasCoords = p.latitude != null && p.longitude != null;
-            if (!hasCoords) return false;
-            if (query.isEmpty) return true;
-            return p.name.toLowerCase().contains(query);
-          }).map((p) {
-            final stats = abjStats[p.id];
-            final abj = stats?['abj'] ?? 100.0;
-            final inspected = stats?['inspected'] ?? 0;
+          final List<Marker> markers = posyandus
+              .where((p) {
+                final bool hasCoords =
+                    p.latitude != null && p.longitude != null;
+                if (!hasCoords) return false;
+                if (query.isEmpty) return true;
+                return p.name.toLowerCase().contains(query);
+              })
+              .map((p) {
+                final stats = abjStats[p.id];
+                final abj = stats?['abj'] ?? 100.0;
+                final inspected = stats?['inspected'] ?? 0;
 
-            return Marker(
-              point: LatLng(p.latitude!, p.longitude!),
-              width: 44,
-              height: 44,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _infoPosyandu = p;
-                    _infoAbj = (abj is num) ? abj.toDouble() : 100.0;
-                    _infoInspected = (inspected is int) ? inspected : 0;
-                  });
-                },
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
-                      ),
-                      child: Icon(Icons.local_hospital_rounded, size: 26, color: _getColor((abj is num) ? abj.toDouble() : 100.0)),
+                return Marker(
+                  point: LatLng(p.latitude!, p.longitude!),
+                  width: 44,
+                  height: 44,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _infoPosyandu = p;
+                        _infoAbj = (abj is num) ? abj.toDouble() : 100.0;
+                        _infoInspected = (inspected is int) ? inspected : 0;
+                      });
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.local_hospital_rounded,
+                            size: 26,
+                            color: _getColor(
+                              (abj is num) ? abj.toDouble() : 100.0,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            );
-          }).toList();
+                  ),
+                );
+              })
+              .toList();
 
           // Tambah marker sementara saat edit
           if (_isEditMode && _tempLocation != null) {
@@ -358,9 +417,19 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.my_location, size: 28, color: Colors.blueAccent),
+                      child: const Icon(
+                        Icons.my_location,
+                        size: 28,
+                        color: Colors.blueAccent,
+                      ),
                     ),
                   ],
                 ),
@@ -379,12 +448,11 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.sikadercantik',
                   ),
-                  MarkerLayer(
-                    markers: markers,
-                  ),
+                  MarkerLayer(markers: markers),
                 ],
               ),
 
@@ -396,50 +464,91 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   right: 20,
                   child: Card(
                     elevation: 12,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 280),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: ListView(
                         shrinkWrap: true,
-                        children: posyandus.where((p) {
-                          final bool hasCoords = p.latitude != null && p.longitude != null;
-                          if (!hasCoords) return false;
-                          return p.name.toLowerCase().contains(query);
-                        }).map((p) {
-                          final stats = abjStats[p.id];
-                          final abj = stats?['abj'] ?? 100.0;
-                          final inspected = stats?['inspected'] ?? 0;
-                          return ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(color: _getColor((abj is num) ? abj.toDouble() : 100.0).withOpacity(0.2), shape: BoxShape.circle),
-                              child: Icon(Icons.local_hospital_rounded, color: _getColor((abj is num) ? abj.toDouble() : 100.0), size: 20),
-                            ),
-                            title: Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                            subtitle: Text('ABJ: ${(abj is num ? abj.toDouble() : 100.0).toStringAsFixed(1)}% | $inspected rumah diperiksa', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey)),
-                            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                            onTap: () {
-                              setState(() {
-                                _mapController.move(LatLng(p.latitude!, p.longitude!), 18.0);
-                                _infoPosyandu = p;
-                                _infoAbj = (abj is num) ? abj.toDouble() : 100.0;
-                                _infoInspected = (inspected is int) ? inspected : 0;
-                                _isSearching = false;
-                                _searchQuery = '';
-                                _searchController.clear();
-                              });
-                              FocusScope.of(context).unfocus();
-                            },
-                          );
-                        }).toList(),
+                        children: posyandus
+                            .where((p) {
+                              final bool hasCoords =
+                                  p.latitude != null && p.longitude != null;
+                              if (!hasCoords) return false;
+                              return p.name.toLowerCase().contains(query);
+                            })
+                            .map((p) {
+                              final stats = abjStats[p.id];
+                              final abj = stats?['abj'] ?? 100.0;
+                              final inspected = stats?['inspected'] ?? 0;
+                              return ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: _getColor(
+                                      (abj is num) ? abj.toDouble() : 100.0,
+                                    ).withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.local_hospital_rounded,
+                                    color: _getColor(
+                                      (abj is num) ? abj.toDouble() : 100.0,
+                                    ),
+                                    size: 20,
+                                  ),
+                                ),
+                                title: Text(
+                                  p.name,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'ABJ: ${(abj is num ? abj.toDouble() : 100.0).toStringAsFixed(1)}% | $inspected rumah diperiksa',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.grey,
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    _mapController.move(
+                                      LatLng(p.latitude!, p.longitude!),
+                                      18.0,
+                                    );
+                                    _infoPosyandu = p;
+                                    _infoAbj = (abj is num)
+                                        ? abj.toDouble()
+                                        : 100.0;
+                                    _infoInspected = (inspected is int)
+                                        ? inspected
+                                        : 0;
+                                    _isSearching = false;
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                  });
+                                  FocusScope.of(context).unfocus();
+                                },
+                              );
+                            })
+                            .toList(),
                       ),
                     ),
                   ),
                 ),
 
-              if (_isEditMode)
-                _buildEditPanel(posyandus, abjStats),
+              if (_isEditMode) _buildEditPanel(posyandus, abjStats),
 
               if (!_isEditMode && markers.isEmpty)
                 Center(
@@ -449,17 +558,29 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.95),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_off, size: 48, color: Colors.blueGrey),
+                        const Icon(
+                          Icons.location_off,
+                          size: 48,
+                          color: Colors.blueGrey,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Belum ada koordinat Posyandu yang diset di peta.\nKlik ikon Edit Lokasi di pojok kanan atas untuk mulai menandai koordinat Posyandu.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(color: Colors.blueGrey.shade800, fontSize: 14),
+                          style: GoogleFonts.outfit(
+                            color: Colors.blueGrey.shade800,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -474,13 +595,20 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   right: 20,
                   child: Card(
                     elevation: 10,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border(left: BorderSide(color: _getColor(_infoAbj), width: 6)),
+                        border: Border(
+                          left: BorderSide(
+                            color: _getColor(_infoAbj),
+                            width: 6,
+                          ),
+                        ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -492,36 +620,72 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                               Expanded(
                                 child: Text(
                                   _infoPosyandu!.name,
-                                  style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF154360),
+                                  ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close, color: Colors.grey),
-                                onPressed: () => setState(() => _infoPosyandu = null),
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _infoPosyandu = null),
                               ),
                             ],
                           ),
                           const Divider(),
                           Row(
                             children: [
-                              Icon(Icons.analytics_outlined, size: 20, color: Colors.blueGrey.shade600),
+                              Icon(
+                                Icons.analytics_outlined,
+                                size: 20,
+                                color: Colors.blueGrey.shade600,
+                              ),
                               const SizedBox(width: 8),
-                              Text('Capaian Angka Bebas Jentik (ABJ): ', style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey)),
+                              Text(
+                                'Capaian Angka Bebas Jentik (ABJ): ',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
                               Text(
                                 '${_infoAbj.toStringAsFixed(1)}%',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: _getColor(_infoAbj)),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getColor(_infoAbj),
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.home_work_outlined, size: 20, color: Colors.blueGrey.shade600),
+                              Icon(
+                                Icons.home_work_outlined,
+                                size: 20,
+                                color: Colors.blueGrey.shade600,
+                              ),
                               const SizedBox(width: 8),
-                              Text('Total Rumah Diperiksa: ', style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey)),
+                              Text(
+                                'Total Rumah Diperiksa: ',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
                               Text(
                                 '$_infoInspected rumah',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade900),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey.shade900,
+                                ),
                               ),
                             ],
                           ),
@@ -542,17 +706,33 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                       color: Colors.white.withOpacity(0.95),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Keterangan ABJ:', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          'Keterangan ABJ:',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        _buildLegendItem(Colors.green.shade600, 'Aman (>= 95%)'),
-                        _buildLegendItem(Colors.orange.shade600, 'Waspada (85-94%)'),
+                        _buildLegendItem(
+                          Colors.green.shade600,
+                          'Aman (>= 95%)',
+                        ),
+                        _buildLegendItem(
+                          Colors.orange.shade600,
+                          'Waspada (85-94%)',
+                        ),
                         _buildLegendItem(Colors.red.shade600, 'Bahaya (< 85%)'),
                       ],
                     ),
@@ -571,7 +751,10 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     elevation: 6,
                     tooltip: 'Dapatkan Lokasi GPS Saat Ini',
                     child: _isLoadingLocation
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          )
                         : const Icon(Icons.my_location, size: 28),
                   ),
                 ),
@@ -584,8 +767,13 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     );
   }
 
-  Widget _buildEditPanel(List<Posyandu> posyandus, Map<String, dynamic> abjStats) {
-    final markedPosyandus = posyandus.where((p) => p.latitude != null && p.longitude != null).toList();
+  Widget _buildEditPanel(
+    List<Posyandu> posyandus,
+    Map<String, dynamic> abjStats,
+  ) {
+    final markedPosyandus = posyandus
+        .where((p) => p.latitude != null && p.longitude != null)
+        .toList();
     final bool isWide = MediaQuery.of(context).size.width >= 768;
 
     // Jika Posyandu sudah dipilih untuk ditandai, sembunyikan panel besar agar tidak menutupi peta
@@ -596,7 +784,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         right: 20,
         child: Card(
           elevation: 12,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           color: Colors.orange.shade800,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -611,14 +801,21 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     children: [
                       Text(
                         'Menandai: ${_selectedPosyandu!.name}',
-                        style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _tempLocation == null
                             ? 'Klik/tap di peta atau tombol GPS di kanan bawah'
                             : 'Koordinat: ${_tempLocation!.latitude.toStringAsFixed(5)}, ${_tempLocation!.longitude.toStringAsFixed(5)}',
-                        style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -630,11 +827,23 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                       minimumSize: const Size(80, 40),
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.orange.shade900,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                    label: Text('Simpan', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                    icon: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Simpan',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    ),
                     onPressed: _saveLocation,
                   ),
                   const SizedBox(width: 8),
@@ -664,7 +873,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         elevation: 12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -682,14 +893,31 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     Expanded(
                       child: Row(
                         children: [
-                          const Icon(Icons.settings_outlined, color: Color(0xFF154360), size: 22),
+                          const Icon(
+                            Icons.settings_outlined,
+                            color: Color(0xFF154360),
+                            size: 22,
+                          ),
                           const SizedBox(width: 10),
-                          Expanded(child: Text('Pengaturan Titik Lokasi Peta', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF154360)))),
+                          Expanded(
+                            child: Text(
+                              'Pengaturan Titik Lokasi Peta',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF154360),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey, size: 24),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 24,
+                      ),
                       onPressed: () => setState(() {
                         _isEditMode = false;
                         _selectedToView = null;
@@ -705,9 +933,22 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 // Bagian Atas: Dropdown Lihat Fasilitas yang Sudah Ditandai
                 Row(
                   children: [
-                    const Icon(Icons.travel_explore, color: Color(0xFF154360), size: 18),
+                    const Icon(
+                      Icons.travel_explore,
+                      color: Color(0xFF154360),
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Lihat Lokasi Fasilitas / Posyandu di Peta', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF154360)))),
+                    Expanded(
+                      child: Text(
+                        'Lihat Lokasi Fasilitas / Posyandu di Peta',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF154360),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -717,19 +958,28 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     labelText: 'Pilih Fasilitas / Posyandu yang Sudah Ditandai',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.location_on, color: Colors.blue),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                   ),
-                  value: _selectedToView,
+                  initialValue: _selectedToView,
                   items: markedPosyandus.map((p) {
                     return DropdownMenuItem(
                       value: p,
-                      child: Text(p.name, style: GoogleFonts.outfit(fontSize: 13), overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        p.name,
+                        style: GoogleFonts.outfit(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) {
                     setState(() {
                       _selectedToView = val;
-                      if (val != null && val.latitude != null && val.longitude != null) {
+                      if (val != null &&
+                          val.latitude != null &&
+                          val.longitude != null) {
                         final latlng = LatLng(val.latitude!, val.longitude!);
                         _mapController.move(latlng, 18.0);
                         final stats = abjStats[val.id];
@@ -787,10 +1037,21 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.add_location_alt_outlined, color: Colors.blue.shade800, size: 20),
+              Icon(
+                Icons.add_location_alt_outlined,
+                color: Colors.blue.shade800,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Tambah / Ubah Titik Lokasi', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
+                child: Text(
+                  'Tambah / Ubah Titik Lokasi',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
               ),
             ],
           ),
@@ -800,14 +1061,24 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
             decoration: const InputDecoration(
               labelText: 'Pilih untuk Ditandai',
               border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.local_hospital_rounded, color: Colors.green),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              prefixIcon: Icon(
+                Icons.local_hospital_rounded,
+                color: Colors.green,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
-            value: _selectedPosyandu,
+            initialValue: _selectedPosyandu,
             items: posyandus.map((p) {
               return DropdownMenuItem(
                 value: p,
-                child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12), overflow: TextOverflow.ellipsis),
+                child: Text(
+                  p.name,
+                  style: GoogleFonts.outfit(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
               );
             }).toList(),
             onChanged: (val) => setState(() {
@@ -838,7 +1109,14 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
               Icon(Icons.delete_outline, color: Colors.red.shade800, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Hapus Titik Koordinat', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red.shade800)),
+                child: Text(
+                  'Hapus Titik Koordinat',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade800,
+                  ),
+                ),
               ),
             ],
           ),
@@ -846,7 +1124,14 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
           if (markedPosyandus.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text('Belum ada fasilitas / Posyandu yang ditandai.', style: GoogleFonts.outfit(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+              child: Text(
+                'Belum ada fasilitas / Posyandu yang ditandai.',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
             )
           else ...[
             DropdownButtonFormField<Posyandu>(
@@ -855,13 +1140,20 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 labelText: 'Pilih untuk Dihapus',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on, color: Colors.red),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
-              value: _selectedToDelete,
+              initialValue: _selectedToDelete,
               items: markedPosyandus.map((p) {
                 return DropdownMenuItem(
                   value: p,
-                  child: Text(p.name, style: GoogleFonts.outfit(fontSize: 12), overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    p.name,
+                    style: GoogleFonts.outfit(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 );
               }).toList(),
               onChanged: (val) => setState(() => _selectedToDelete = val),
@@ -872,13 +1164,25 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _deleteLocation,
-                  icon: const Icon(Icons.delete_forever, color: Colors.red, size: 18),
-                  label: Text('Hapus Koordinat', style: GoogleFonts.outfit(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    Icons.delete_forever,
+                    color: Colors.red,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Hapus Koordinat',
+                    style: GoogleFonts.outfit(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.red.shade400, width: 1.5),
                     backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
@@ -906,5 +1210,3 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     );
   }
 }
-
-
