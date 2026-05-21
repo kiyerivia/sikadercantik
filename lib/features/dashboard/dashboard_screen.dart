@@ -6,6 +6,7 @@ import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
+import 'superadmin_dashboard_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -26,6 +27,8 @@ class DashboardScreen extends ConsumerWidget {
           return _KaderDashboard(profile: profile);
         } else if (profile.role == 'admin') {
           return _AdminDashboard(profile: profile);
+        } else if (profile.role == 'superadmin') {
+          return SuperAdminDashboardScreen(profile: profile);
         }
 
         return Scaffold(

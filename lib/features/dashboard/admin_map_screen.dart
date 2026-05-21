@@ -437,6 +437,30 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
             );
           }
 
+          // Generate circle areas
+          final List<CircleMarker> circles = posyandus
+              .where((p) {
+                final bool hasCoords = p.latitude != null && p.longitude != null;
+                if (!hasCoords) return false;
+                if (query.isEmpty) return true;
+                return p.name.toLowerCase().contains(query);
+              })
+              .map((p) {
+                final stats = abjStats[p.id];
+                final abj = stats?['abj'] ?? 100.0;
+                final color = _getColor((abj is num) ? abj.toDouble() : 100.0);
+
+                return CircleMarker(
+                  point: LatLng(p.latitude!, p.longitude!),
+                  color: color.withOpacity(0.25), // Semi-transparent area effect
+                  borderColor: color.withOpacity(0.8), // Solid outer ring
+                  borderStrokeWidth: 2,
+                  useRadiusInMeter: true,
+                  radius: 300, // 300 meters radius area
+                );
+              })
+              .toList();
+
           return Stack(
             children: [
               FlutterMap(
@@ -452,6 +476,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.sikadercantik',
                   ),
+                  CircleLayer(circles: circles), // Added Area Effect
                   MarkerLayer(markers: markers),
                 ],
               ),

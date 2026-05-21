@@ -67,7 +67,7 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).value;
-    final isAdmin = profile?.role == 'admin';
+    final isAdmin = profile?.role == 'admin' || profile?.role == 'superadmin';
 
     final count = isAdmin 
         ? ref.watch(pendingVerificationCountProvider)

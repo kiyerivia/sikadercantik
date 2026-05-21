@@ -17,7 +17,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
     final isAdmin = profileAsync.maybeWhen(
-      data: (p) => p?.role == 'admin',
+      data: (p) => p?.role == 'admin' || p?.role == 'superadmin',
       orElse: () => false,
     );
 
@@ -29,7 +29,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
     final savingLocks = useRef<Map<String, bool>>({});
 
     final reportsAsync = profileAsync.maybeWhen(
-      data: (profile) => profile?.role == 'admin'
+      data: (profile) => (profile?.role == 'admin' || profile?.role == 'superadmin')
           ? ref.watch(allReportsProvider)
           : ref.watch(myReportsProvider),
       orElse: () => const AsyncValue.loading(),

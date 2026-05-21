@@ -89,21 +89,58 @@ class AdminAnalyticsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Dashboard ABJ',
-                    style: GoogleFonts.outfit(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pantau capaian Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN kader.',
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      color: const Color(0xFF64748B),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dashboard ABJ',
+                              style: GoogleFonts.outfit(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Pantau capaian Angka Bebas Jentik (ABJ) berdasarkan data laporan PSN kader.',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () => context.push('/map'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE67E22), // Orange
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          minimumSize: Size.zero, // OVERRIDES GLOBAL INFINITY WIDTH
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.explore, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Buka Peta',
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
 
