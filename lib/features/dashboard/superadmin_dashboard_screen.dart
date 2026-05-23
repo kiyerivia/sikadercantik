@@ -243,7 +243,7 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
                     icon: Icons.description_rounded,
                     iconColor: const Color(0xFFF57C00), // Orange
                     bgColor: const Color(0xFFFFF3E0),
-                    onTap: () => context.push('/history'), // Action for report download
+                    onTap: () => context.push('/superadmin-reports'), // Action for report download
                   ),
                   const SizedBox(height: 24),
                   const _InfoCard(),
