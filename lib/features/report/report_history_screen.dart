@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/auth_providers.dart';
+import '../../shared/providers/master_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/domain/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,6 +17,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
+    final villagesAsync = ref.watch(villagesProvider);
     final isAdmin = profileAsync.maybeWhen(
       data: (p) => p?.role == 'admin' || p?.role == 'superadmin',
       orElse: () => false,
@@ -23,6 +25,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
 
     final selectedMonth = useState<String>('Semua');
     final selectedYear = useState<String>('Semua');
+    final selectedVillage = useState<String>('Semua');
     final searchQuery = useState<String>('');
     final scrollController = useScrollController();
     final tempNotes = useRef<Map<String, String>>({});
@@ -257,6 +260,114 @@ class ReportHistoryScreen extends HookConsumerWidget {
                           ),
                         );
 
+                        final desaWidget = Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.home_work,
+                                color: Colors.blueGrey,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pilih Desa',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownButtonHideUnderline(
+                                        child: villagesAsync.when(
+                                          data: (villages) {
+                                            final gumelarVillages = [
+                                              'cilangkap', 'cihonje', 'paningkaban', 'karangkemojing',
+                                              'gancang', 'kedungurang', 'gumelar', 'tlaga', 'samudra', 'samudra kulon',
+                                            ];
+                                            final gumelarOnly = villages
+                                                .where((v) => gumelarVillages.contains(v.name.trim().toLowerCase()))
+                                                .toList();
+                                            return DropdownButton<String>(
+                                              value: selectedVillage.value,
+                                              isDense: true,
+                                              isExpanded: true,
+                                              icon: const Icon(
+                                                Icons.keyboard_arrow_down,
+                                                color: Colors.grey,
+                                                size: 18,
+                                              ),
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 13,
+                                                color: const Color(0xFF2C3E50),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  selectedVillage.value = val;
+                                                }
+                                              },
+                                              items: [
+                                                const DropdownMenuItem(
+                                                  value: 'Semua',
+                                                  child: Text('Semua'),
+                                                ),
+                                                ...gumelarOnly.map(
+                                                  (v) => DropdownMenuItem(
+                                                    value: v.name,
+                                                    child: Text(v.name),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                          loading: () => DropdownButton<String>(
+                                            value: 'Semua',
+                                            isDense: true,
+                                            isExpanded: true,
+                                            items: const [
+                                              DropdownMenuItem(
+                                                value: 'Semua',
+                                                child: Text('Memuat...'),
+                                              ),
+                                            ],
+                                            onChanged: null,
+                                          ),
+                                          error: (e, s) => DropdownButton<String>(
+                                            value: 'Semua',
+                                            isDense: true,
+                                            isExpanded: true,
+                                            items: const [
+                                              DropdownMenuItem(
+                                                value: 'Semua',
+                                                child: Text('Error'),
+                                              ),
+                                            ],
+                                            onChanged: null,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
                         final bulanWidget = Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -304,8 +415,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                             fontWeight: FontWeight.w500,
                                           ),
                                           onChanged: (val) {
-                                            if (val != null)
+                                            if (val != null) {
                                               selectedMonth.value = val;
+                                            }
                                           },
                                           items:
                                               [
@@ -393,8 +505,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                             fontWeight: FontWeight.w500,
                                           ),
                                           onChanged: (val) {
-                                            if (val != null)
+                                            if (val != null) {
                                               selectedYear.value = val;
+                                            }
                                           },
                                           items:
                                               [
@@ -430,7 +543,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
                         if (isMobile) {
                           return Column(
                             children: [
-                              puskesmasWidget,
+                              Row(
+                                children: [
+                                  Expanded(child: puskesmasWidget),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: desaWidget),
+                                ],
+                              ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
@@ -445,6 +564,8 @@ class ReportHistoryScreen extends HookConsumerWidget {
                           return Row(
                             children: [
                               Expanded(child: puskesmasWidget),
+                              const SizedBox(width: 16),
+                              Expanded(child: desaWidget),
                               const SizedBox(width: 16),
                               Expanded(child: bulanWidget),
                               const SizedBox(width: 16),
@@ -561,6 +682,19 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                 (r) =>
                                     r.reportDate.year.toString() ==
                                     selectedYear.value,
+                              )
+                              .toList();
+                        }
+
+                        // Village filter
+                        if (selectedVillage.value != 'Semua') {
+                          filtered = filtered
+                              .where(
+                                (r) =>
+                                    (r.villageName ?? '')
+                                        .toLowerCase()
+                                        .trim() ==
+                                    selectedVillage.value.toLowerCase().trim(),
                               )
                               .toList();
                         }
@@ -896,17 +1030,20 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                       if (savingLocks
                                                               .value[report
                                                               .id] ==
-                                                          true)
+                                                          true) {
                                                         return;
+                                                      }
                                                       if (val ==
-                                                          (adminNote ?? ''))
+                                                          (adminNote ?? '')) {
                                                         return;
+                                                      }
                                                       if (val == '-' &&
                                                           (adminNote == null ||
                                                               adminNote
                                                                   .trim()
-                                                                  .isEmpty))
+                                                                  .isEmpty)) {
                                                         return;
+                                                      }
 
                                                       savingLocks.value[report
                                                               .id] =

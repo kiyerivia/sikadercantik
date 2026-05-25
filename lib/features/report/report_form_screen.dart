@@ -15,7 +15,7 @@ class HouseReportEntry {
   final TextEditingController kkNameController = TextEditingController();
   final TextEditingController rtController = TextEditingController();
   final TextEditingController rwController = TextEditingController();
-  final TextEditingController positivePlacesCountController = TextEditingController(text: '0');
+  final TextEditingController positivePlacesCountController = TextEditingController();
   String? selectedResult;
   List<String?> selectedPlaceIds = [null];
 
@@ -36,8 +36,8 @@ class ReportFormScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    final housesInspectedController = useTextEditingController(text: '0');
-    final housesPositiveController = useTextEditingController(text: '0');
+    final housesInspectedController = useTextEditingController();
+    final housesPositiveController = useTextEditingController();
     
     final houseEntries = useState<List<HouseReportEntry>>([]);
     final isEdit = initialReport != null;
@@ -103,12 +103,128 @@ class ReportFormScreen extends HookConsumerWidget {
     final breedingPlacesAsync = ref.watch(breedingPlacesProvider);
 
     Future<void> handleSubmit() async {
-      if (!formKey.currentState!.validate()) return;
-      if (selectedPosyanduId.value == null) {
+      // 1. Validate Desa
+      if (selectedVillageId.value == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Silakan pilih Posyandu')),
+          const SnackBar(
+            content: Text('Silakan pilih Desa terlebih dahulu!'),
+            backgroundColor: Colors.orange,
+          ),
         );
         return;
+      }
+
+      // 2. Validate Posyandu
+      if (selectedPosyanduId.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan pilih Posyandu terlebih dahulu!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // 3. Form Validation (Inspect / Positive house counts and KK texts)
+      if (!formKey.currentState!.validate()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan lengkapi semua kolom yang wajib diisi!'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // 4. Validate KK Entries
+      for (int i = 0; i < houseEntries.value.length; i++) {
+        final entry = houseEntries.value[i];
+        
+        // Status Pemeriksaan must be chosen
+        if (entry.selectedResult == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Silakan pilih Status Pemeriksaan pada DATA KK POSITIF #${i + 1}!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        // Validate Nama KK (Required for both Ada Jentik and Nihil)
+        if (entry.kkNameController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Silakan isi Nama KK pada DATA KK POSITIF #${i + 1}!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        // Validate RT (Required for both Ada Jentik and Nihil)
+        if (entry.rtController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Silakan isi RT pada DATA KK POSITIF #${i + 1}!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        // Validate RW (Required for both Ada Jentik and Nihil)
+        if (entry.rwController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Silakan isi RW pada DATA KK POSITIF #${i + 1}!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        if (entry.selectedResult == 'Ada Jentik') {
+          // Validate Tempat Positif Jentik
+          final activePlaces = entry.selectedPlaceIds.where((id) => id != null).toList();
+          if (activePlaces.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Silakan pilih minimal satu Tempat Positif Jentik pada DATA KK POSITIF #${i + 1}!'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+          if (entry.selectedPlaceIds.any((id) => id == null)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Ada Tempat Positif Jentik yang belum dipilih pada DATA KK POSITIF #${i + 1}!'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+          // Validate Jumlah Tempat Positif
+          final countText = entry.positivePlacesCountController.text.trim();
+          if (countText.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Silakan isi Jumlah Tempat Positif pada DATA KK POSITIF #${i + 1}!'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+          final countVal = int.tryParse(countText);
+          if (countVal == null || countVal <= 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Jumlah Tempat Positif pada DATA KK POSITIF #${i + 1} harus lebih dari 0!'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+        }
       }
 
       isLoading.value = true;
@@ -402,7 +518,7 @@ class ReportFormScreen extends HookConsumerWidget {
                         const SizedBox(height: 20),
 
                         // Global Fields
-                        _buildLabel(iconWidget: const Icon(Icons.location_on, size: 16, color: Colors.blue), label: 'Nama Desa'),
+                        _buildLabel(iconWidget: const Icon(Icons.location_on, size: 16, color: Colors.blue), label: 'Nama Desa', isRequired: true),
                         const SizedBox(height: 8),
                         _buildDropdown(
                           key: ValueKey('village_form_${selectedVillageId.value}'),
@@ -438,7 +554,7 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        _buildLabel(iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 16, height: 16), label: 'Nama Posyandu'),
+                        _buildLabel(iconWidget: Image.asset('assets/images/icon_posyandu.png', width: 16, height: 16), label: 'Nama Posyandu', isRequired: true),
                         const SizedBox(height: 8),
                         _buildDropdown(
                           key: ValueKey('posyandu_form_${selectedVillageId.value}_${selectedPosyanduId.value}'),
@@ -456,7 +572,7 @@ class ReportFormScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        _buildLabel(iconWidget: const Icon(Icons.calendar_today, size: 16, color: Colors.blue), label: 'Tanggal Laporan'),
+                        _buildLabel(iconWidget: const Icon(Icons.calendar_today, size: 16, color: Colors.blue), label: 'Tanggal Laporan', isRequired: true),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () async {
@@ -488,9 +604,33 @@ class ReportFormScreen extends HookConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Jumlah Rumah Diperiksa', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                                  RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF154360),
+                                      ),
+                                      children: const [
+                                        TextSpan(text: 'Jumlah Rumah Diperiksa'),
+                                        TextSpan(
+                                          text: ' *',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   const SizedBox(height: 8),
-                                  _buildNumericInput(housesInspectedController),
+                                  _buildNumericInput(
+                                    housesInspectedController,
+                                    hintText: '-',
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Wajib diisi';
+                                      }
+                                      return null;
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
@@ -499,9 +639,33 @@ class ReportFormScreen extends HookConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Jumlah Rumah Positif Jentik', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                                  RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF154360),
+                                      ),
+                                      children: const [
+                                        TextSpan(text: 'Jumlah Rumah Positif Jentik'),
+                                        TextSpan(
+                                          text: ' *',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   const SizedBox(height: 8),
-                                  _buildNumericInput(housesPositiveController),
+                                  _buildNumericInput(
+                                    housesPositiveController,
+                                    hintText: '-',
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Wajib diisi';
+                                      }
+                                      return null;
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
@@ -513,6 +677,7 @@ class ReportFormScreen extends HookConsumerWidget {
                         ...houseEntries.value.asMap().entries.map((e) {
                           final idx = e.key;
                           final entry = e.value;
+                          final isAdaJentik = entry.selectedResult == 'Ada Jentik';
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -533,7 +698,11 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              _buildLabel(iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18), label: 'Status Pemeriksaan'),
+                              _buildLabel(
+                                iconWidget: Image.asset('assets/images/icon_mosquito.png', width: 18, height: 18),
+                                label: 'Status Pemeriksaan',
+                                isRequired: true,
+                              ),
                               const SizedBox(height: 8),
                               _buildDropdown(
                                 key: ValueKey('status_entry_$idx'),
@@ -544,25 +713,65 @@ class ReportFormScreen extends HookConsumerWidget {
                                   if (val == 'Nihil') {
                                     entry.selectedPlaceIds = [null];
                                     entry.positivePlacesCountController.text = '0';
+                                  } else {
+                                    entry.positivePlacesCountController.clear();
                                   }
                                   houseEntries.value = [...houseEntries.value]; // Trigger rebuild
                                 },
                                 items: ['Ada Jentik', 'Nihil'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.outfit(fontSize: 12)))).toList(),
                               ),
                               const SizedBox(height: 16),
-                              _buildLabel(iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal), label: 'Nama KK & RT/RW'),
+                              _buildLabel(
+                                iconWidget: const Icon(Icons.assignment, size: 16, color: Colors.teal),
+                                label: 'Nama KK & RT/RW',
+                                isRequired: true,
+                              ),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Expanded(flex: 2, child: _buildTextInput(entry.kkNameController, 'Nama')),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _buildTextInput(
+                                      entry.kkNameController,
+                                      'Nama *',
+                                      validator: (val) {
+                                        if (val == null || val.trim().isEmpty) {
+                                          return 'Wajib diisi';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
                                   const SizedBox(width: 12),
-                                  _buildSmallLabel('RT'),
+                                  _buildSmallLabel('RT', isRequired: true),
                                   const SizedBox(width: 4),
-                                  SizedBox(width: 45, child: _buildSmallTextInput(entry.rtController)),
+                                  SizedBox(
+                                    width: 45,
+                                    child: _buildSmallTextInput(
+                                      entry.rtController,
+                                      validator: (val) {
+                                        if (val == null || val.trim().isEmpty) {
+                                          return '';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
-                                  _buildSmallLabel('RW'),
+                                  _buildSmallLabel('RW', isRequired: true),
                                   const SizedBox(width: 4),
-                                  SizedBox(width: 45, child: _buildSmallTextInput(entry.rwController)),
+                                  SizedBox(
+                                    width: 45,
+                                    child: _buildSmallTextInput(
+                                      entry.rwController,
+                                      validator: (val) {
+                                        if (val == null || val.trim().isEmpty) {
+                                          return '';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -574,7 +783,11 @@ class ReportFormScreen extends HookConsumerWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       // Multiple Breeding Places
-                                      _buildLabel(iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue), label: 'Tempat Positif Jentik'),
+                                      _buildLabel(
+                                        iconWidget: const Icon(Icons.water_drop, size: 16, color: Colors.blue),
+                                        label: 'Tempat Positif Jentik',
+                                        isRequired: isAdaJentik,
+                                      ),
                                       const SizedBox(height: 8),
                                       if (isNihil)
                                         Container(
@@ -636,7 +849,11 @@ class ReportFormScreen extends HookConsumerWidget {
                                           );
                                         }),
                                       const SizedBox(height: 16),
-                                      _buildLabel(iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal), label: 'Jumlah Tempat Positif'),
+                                      _buildLabel(
+                                        iconWidget: const Icon(Icons.settings, size: 16, color: Colors.teal),
+                                        label: 'Jumlah Tempat Positif',
+                                        isRequired: isAdaJentik,
+                                      ),
                                       const SizedBox(height: 8),
                                       if (isNihil)
                                         Container(
@@ -650,7 +867,25 @@ class ReportFormScreen extends HookConsumerWidget {
                                           child: Text('-', style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 14, fontWeight: FontWeight.bold)),
                                         )
                                       else
-                                        SizedBox(width: double.infinity, child: _buildNumericInput(entry.positivePlacesCountController)),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: _buildNumericInput(
+                                            entry.positivePlacesCountController,
+                                            hintText: '-',
+                                            validator: (val) {
+                                              if (isAdaJentik) {
+                                                if (val == null || val.trim().isEmpty) {
+                                                  return 'Wajib diisi';
+                                                }
+                                                final numVal = int.tryParse(val);
+                                                if (numVal == null || numVal <= 0) {
+                                                  return 'Harus > 0';
+                                                }
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
                                     ],
                                   );
                                 },
@@ -720,38 +955,69 @@ class ReportFormScreen extends HookConsumerWidget {
 );
 }
 
-  Widget _buildSmallLabel(String text) {
+  Widget _buildSmallLabel(String text, {bool isRequired = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
-      child: Text(text, style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
+      child: RichText(
+        text: TextSpan(
+          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700]),
+          children: [
+            TextSpan(text: text),
+            if (isRequired)
+              const TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildLabel({required Widget iconWidget, required String label}) {
+  Widget _buildLabel({
+    required Widget iconWidget,
+    required String label,
+    bool isRequired = false,
+  }) {
     return Row(
       children: [
         iconWidget,
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF154360)),
+        RichText(
+          text: TextSpan(
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF154360),
+            ),
+            children: [
+              TextSpan(text: label),
+              if (isRequired)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSmallTextInput(TextEditingController controller) {
+  Widget _buildSmallTextInput(TextEditingController controller, {String? Function(String?)? validator}) {
     return TextFormField(
       controller: controller,
       textAlign: TextAlign.center,
       keyboardType: TextInputType.number,
+      validator: validator,
       style: const TextStyle(fontSize: 12),
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
         isDense: true,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: Colors.grey[300]!)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: Colors.grey[300]!)),
+        errorStyle: const TextStyle(height: 0), // hide validation text under tiny box
       ),
     );
   }
@@ -791,12 +1057,19 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildNumericInput(TextEditingController controller) {
+  Widget _buildNumericInput(
+    TextEditingController controller, {
+    String? Function(String?)? validator,
+    String? hintText,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
+      validator: validator,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
         filled: true,
         fillColor: const Color(0xFFF8F9FA),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -806,9 +1079,10 @@ class ReportFormScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _buildTextInput(TextEditingController controller, String hint) {
+  Widget _buildTextInput(TextEditingController controller, String hint, {String? Function(String?)? validator}) {
     return TextFormField(
       controller: controller,
+      validator: validator,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
