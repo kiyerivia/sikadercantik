@@ -1914,7 +1914,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Data KK #${index + 1}',
+                                      'Data KK Jentik Nyamuk #${index + 1}',
                                       style: GoogleFonts.outfit(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,

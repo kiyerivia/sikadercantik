@@ -46,3 +46,71 @@ final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((
 
   return stats;
 });
+
+class VillageMapData {
+  final String name;
+  final double latitude;
+  final double longitude;
+  final double abj;
+  final int inspected;
+  
+  VillageMapData({
+    required this.name,
+    required this.latitude,
+    required this.longitude,
+    required this.abj,
+    required this.inspected,
+  });
+}
+
+final villageMapDataProvider = FutureProvider<List<VillageMapData>>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  
+  final pRes = await supabase.from('posyandus').select('id, latitude, longitude, rws(villages(name))');
+  final rRes = await supabase.from('reports').select('posyandu_id, houses_inspected, houses_positive, report_date');
+  
+  Map<String, List<Map<String, dynamic>>> villagePosyandus = {};
+  Map<String, String> posyanduToVillage = {};
+  
+  for (var p in pRes as List) {
+    final vName = p['rws']?['villages']?['name'] as String?;
+    if (vName != null) {
+      posyanduToVillage[p['id']] = vName;
+      if (p['latitude'] != null && p['longitude'] != null) {
+        villagePosyandus.putIfAbsent(vName, () => []).add(p);
+      }
+    }
+  }
+  
+  Map<String, int> villageInspected = {};
+  Map<String, int> villagePositive = {};
+  
+  for (var r in rRes as List) {
+    final pid = r['posyandu_id'] as String;
+    final vName = posyanduToVillage[pid];
+    if (vName != null) {
+       villageInspected[vName] = (villageInspected[vName] ?? 0) + (r['houses_inspected'] as int);
+       villagePositive[vName] = (villagePositive[vName] ?? 0) + (r['houses_positive'] as int);
+    }
+  }
+  
+  List<VillageMapData> result = [];
+  villagePosyandus.forEach((vName, posys) {
+    double sumLat = 0;
+    double sumLon = 0;
+    for (var p in posys) {
+      sumLat += p['latitude'] as double;
+      sumLon += p['longitude'] as double;
+    }
+    double avgLat = sumLat / posys.length;
+    double avgLon = sumLon / posys.length;
+    
+    int inspected = villageInspected[vName] ?? 0;
+    int positive = villagePositive[vName] ?? 0;
+    double abj = inspected > 0 ? ((inspected - positive) / inspected) * 100 : 100.0;
+    
+    result.add(VillageMapData(name: vName, latitude: avgLat, longitude: avgLon, abj: abj, inspected: inspected));
+  });
+  
+  return result;
+});

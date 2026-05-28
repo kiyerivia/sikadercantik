@@ -136,6 +136,43 @@ class ReportFormScreen extends HookConsumerWidget {
         return;
       }
 
+      final expectedInspected = int.tryParse(housesInspectedController.text) ?? 0;
+      final expectedPositive = int.tryParse(housesPositiveController.text) ?? 0;
+      
+      if (expectedPositive > expectedInspected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Jumlah Rumah Positif tidak boleh lebih besar dari Jumlah Rumah Diperiksa!'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // 1. Total data KK yang diisi harus sama dengan Jumlah Rumah Diperiksa
+      if (houseEntries.value.length != expectedInspected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Total Data KK yang diinput (${houseEntries.value.length}) harus sama dengan Jumlah Rumah Diperiksa ($expectedInspected)!'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // 2. Jumlah data KK yang statusnya "Ada Jentik" harus sama dengan Jumlah Rumah Positif
+      final actualPositive = houseEntries.value.where((e) => e.selectedResult == 'Ada Jentik').length;
+      
+      if (actualPositive != expectedPositive) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Data KK status "Ada Jentik" ($actualPositive) tidak sesuai dengan Jumlah Rumah Positif ($expectedPositive)!'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
       // 4. Validate KK Entries
       for (int i = 0; i < houseEntries.value.length; i++) {
         final entry = houseEntries.value[i];
@@ -144,7 +181,7 @@ class ReportFormScreen extends HookConsumerWidget {
         if (entry.selectedResult == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Silakan pilih Status Pemeriksaan pada DATA KK POSITIF #${i + 1}!'),
+              content: Text('Silakan pilih Status Pemeriksaan pada DATA KK JENTIK NYAMUK #${i + 1}!'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -155,7 +192,7 @@ class ReportFormScreen extends HookConsumerWidget {
         if (entry.kkNameController.text.trim().isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Silakan isi Nama KK pada DATA KK POSITIF #${i + 1}!'),
+              content: Text('Silakan isi Nama KK pada DATA KK JENTIK NYAMUK #${i + 1}!'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -165,7 +202,7 @@ class ReportFormScreen extends HookConsumerWidget {
         if (entry.rtController.text.trim().isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Silakan isi RT pada DATA KK POSITIF #${i + 1}!'),
+              content: Text('Silakan isi RT pada DATA KK JENTIK NYAMUK #${i + 1}!'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -175,7 +212,7 @@ class ReportFormScreen extends HookConsumerWidget {
         if (entry.rwController.text.trim().isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Silakan isi RW pada DATA KK POSITIF #${i + 1}!'),
+              content: Text('Silakan isi RW pada DATA KK JENTIK NYAMUK #${i + 1}!'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -188,7 +225,7 @@ class ReportFormScreen extends HookConsumerWidget {
           if (activePlaces.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Silakan pilih minimal satu Tempat Positif Jentik pada DATA KK POSITIF #${i + 1}!'),
+                content: Text('Silakan pilih minimal satu Tempat Positif Jentik pada DATA KK JENTIK NYAMUK #${i + 1}!'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -197,7 +234,7 @@ class ReportFormScreen extends HookConsumerWidget {
           if (entry.selectedPlaceIds.any((id) => id == null)) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Ada Tempat Positif Jentik yang belum dipilih pada DATA KK POSITIF #${i + 1}!'),
+                content: Text('Ada Tempat Positif Jentik yang belum dipilih pada DATA KK JENTIK NYAMUK #${i + 1}!'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -208,7 +245,7 @@ class ReportFormScreen extends HookConsumerWidget {
           if (countText.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Silakan isi Jumlah Tempat Positif pada DATA KK POSITIF #${i + 1}!'),
+                content: Text('Silakan isi Jumlah Tempat Positif pada DATA KK JENTIK NYAMUK #${i + 1}!'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -218,7 +255,7 @@ class ReportFormScreen extends HookConsumerWidget {
           if (countVal == null || countVal <= 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Jumlah Tempat Positif pada DATA KK POSITIF #${i + 1} harus lebih dari 0!'),
+                content: Text('Jumlah Tempat Positif pada DATA KK JENTIK NYAMUK #${i + 1} harus lebih dari 0!'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -686,7 +723,7 @@ class ReportFormScreen extends HookConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('DATA KK POSITIF #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
+                                  Text('DATA KK JENTIK NYAMUK #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
                                   if (houseEntries.value.length > 1)
                                     IconButton(
                                       icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),

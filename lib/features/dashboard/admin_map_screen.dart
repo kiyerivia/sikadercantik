@@ -33,7 +33,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
   String _searchQuery = '';
 
   // State untuk info window saat marker di-tap
-  Posyandu? _infoPosyandu;
+  String? _infoTitle;
   double _infoAbj = 100.0;
   int _infoInspected = 0;
 
@@ -50,7 +50,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       });
     } else if (!_isEditMode) {
       setState(() {
-        _infoPosyandu = null;
+        _infoTitle = null;
       });
     }
   }
@@ -247,6 +247,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
   Widget build(BuildContext context) {
     final posyanduAsync = ref.watch(posyanduListProvider);
     final abjDataAsync = ref.watch(posyanduAbjProvider);
+    final villageDataAsync = ref.watch(villageMapDataProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -259,7 +260,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 autofocus: true,
                 style: GoogleFonts.outfit(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
-                  hintText: 'Cari fasilitas / posyandu...',
+                  hintText: 'Cari nama desa...',
                   hintStyle: GoogleFonts.outfit(
                     color: Colors.white70,
                     fontSize: 15,
@@ -270,12 +271,39 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   setState(() {
                     _searchQuery = val;
                   });
+                  final query = val.trim().toLowerCase();
+                  if (query.isNotEmpty) {
+                    final villages = villageDataAsync.value ?? [];
+                    final matches = villages.where((v) => v.name.toLowerCase().contains(query)).toList();
+                    if (matches.length == 1) {
+                      _mapController.move(LatLng(matches.first.latitude, matches.first.longitude), 15.0);
+                    }
+                  }
+                },
+                onSubmitted: (val) {
+                  final query = val.trim().toLowerCase();
+                  if (query.isEmpty) return;
+                  final villages = villageDataAsync.value ?? [];
+                  final matches = villages.where((v) => v.name.toLowerCase().contains(query)).toList();
+                  if (matches.isNotEmpty) {
+                    final v = matches.first;
+                    setState(() {
+                      _mapController.move(LatLng(v.latitude, v.longitude), 18.0);
+                      _infoTitle = v.name;
+                      _infoAbj = v.abj;
+                      _infoInspected = v.inspected;
+                      _isSearching = false;
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
                 },
               )
             : Text(
                 _isEditMode
                     ? 'Klik Peta untuk Presisi Titik Lokasi'
-                    : 'Peta Sebaran Jentik (Leaflet)',
+                    : 'Peta Sebaran Jentik (OpenLayers/OSM)',
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -307,7 +335,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
           if (!_isEditMode && !_isSearching)
             IconButton(
               icon: const Icon(Icons.search, color: Colors.white),
-              tooltip: 'Cari Fasilitas / Posyandu',
+              tooltip: 'Cari Desa',
               onPressed: () => setState(() => _isSearching = true),
             ),
           if (_isSearching)
@@ -335,8 +363,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
               onPressed: () {
                 ref.invalidate(posyanduAbjProvider);
                 ref.invalidate(posyanduListProvider);
+                ref.invalidate(villageMapDataProvider);
                 setState(() {
-                  _infoPosyandu = null;
+                  _infoTitle = null;
                 });
               },
             ),
@@ -345,116 +374,102 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       body: posyanduAsync.when(
         data: (posyandus) {
           final abjStats = abjDataAsync.value ?? {};
+          final villages = villageDataAsync.value ?? [];
 
           final String query = _searchQuery.trim().toLowerCase();
 
-          final List<Marker> markers = posyandus
-              .where((p) {
-                final bool hasCoords =
-                    p.latitude != null && p.longitude != null;
-                if (!hasCoords) return false;
-                if (query.isEmpty) return true;
-                return p.name.toLowerCase().contains(query);
-              })
-              .map((p) {
-                final stats = abjStats[p.id];
-                final abj = stats?['abj'] ?? 100.0;
-                final inspected = stats?['inspected'] ?? 0;
+          final List<Marker> markers = [];
+          final List<CircleMarker> circles = [];
 
-                return Marker(
+          if (_isEditMode) {
+            markers.addAll(posyandus
+              .where((p) => p.latitude != null && p.longitude != null)
+              .map((p) => Marker(
                   point: LatLng(p.latitude!, p.longitude!),
                   width: 44,
                   height: 44,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _infoPosyandu = p;
-                        _infoAbj = (abj is num) ? abj.toDouble() : 100.0;
-                        _infoInspected = (inspected is int) ? inspected : 0;
-                      });
-                    },
-                    child: Center(
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: _getColor((abj is num) ? abj.toDouble() : 100.0),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
+                  child: Center(
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
                   ),
-                );
-              })
-              .toList();
-
-          // Tambah marker sementara saat edit
-          if (_isEditMode && _tempLocation != null) {
-            markers.add(
-              Marker(
-                point: _tempLocation!,
-                width: 44,
-                height: 44,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                ))
+              .toList());
+          } else {
+            final filteredVillages = villages.where((v) => query.isEmpty || v.name.toLowerCase().contains(query)).toList();
+            
+            markers.addAll(filteredVillages.map((v) => Marker(
+                  point: LatLng(v.latitude, v.longitude),
+                  width: 120,
+                  height: 60,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _infoTitle = v.name;
+                        _infoAbj = v.abj;
+                        _infoInspected = v.inspected;
+                      });
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: _getColor(v.abj),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.my_location,
-                        size: 28,
-                        color: Colors.blueAccent,
-                      ),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Text(
+                            v.name,
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // Generate circle areas ONLY for infected posyandus (ABJ < 100)
-          final List<CircleMarker> circles = posyandus
-              .where((p) {
-                final bool hasCoords = p.latitude != null && p.longitude != null;
-                if (!hasCoords) return false;
-                if (query.isEmpty) return true;
-                return p.name.toLowerCase().contains(query);
-              })
-              .where((p) {
-                final stats = abjStats[p.id];
-                final abj = stats?['abj'] ?? 100.0;
-                final numericAbj = (abj is num) ? abj.toDouble() : 100.0;
-                // Hanya munculkan circle jika ada rumah positif (ABJ < 100)
-                return numericAbj < 100.0;
-              })
-              .map((p) {
-                return CircleMarker(
-                  point: LatLng(p.latitude!, p.longitude!),
-                  color: Colors.red.withOpacity(0.25), // Semi-transparent red area effect
-                  borderColor: Colors.red.withOpacity(0.8), // Solid red outer ring
+                  ),
+                )).toList());
+                
+            circles.addAll(filteredVillages
+              .where((v) => v.abj < 100.0)
+              .map((v) => CircleMarker(
+                  point: LatLng(v.latitude, v.longitude),
+                  color: Colors.red.withOpacity(0.25),
+                  borderColor: Colors.red.withOpacity(0.8),
                   borderStrokeWidth: 2,
                   useRadiusInMeter: true,
-                  radius: 300, // 300 meters radius area
-                );
-              })
-              .toList();
+                  radius: 300,
+                )).toList());
+          }
 
           return Stack(
             children: [
@@ -495,43 +510,31 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                       ),
                       child: ListView(
                         shrinkWrap: true,
-                        children: posyandus
-                            .where((p) {
-                              final bool hasCoords =
-                                  p.latitude != null && p.longitude != null;
-                              if (!hasCoords) return false;
-                              return p.name.toLowerCase().contains(query);
-                            })
-                            .map((p) {
-                              final stats = abjStats[p.id];
-                              final abj = stats?['abj'] ?? 100.0;
-                              final inspected = stats?['inspected'] ?? 0;
+                        children: (_isEditMode ? [] : villageDataAsync.value ?? [])
+                            .where((v) => query.isNotEmpty && v.name.toLowerCase().contains(query))
+                            .map((v) {
                               return ListTile(
                                 leading: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: _getColor(
-                                      (abj is num) ? abj.toDouble() : 100.0,
-                                    ).withOpacity(0.2),
+                                    color: _getColor(v.abj).withOpacity(0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    Icons.local_hospital_rounded,
-                                    color: _getColor(
-                                      (abj is num) ? abj.toDouble() : 100.0,
-                                    ),
+                                    Icons.map,
+                                    color: _getColor(v.abj),
                                     size: 20,
                                   ),
                                 ),
                                 title: Text(
-                                  p.name,
+                                  v.name,
                                   style: GoogleFonts.outfit(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
                                 ),
                                 subtitle: Text(
-                                  'ABJ: ${(abj is num ? abj.toDouble() : 100.0).toStringAsFixed(1)}% | $inspected rumah diperiksa',
+                                  'ABJ: ${v.abj.toStringAsFixed(1)}% | ${v.inspected} rumah diperiksa',
                                   style: GoogleFonts.outfit(
                                     fontSize: 12,
                                     color: Colors.blueGrey,
@@ -544,16 +547,12 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                                 onTap: () {
                                   setState(() {
                                     _mapController.move(
-                                      LatLng(p.latitude!, p.longitude!),
+                                      LatLng(v.latitude, v.longitude),
                                       18.0,
                                     );
-                                    _infoPosyandu = p;
-                                    _infoAbj = (abj is num)
-                                        ? abj.toDouble()
-                                        : 100.0;
-                                    _infoInspected = (inspected is int)
-                                        ? inspected
-                                        : 0;
+                                    _infoTitle = v.name;
+                                    _infoAbj = v.abj;
+                                    _infoInspected = v.inspected;
                                     _isSearching = false;
                                     _searchQuery = '';
                                     _searchController.clear();
@@ -595,7 +594,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Belum ada koordinat Posyandu yang diset di peta.\nKlik ikon Edit Lokasi di pojok kanan atas untuk mulai menandai koordinat Posyandu.',
+                          'Belum ada koordinat Desa yang diset di peta.\nKlik ikon Edit Lokasi di pojok kanan atas untuk mulai menandai koordinat Desa.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.outfit(
                             color: Colors.blueGrey.shade800,
@@ -608,7 +607,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 ),
 
               // Pop-up Info Window Floating Card
-              if (!_isEditMode && _infoPosyandu != null)
+              if (!_isEditMode && _infoTitle != null)
                 Positioned(
                   top: 20,
                   left: 20,
@@ -639,7 +638,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  _infoPosyandu!.name,
+                                  _infoTitle!,
                                   style: GoogleFonts.outfit(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -653,7 +652,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                                   color: Colors.grey,
                                 ),
                                 onPressed: () =>
-                                    setState(() => _infoPosyandu = null),
+                                    setState(() => _infoTitle = null),
                               ),
                             ],
                           ),
@@ -1005,7 +1004,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         final stats = abjStats[val.id];
                         final abj = stats?['abj'] ?? 100.0;
                         final inspected = stats?['inspected'] ?? 0;
-                        _infoPosyandu = val;
+                        _infoTitle = val.name;
                         _infoAbj = (abj is num) ? abj.toDouble() : 100.0;
                         _infoInspected = (inspected is int) ? inspected : 0;
                         _isEditMode = false; // Panel otomatis tertutup!
