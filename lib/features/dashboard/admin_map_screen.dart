@@ -373,30 +373,22 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         _infoInspected = (inspected is int) ? inspected : 0;
                       });
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.local_hospital_rounded,
-                            size: 26,
-                            color: _getColor(
-                              (abj is num) ? abj.toDouble() : 100.0,
+                    child: Center(
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: _getColor((abj is num) ? abj.toDouble() : 100.0),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 2,
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 );
@@ -437,7 +429,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
             );
           }
 
-          // Generate circle areas
+          // Generate circle areas ONLY for infected posyandus (ABJ < 100)
           final List<CircleMarker> circles = posyandus
               .where((p) {
                 final bool hasCoords = p.latitude != null && p.longitude != null;
@@ -445,15 +437,18 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 if (query.isEmpty) return true;
                 return p.name.toLowerCase().contains(query);
               })
-              .map((p) {
+              .where((p) {
                 final stats = abjStats[p.id];
                 final abj = stats?['abj'] ?? 100.0;
-                final color = _getColor((abj is num) ? abj.toDouble() : 100.0);
-
+                final numericAbj = (abj is num) ? abj.toDouble() : 100.0;
+                // Hanya munculkan circle jika ada rumah positif (ABJ < 100)
+                return numericAbj < 100.0;
+              })
+              .map((p) {
                 return CircleMarker(
                   point: LatLng(p.latitude!, p.longitude!),
-                  color: color.withOpacity(0.25), // Semi-transparent area effect
-                  borderColor: color.withOpacity(0.8), // Solid outer ring
+                  color: Colors.red.withOpacity(0.25), // Semi-transparent red area effect
+                  borderColor: Colors.red.withOpacity(0.8), // Solid red outer ring
                   borderStrokeWidth: 2,
                   useRadiusInMeter: true,
                   radius: 300, // 300 meters radius area
@@ -467,7 +462,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: _center,
-                  initialZoom: 14.0,
+                  initialZoom: 12.5, // Zoom out to show all 10 villages
                   onTap: (tapPosition, point) => _handleMapTap(point),
                 ),
                 children: [
