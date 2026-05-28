@@ -828,14 +828,25 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                               ),
                                             ),
                                             DataCell(
-                                              Text(
-                                                DateFormat(
-                                                  'dd MMMM yyyy',
-                                                ).format(report.reportDate),
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 12,
-                                                  color: Colors.blueGrey,
-                                                ),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    DateFormat('dd MMMM yyyy').format(report.reportDate),
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 12,
+                                                      color: Colors.blueGrey,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    DateFormat('HH:mm:ss').format(report.createdAt),
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 10,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                             DataCell(

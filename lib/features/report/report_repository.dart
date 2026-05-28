@@ -11,6 +11,7 @@ class ReportRepository {
     required int housesInspected,
     required int housesPositive,
     required List<String> breedingPlaceIds,
+    required DateTime reportDate,
     String? notes,
   }) async {
     final userId = _client.auth.currentUser?.id;
@@ -22,6 +23,7 @@ class ReportRepository {
       'posyandu_id': posyanduId,
       'houses_inspected': housesInspected,
       'houses_positive': housesPositive,
+      'report_date': reportDate.toIso8601String(),
       'notes': notes,
       'status': 'submitted',
     }).select().single();
@@ -107,12 +109,14 @@ class ReportRepository {
     required int housesInspected,
     required int housesPositive,
     required List<String> breedingPlaceIds,
+    required DateTime reportDate,
     String? notes,
   }) async {
     // 1. Update Report & reset status to submitted for re-verification
     await _client.from('reports').update({
       'houses_inspected': housesInspected,
       'houses_positive': housesPositive,
+      'report_date': reportDate.toIso8601String(),
       'notes': notes,
       'status': 'submitted', // Change back to submitted
     }).eq('id', reportId);

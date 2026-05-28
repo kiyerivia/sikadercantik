@@ -265,6 +265,7 @@ class ReportFormScreen extends HookConsumerWidget {
             housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
             housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
             breedingPlaceIds: allBreedingPlaceIds,
+            reportDate: reportDate.value,
             notes: notesBuffer.toString(),
           );
         } else {
@@ -273,6 +274,7 @@ class ReportFormScreen extends HookConsumerWidget {
             housesInspected: int.tryParse(housesInspectedController.text) ?? 0,
             housesPositive: int.tryParse(housesPositiveController.text) ?? 0,
             breedingPlaceIds: allBreedingPlaceIds,
+            reportDate: reportDate.value,
             notes: notesBuffer.toString(),
           );
         }
