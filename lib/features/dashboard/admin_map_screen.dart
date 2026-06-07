@@ -253,7 +253,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       appBar: AppBar(
         backgroundColor: _isEditMode
             ? Colors.orange.shade800
-            : const Color(0xFF1F618D),
+            : const Color(0xFF10365F),
         title: _isSearching
             ? TextField(
                 controller: _searchController,
@@ -642,7 +642,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                                   style: GoogleFonts.outfit(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF154360),
+                                    color: const Color(0xFF10365F),
                                   ),
                                 ),
                               ),
@@ -914,7 +914,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         children: [
                           const Icon(
                             Icons.settings_outlined,
-                            color: Color(0xFF154360),
+                            color: Color(0xFF10365F),
                             size: 22,
                           ),
                           const SizedBox(width: 10),
@@ -924,7 +924,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF154360),
+                                color: const Color(0xFF10365F),
                               ),
                             ),
                           ),
@@ -954,7 +954,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   children: [
                     const Icon(
                       Icons.travel_explore,
-                      color: Color(0xFF154360),
+                      color: Color(0xFF10365F),
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -964,7 +964,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF154360),
+                          color: const Color(0xFF10365F),
                         ),
                       ),
                     ),

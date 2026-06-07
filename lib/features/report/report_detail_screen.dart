@@ -22,7 +22,7 @@ class ReportDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: const BackButton(color: Colors.white),
         title: Text('Detail Laporan', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1F618D),
+        backgroundColor: const Color(0xFF10365F),
         elevation: 0,
         actions: const [
           NotificationBadge(),
@@ -37,7 +37,7 @@ class ReportDetailScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
-                color: Color(0xFF1F618D),
+                color: Color(0xFF10365F),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(32),
                   bottomRight: Radius.circular(32),

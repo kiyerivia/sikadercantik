@@ -41,9 +41,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
     final adminNotesAsync = ref.watch(allAdminNotesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFD4E6F1),
+      backgroundColor: const Color(0xFFF4F8FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F618D),
+        backgroundColor: const Color(0xFF10365F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -81,7 +81,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                       ),
                       TextSpan(
                         text: 'PSN',
-                        style: TextStyle(color: Color(0xFF82E0AA)),
+                        style: TextStyle(color: Color(0xFF68B744)),
                       ),
                     ],
                   ),
@@ -131,7 +131,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
             child: const CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
             ),
           ),
           const SizedBox(width: 16),
@@ -163,7 +163,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 Text(
                   'Riwayat Laporan PSN',
                   style: GoogleFonts.outfit(
-                    color: const Color(0xFF2C3E50),
+                    color: const Color(0xFF10365F),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -197,7 +197,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF154360),
+                        color: const Color(0xFF10365F),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -248,7 +248,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       'Puskesmas Gumelar',
                                       style: GoogleFonts.outfit(
                                         fontSize: 13,
-                                        color: const Color(0xFF2C3E50),
+                                        color: const Color(0xFF10365F),
                                         fontWeight: FontWeight.w500,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -312,7 +312,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                               ),
                                               style: GoogleFonts.outfit(
                                                 fontSize: 13,
-                                                color: const Color(0xFF2C3E50),
+                                                color: const Color(0xFF10365F),
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               onChanged: (val) {
@@ -411,7 +411,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           ),
                                           style: GoogleFonts.outfit(
                                             fontSize: 13,
-                                            color: const Color(0xFF2C3E50),
+                                            color: const Color(0xFF10365F),
                                             fontWeight: FontWeight.w500,
                                           ),
                                           onChanged: (val) {
@@ -501,7 +501,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           ),
                                           style: GoogleFonts.outfit(
                                             fontSize: 13,
-                                            color: const Color(0xFF2C3E50),
+                                            color: const Color(0xFF10365F),
                                             fontWeight: FontWeight.w500,
                                           ),
                                           onChanged: (val) {
@@ -629,7 +629,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1976D2),
+                            backgroundColor: const Color(0xFF29B6F6),
                             minimumSize: const Size(
                               120,
                               54,
@@ -739,7 +739,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     child: DataTable(
                                       showCheckboxColumn: false,
                                       headingRowColor: WidgetStateProperty.all(
-                                        const Color(0xFFF4F6F9),
+                                        const Color(0xFFF4F8FA),
                                       ),
                                       columnSpacing: 20,
                                       dataRowMinHeight: 50,
@@ -747,7 +747,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                       headingTextStyle: GoogleFonts.outfit(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF154360),
+                                        color: const Color(0xFF10365F),
                                       ),
                                       columns: [
                                         const DataColumn(label: Text('No')),
@@ -808,7 +808,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           color: WidgetStateProperty.all(
                                             index % 2 == 0
                                                 ? Colors.white
-                                                : const Color(0xFFF8F9F9),
+                                                : const Color(0xFFF4F8FA),
                                           ),
                                           onSelectChanged: (_) =>
                                               _showReportSummaryDialog(
@@ -906,7 +906,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                 icon: const Icon(
                                                   Icons.edit,
                                                   size: 14,
-                                                  color: Color(0xFF1976D2),
+                                                  color: Color(0xFF29B6F6),
                                                 ),
                                                 label: Text(
                                                   'Edit Laporan',
@@ -914,13 +914,13 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 10,
                                                     color: const Color(
-                                                      0xFF1976D2,
+                                                      0xFF29B6F6,
                                                     ),
                                                   ),
                                                 ),
                                                 style: OutlinedButton.styleFrom(
                                                   side: const BorderSide(
-                                                    color: Color(0xFF1976D2),
+                                                    color: Color(0xFF29B6F6),
                                                   ),
                                                   padding:
                                                       const EdgeInsets.symmetric(
@@ -1233,7 +1233,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                               borderSide:
                                                                   const BorderSide(
                                                                     color: Color(
-                                                                      0xFF1976D2,
+                                                                      0xFF29B6F6,
                                                                     ),
                                                                   ),
                                                               borderRadius:
@@ -1422,7 +1422,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1976D2),
+                                    color: const Color(0xFF29B6F6),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -1467,7 +1467,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF1976D2),
+                    color: Color(0xFF29B6F6),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -1486,7 +1486,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF154360),
+                          color: const Color(0xFF10365F),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1562,7 +1562,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     style: GoogleFonts.outfit(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F618D),
+                      color: const Color(0xFF10365F),
                     ),
                   ),
                   IconButton(
@@ -1858,7 +1858,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF154360),
+                  color: const Color(0xFF10365F),
                 ),
               ),
               const SizedBox(height: 8),
@@ -1995,7 +1995,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1F618D),
+                    backgroundColor: const Color(0xFF10365F),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

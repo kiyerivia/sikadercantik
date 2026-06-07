@@ -4,6 +4,7 @@ class Profile {
   final String role;
   final String? posyanduId;
   final String? phoneNumber;
+  final String? avatarUrl;
 
   Profile({
     required this.id,
@@ -11,6 +12,7 @@ class Profile {
     required this.role,
     this.posyanduId,
     this.phoneNumber,
+    this.avatarUrl,
   });
 
   factory Profile.fromMap(Map<String, dynamic> map) {
@@ -20,6 +22,7 @@ class Profile {
       role: map['role'] as String,
       posyanduId: map['posyandu_id'] as String?,
       phoneNumber: map['phone_number'] as String?,
+      avatarUrl: map['avatar_url'] as String?,
     );
   }
 }

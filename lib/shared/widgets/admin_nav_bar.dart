@@ -87,7 +87,7 @@ class _NavButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF1F618D) : Colors.transparent,
+            color: isActive ? const Color(0xFF10365F) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

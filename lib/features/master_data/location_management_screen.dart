@@ -17,10 +17,10 @@ class LocationManagementScreen extends HookConsumerWidget {
     final searchQuery = useState<String>('');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: const Color(0xFFF4F8FA),
       appBar: AppBar(
         leading: const BackButton(color: Colors.white),
-        backgroundColor: const Color(0xFF1F618D),
+        backgroundColor: const Color(0xFF10365F),
         elevation: 0,
         title: Row(
           children: [
@@ -40,7 +40,7 @@ class LocationManagementScreen extends HookConsumerWidget {
                     style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
                     children: const [
                       TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
-                      TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF82E0AA))),
+                      TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF68B744))),
                     ],
                   ),
                 ),
@@ -78,7 +78,7 @@ class LocationManagementScreen extends HookConsumerWidget {
             child: const CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
             ),
           ),
           const SizedBox(width: 16),
@@ -155,7 +155,7 @@ class LocationManagementScreen extends HookConsumerWidget {
                     icon: const Icon(Icons.add, color: Colors.white, size: 20),
                     label: Text('Tambah Desa', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1F618D),
+                      backgroundColor: const Color(0xFF10365F),
                       minimumSize: const Size(120, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -232,7 +232,7 @@ class LocationManagementScreen extends HookConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Tambah Desa Baru', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF1F618D))),
+        title: Text('Tambah Desa Baru', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF10365F))),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +246,7 @@ class LocationManagementScreen extends HookConsumerWidget {
                 labelText: 'Nama Desa / Kelurahan',
                 labelStyle: GoogleFonts.outfit(color: Colors.blueGrey),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F618D), width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF10365F), width: 2)),
               ),
             ),
           ],
@@ -274,7 +274,7 @@ class LocationManagementScreen extends HookConsumerWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F618D),
+              backgroundColor: const Color(0xFF10365F),
               minimumSize: const Size(90, 42),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -318,8 +318,8 @@ class _VillageExpandable extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: const Color(0xFF1F618D).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.location_city, color: Color(0xFF1F618D), size: 24),
+              decoration: BoxDecoration(color: const Color(0xFF10365F).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.location_city, color: Color(0xFF10365F), size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -327,7 +327,7 @@ class _VillageExpandable extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Desa / Wilayah', style: GoogleFonts.outfit(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
-                  Text(village.name, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                  Text(village.name, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
                 ],
               ),
             ),
@@ -335,7 +335,7 @@ class _VillageExpandable extends ConsumerWidget {
         ),
         children: [
           Container(
-            color: const Color(0xFFF8F9F9),
+            color: const Color(0xFFF4F8FA),
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,11 +359,11 @@ class _VillageExpandable extends ConsumerWidget {
                         ),
                         OutlinedButton.icon(
                           onPressed: () => _showAddRwDialog(context, ref, village),
-                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF1F618D)),
-                          label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
+                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF10365F)),
+                          label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            side: const BorderSide(color: Color(0xFF1F618D)),
+                            side: const BorderSide(color: Color(0xFF10365F)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
@@ -424,7 +424,7 @@ class _VillageExpandable extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Tambah RW Baru - ${village.name}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF1F618D))),
+        title: Text('Tambah RW Baru - ${village.name}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF10365F))),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +438,7 @@ class _VillageExpandable extends ConsumerWidget {
                 labelText: 'Nomor RW (Contoh: 01)',
                 labelStyle: GoogleFonts.outfit(color: Colors.blueGrey),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F618D), width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF10365F), width: 2)),
               ),
             ),
           ],
@@ -466,7 +466,7 @@ class _VillageExpandable extends ConsumerWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F618D),
+              backgroundColor: const Color(0xFF10365F),
               minimumSize: const Size(90, 42),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -532,7 +532,7 @@ class _RWExpandable extends ConsumerWidget {
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: ExpansionTile(
-        title: Text('RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF2C3E50), fontSize: 15)),
+        title: Text('RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F), fontSize: 15)),
         leading: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
@@ -622,7 +622,7 @@ class _RWExpandable extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Tambah Posyandu - RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF1F618D))),
+        title: Text('Tambah Posyandu - RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF10365F))),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -636,7 +636,7 @@ class _RWExpandable extends ConsumerWidget {
                   labelText: 'Nama Posyandu *',
                   labelStyle: GoogleFonts.outfit(color: Colors.blueGrey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F618D), width: 2)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF10365F), width: 2)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -701,7 +701,7 @@ class _RWExpandable extends ConsumerWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F618D),
+              backgroundColor: const Color(0xFF10365F),
               minimumSize: const Size(90, 42),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -747,7 +747,7 @@ class _PosyanduList extends ConsumerWidget {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
             child: ListTile(
               dense: true,
-              title: Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF154360), fontSize: 14)),
+              title: Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F), fontSize: 14)),
               subtitle: p.namaKetua != null && p.namaKetua!.isNotEmpty
                   ? Text('Ketua: ${p.namaKetua} ${p.nomorHp != null ? '(${p.nomorHp})' : ''}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))
                   : null,

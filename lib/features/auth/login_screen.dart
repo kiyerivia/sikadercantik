@@ -139,7 +139,7 @@ class LoginScreen extends HookConsumerWidget {
                     ElevatedButton(
                       onPressed: isLoading.value ? null : handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1D7423),
+                        backgroundColor: const Color(0xFF68B744),
                         minimumSize: const Size(double.infinity, 54),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -166,7 +166,7 @@ class LoginScreen extends HookConsumerWidget {
                       child: const Text(
                         'Lupa Password?',
                         style: TextStyle(
-                          color: Color(0xFF1D7423),
+                          color: Color(0xFF68B744),
                           fontWeight: FontWeight.bold,
                         ),
                       ),

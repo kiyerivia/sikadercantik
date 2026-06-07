@@ -25,9 +25,9 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
     final villagesAsync = ref.watch(villagesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FBFF), // Light bluish background
+      backgroundColor: const Color(0xFFF4F8FA), // Light bluish background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F618D),
+        backgroundColor: const Color(0xFF10365F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -69,7 +69,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                       ),
                       TextSpan(
                         text: 'PSN',
-                        style: TextStyle(color: Color(0xFF82E0AA)),
+                        style: TextStyle(color: Color(0xFF68B744)),
                       ),
                     ],
                   ),
@@ -119,7 +119,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: const CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF005B9F), size: 20),
+              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
             ),
           ),
           const SizedBox(width: 16),
@@ -151,7 +151,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                 Text(
                   'Rekap & Laporan PSN',
                   style: GoogleFonts.outfit(
-                    color: const Color(0xFF2C3E50),
+                    color: const Color(0xFF10365F),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -168,7 +168,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                   Text(
                     'Rekap & Laporan PSN',
                     style: GoogleFonts.outfit(
-                      color: const Color(0xFF154360),
+                      color: const Color(0xFF10365F),
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -177,7 +177,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             Text(
               'Unduh dan cetak rekap laporan PSN, capaian ABJ, dan laporan lainnya.',
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049).withOpacity(0.6),
+                color: const Color(0xFF10365F).withOpacity(0.6),
                 fontSize: 14,
               ),
             ),
@@ -329,7 +329,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F4FA),
+                color: const Color(0xFFF4F8FA),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -338,7 +338,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF1976D2),
+                      color: Color(0xFF29B6F6),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
@@ -351,7 +351,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                         Text(
                           'Informasi',
                           style: GoogleFonts.outfit(
-                            color: const Color(0xFF003049),
+                            color: const Color(0xFF10365F),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -360,7 +360,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                         Text(
                           'Pilih filter untuk menampilkan laporan sesuai kebutuhan.\nJika tidak memilih filter, laporan akan menampilkan semua data.',
                           style: GoogleFonts.outfit(
-                            color: const Color(0xFF003049).withOpacity(0.7),
+                            color: const Color(0xFF10365F).withOpacity(0.7),
                             fontSize: 12,
                             height: 1.4,
                           ),
@@ -377,7 +377,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             Text(
               'File Laporan Rekap PSN',
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049),
+                color: const Color(0xFF10365F),
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -402,7 +402,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FBFF),
+                      color: const Color(0xFFF4F8FA),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -463,7 +463,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                 Text(
                   'Menampilkan 6 jenis laporan',
                   style: GoogleFonts.outfit(
-                    color: const Color(0xFF003049).withOpacity(0.6),
+                    color: const Color(0xFF10365F).withOpacity(0.6),
                     fontSize: 13,
                   ),
                 ),
@@ -471,7 +471,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1976D2),
+                    color: const Color(0xFF29B6F6),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   alignment: Alignment.center,
@@ -492,9 +492,9 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FBFF),
+                color: const Color(0xFFF4F8FA),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.2)),
+                border: Border.all(color: const Color(0xFF29B6F6).withOpacity(0.2)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,7 +502,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF1976D2),
+                      color: Color(0xFF29B6F6),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.description_outlined, color: Colors.white, size: 20),
@@ -515,7 +515,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                         Text(
                           'Catatan',
                           style: GoogleFonts.outfit(
-                            color: const Color(0xFF003049),
+                            color: const Color(0xFF10365F),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -524,7 +524,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                         Text(
                           'File laporan dalam format Excel (.xlsx) dapat dibuka menggunakan Microsoft Excel atau aplikasi sejenis.',
                           style: GoogleFonts.outfit(
-                            color: const Color(0xFF003049).withOpacity(0.7),
+                            color: const Color(0xFF10365F).withOpacity(0.7),
                             fontSize: 12,
                             height: 1.4,
                           ),
@@ -582,7 +582,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049),
+                color: const Color(0xFF10365F),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -599,7 +599,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
     return Text(
       text,
       style: GoogleFonts.outfit(
-        color: const Color(0xFF003049),
+        color: const Color(0xFF10365F),
         fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
@@ -625,7 +625,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: Text(
               no,
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049),
+                color: const Color(0xFF10365F),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -636,7 +636,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: Text(
               nama,
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049),
+                color: const Color(0xFF10365F),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -647,7 +647,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: Text(
               deskripsi,
               style: GoogleFonts.outfit(
-                color: const Color(0xFF003049).withOpacity(0.7),
+                color: const Color(0xFF10365F).withOpacity(0.7),
                 fontSize: 12,
               ),
             ),
@@ -676,7 +676,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: Container(
               alignment: Alignment.centerRight,
               child: Material(
-                color: const Color(0xFF388E3C), // Green button
+                color: const Color(0xFF68B744), // Green button
                 borderRadius: BorderRadius.circular(6),
                 child: InkWell(
                   onTap: () {

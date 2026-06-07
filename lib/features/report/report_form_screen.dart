@@ -338,7 +338,7 @@ class ReportFormScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFD4E6F1), // Light blue background like sky
+      backgroundColor: const Color(0xFFF4F8FA), // Light blue background like sky
       body: SafeArea(
         child: Column(
           children: [
@@ -347,7 +347,7 @@ class ReportFormScreen extends HookConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1F618D), Color(0xFF2980B9)], // Dark to mid blue
+                  colors: [Color(0xFF10365F), Color(0xFF2980B9)], // Dark to mid blue
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -378,7 +378,7 @@ class ReportFormScreen extends HookConsumerWidget {
                       ),
                       children: const [
                         TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
-                        TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF82E0AA))),
+                        TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF68B744))),
                       ],
                     ),
                   ),
@@ -408,7 +408,7 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: const CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+                      child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
                     ),
                   ),
                 ],
@@ -426,7 +426,7 @@ class ReportFormScreen extends HookConsumerWidget {
                     child: Text('Beranda', style: GoogleFonts.outfit(color: Colors.blueGrey, fontSize: 12)),
                   ),
                   const Icon(Icons.chevron_right, size: 14, color: Colors.blueGrey),
-                  Text(isEdit ? 'Edit Laporan PSN' : 'Entri Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF2C3E50), fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(isEdit ? 'Edit Laporan PSN' : 'Entri Laporan PSN', style: GoogleFonts.outfit(color: const Color(0xFF10365F), fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -552,7 +552,7 @@ class ReportFormScreen extends HookConsumerWidget {
                           children: [
                         Text(
                           isEdit ? 'EDIT LAPORAN PSN' : 'ENTRI LAPORAN PSN',
-                          style: GoogleFonts.outfit(color: const Color(0xFF154360), fontSize: 16, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.outfit(color: const Color(0xFF10365F), fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 20),
 
@@ -648,7 +648,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                       style: GoogleFonts.outfit(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF154360),
+                                        color: const Color(0xFF10365F),
                                       ),
                                       children: const [
                                         TextSpan(text: 'Jumlah Rumah Diperiksa'),
@@ -683,7 +683,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                       style: GoogleFonts.outfit(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF154360),
+                                        color: const Color(0xFF10365F),
                                       ),
                                       children: const [
                                         TextSpan(text: 'Jumlah Rumah Positif Jentik'),
@@ -710,7 +710,7 @@ class ReportFormScreen extends HookConsumerWidget {
                             ),
                           ],
                         ),
-                        const Divider(height: 40, thickness: 1, color: Color(0xFFD4E6F1)),
+                        const Divider(height: 40, thickness: 1, color: Color(0xFFF4F8FA)),
 
                         // House Entries
                         ...houseEntries.value.asMap().entries.map((e) {
@@ -723,7 +723,7 @@ class ReportFormScreen extends HookConsumerWidget {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('DATA KK JENTIK NYAMUK #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1F618D))),
+                                  Text('DATA KK JENTIK NYAMUK #${idx + 1}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
                                   if (houseEntries.value.length > 1)
                                     IconButton(
                                       icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
@@ -951,7 +951,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                           Image.asset('assets/images/icon_kk.png', width: 40, height: 40),
                                           const SizedBox(height: 8),
                                           Text('Tambah data', style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[600])),
-                                          Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF154360))),
+                                          Text('Kartu Keluarga', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
                                         ],
                                       ),
                                     ),
@@ -1028,7 +1028,7 @@ class ReportFormScreen extends HookConsumerWidget {
             style: GoogleFonts.outfit(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF154360),
+              color: const Color(0xFF10365F),
             ),
             children: [
               TextSpan(text: label),

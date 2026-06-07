@@ -5,387 +5,362 @@ import 'package:go_router/go_router.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/user_profile_menu.dart';
 
-class SuperAdminDashboardScreen extends ConsumerWidget {
+Widget _buildAppBarTitle() {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Text('Si ', style: GoogleFonts.caveat(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+      Text('KADER ', style: GoogleFonts.outfit(color: AppTheme.primaryGreen, fontSize: 22, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, letterSpacing: 1)),
+      Text('Cantik ', style: GoogleFonts.caveat(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+      const Icon(Icons.eco, color: AppTheme.primaryGreen, size: 20),
+    ],
+  );
+}
+
+class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
   final Profile profile;
   const SuperAdminDashboardScreen({super.key, required this.profile});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SuperAdminDashboardScreen> createState() => _SuperAdminDashboardScreenState();
+}
+
+class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardScreen> {
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F7FF),
+      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF005B9F), // Deeper blue to match image
+        backgroundColor: AppTheme.primaryBlue,
         elevation: 0,
+        centerTitle: true,
         leading: const Icon(Icons.menu, color: Colors.white),
-        title: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset(
-                'assets/images/psn_logo_new.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.bug_report, color: Colors.red, size: 20),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+        title: _buildAppBarTitle(),
+        actions: [
+          const NotificationBadge(),
+          const SizedBox(width: 8),
+          const UserProfileMenu(),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            child: Column(
               children: [
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      height: 1.1,
+                // Hero Section
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 300,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/superadmin_dashboard_illustration.png.png'),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
+                      ),
                     ),
-                    children: const [
-                      TextSpan(
-                        text: 'SI KADER ',
-                        style: TextStyle(color: Colors.white),
+                    Positioned(
+                      bottom: -40,
+                      left: 20,
+                      right: 20,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Selamat Datang,',
+                                  style: GoogleFonts.outfit(
+                                    color: AppTheme.textDark,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  'Superadmin',
+                                  style: GoogleFonts.outfit(
+                                    color: AppTheme.primaryGreen,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Dinas Kesehatan',
+                                  style: GoogleFonts.outfit(
+                                    color: AppTheme.textDark.withOpacity(0.6),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Icon(Icons.eco, color: AppTheme.primaryGreen.withOpacity(0.2), size: 48),
+                          ],
+                        ),
                       ),
-                      TextSpan(
-                        text: 'PSN',
-                        style: TextStyle(color: Color(0xFF82E0AA)),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  'SUPER ADMIN\nDINAS KESEHATAN KABUPATEN',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    height: 1.1,
+                const SizedBox(height: 60),
+                
+                // Menu Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'DASHBOARD SUPERADMIN',
+                        style: GoogleFonts.outfit(
+                          color: AppTheme.textDark,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MenuGridItem(
+                              title: 'Kelola Wilayah',
+                              subtitle: 'Kelola data wilayah\ndan puskesmas',
+                              icon: Icons.location_on,
+                              iconColor: AppTheme.primaryBlue,
+                              onTap: () => context.push('/locations'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _MenuGridItem(
+                              title: 'Kelola Pengguna',
+                              subtitle: 'Kelola admin dan\nsuperadmin',
+                              icon: Icons.people_alt,
+                              iconColor: AppTheme.secondaryBlue,
+                              onTap: () {},
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MenuGridItem(
+                              title: 'Monitoring Laporan',
+                              subtitle: 'Monitoring laporan\nseluruh wilayah',
+                              icon: Icons.bar_chart,
+                              iconColor: AppTheme.primaryBlue,
+                              onTap: () => context.push('/analytics'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _MenuGridItem(
+                              title: 'Pengaturan Sistem',
+                              subtitle: 'Pengaturan aplikasi\ndan sistem',
+                              icon: Icons.settings,
+                              iconColor: AppTheme.primaryBlue,
+                              onTap: () {},
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Statistik Nasional
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Statistik Nasional',
+                            style: GoogleFonts.outfit(
+                              color: AppTheme.textDark,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Text('Tahun Ini', style: GoogleFonts.outfit(fontSize: 12)),
+                                const Icon(Icons.arrow_drop_down, size: 16),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _StatItem(val: '12.456', label: 'Total Laporan', icon: Icons.description, color: Colors.green),
+                          _StatItem(val: '10.987', label: 'Terverifikasi', icon: Icons.check_circle, color: Colors.blue),
+                          _StatItem(val: '1.234', label: 'Menunggu', icon: Icons.schedule, color: Colors.orange),
+                          _StatItem(val: '235', label: 'Ditolak', icon: Icons.cancel, color: Colors.red),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          const NotificationBadge(),
-          const SizedBox(width: 12),
-          PopupMenuButton<String>(
-            onSelected: (val) async {
-              if (val == 'logout') {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) context.go('/login');
-              }
-            },
-            offset: const Offset(0, 50),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
+      ),
+    );
+  }
+}
+
+class _MenuGridItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _MenuGridItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.logout, color: Colors.red, size: 20),
-                    const SizedBox(width: 12),
                     Text(
-                      'Logout',
+                      title,
                       style: GoogleFonts.outfit(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textDark,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.outfit(
+                        color: AppTheme.textDark.withOpacity(0.6),
+                        fontSize: 10,
+                        height: 1.2,
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF005B9F), size: 20),
-            ),
           ),
-          const SizedBox(width: 16),
-        ],
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String val;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _StatItem({required this.val, required this.label, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white, size: 16),
+        ),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero Section
-            Container(
-              width: double.infinity,
-              height: 240,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8F4FA),
-                image: DecorationImage(
-                  image: AssetImage('assets/images/superadmin_bg.png'),
-                  fit: BoxFit.cover,
-                  alignment: Alignment.centerRight,
-                ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.white.withOpacity(0.95),
-                      Colors.white.withOpacity(0.7),
-                      Colors.white.withOpacity(0.0),
-                    ],
-                    stops: const [0.0, 0.4, 1.0],
-                  ),
-                ),
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  top: 40,
-                  right: 120, // Space for the character
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Selamat Datang,',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF003049),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        shadows: const [Shadow(color: Colors.white, blurRadius: 4)],
-                      ),
-                    ),
-                    Text(
-                      'Super Admin',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF005B9F),
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        shadows: const [Shadow(color: Colors.white, blurRadius: 4)],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF003049).withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Dinas Kesehatan Kabupaten',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            Text(
+              val,
+              style: GoogleFonts.outfit(
+                color: AppTheme.textDark,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
             ),
-
-            // Menu Section
-            Container(
-              width: double.infinity,
-              transform: Matrix4.translationValues(0, -20, 0),
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PILIH MENU',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF003049),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _MenuCard(
-                    title: 'Dashboard Monitoring',
-                    subtitle: 'Pantau ringkasan pelaksanaan PSN, capaian ABJ, dan kinerja puskesmas secara keseluruhan.',
-                    icon: Icons.bar_chart_rounded,
-                    iconColor: const Color(0xFF1976D2), // Blue
-                    bgColor: const Color(0xFFE3F2FD),
-                    onTap: () => context.push('/analytics'),
-                  ),
-                  const SizedBox(height: 16),
-                  _MenuCard(
-                    title: 'Data PSN & Intervensi',
-                    subtitle: 'Lihat dan kelola data laporan PSN, rumah positif jentik, dan status intervensi petugas.',
-                    icon: Icons.assignment_rounded,
-                    iconColor: const Color(0xFF388E3C), // Green
-                    bgColor: const Color(0xFFE8F5E9),
-                    onTap: () => context.push('/history'),
-                  ),
-                  const SizedBox(height: 16),
-                  _MenuCard(
-                    title: 'Manajemen Wilayah & User',
-                    subtitle: 'Kelola data wilayah kerja, puskesmas, posyandu, RT/RW, serta akun admin dan kader.',
-                    icon: Icons.people_alt_rounded,
-                    iconColor: const Color(0xFF7B1FA2), // Purple
-                    bgColor: const Color(0xFFF3E5F5),
-                    onTap: () => context.push('/locations'), // Will go to locations management
-                  ),
-                  const SizedBox(height: 16),
-                  _MenuCard(
-                    title: 'Rekap & Laporan PSN',
-                    subtitle: 'Unduh dan cetak rekap laporan PSN, capaian ABJ, dan laporan lainnya dalam format PDF atau Excel.',
-                    icon: Icons.description_rounded,
-                    iconColor: const Color(0xFFF57C00), // Orange
-                    bgColor: const Color(0xFFFFF3E0),
-                    onTap: () => context.push('/superadmin-reports'), // Action for report download
-                  ),
-                  const SizedBox(height: 24),
-                  const _InfoCard(),
-                ],
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: AppTheme.textDark.withOpacity(0.6),
+                fontSize: 9,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _MenuCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
-  final VoidCallback onTap;
-
-  const _MenuCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: bgColor, width: 2), // Light tinted border
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Solid colored rounded square for icon
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: iconColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 36),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF003049),
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF003049).withOpacity(0.7),
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.chevron_right, color: iconColor, size: 28),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4FA),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1976D2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Informasi',
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFF003049),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Data diperbarui setiap 1 jam sekali.\nPastikan penginputan data oleh kader dilakukan secara rutin.',
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFF003049).withOpacity(0.7),
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

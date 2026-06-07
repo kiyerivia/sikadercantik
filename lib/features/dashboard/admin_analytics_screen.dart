@@ -30,7 +30,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F618D),
+        backgroundColor: const Color(0xFF10365F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -75,7 +75,7 @@ class AdminAnalyticsScreen extends ConsumerWidget {
             child: const CircleAvatar(
               radius: 16,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF1F618D), size: 20),
+              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
             ),
           ),
           const SizedBox(width: 16),

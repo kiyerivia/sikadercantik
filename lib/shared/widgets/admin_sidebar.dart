@@ -86,16 +86,16 @@ class _SidebarItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF1F618D).withOpacity(0.1) : Colors.transparent,
+            color: isActive ? const Color(0xFF10365F).withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isActive 
-              ? const Border(left: BorderSide(color: Color(0xFF1F618D), width: 4))
+              ? const Border(left: BorderSide(color: Color(0xFF10365F), width: 4))
               : null,
           ),
           child: ListTile(
             leading: Icon(
               icon, 
-              color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1F618D) : const Color(0xFF64748B)), 
+              color: isDestructive ? Colors.red : (isActive ? const Color(0xFF10365F) : const Color(0xFF64748B)), 
               size: 22
             ),
             title: Text(
@@ -103,7 +103,7 @@ class _SidebarItem extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 14,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isDestructive ? Colors.red : (isActive ? const Color(0xFF1F618D) : const Color(0xFF64748B)),
+                color: isDestructive ? Colors.red : (isActive ? const Color(0xFF10365F) : const Color(0xFF64748B)),
               ),
             ),
             dense: true,

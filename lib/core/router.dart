@@ -9,8 +9,10 @@ import '../features/report/report_form_screen.dart';
 import '../features/report/report_history_screen.dart';
 import '../features/report/report_detail_screen.dart';
 import '../features/report/superadmin_reports_screen.dart';
+import '../features/profile/profile_screen.dart';
 import '../shared/providers/auth_providers.dart';
 import '../shared/domain/models.dart';
+import '../shared/widgets/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -33,35 +35,44 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
-      GoRoute(
-        path: '/locations',
-        builder: (context, state) => const LocationManagementScreen(),
-      ),
-      GoRoute(
-        path: '/analytics',
-        builder: (context, state) => const AdminAnalyticsScreen(),
-      ),
-      GoRoute(
-        path: '/report',
-        builder: (context, state) => ReportFormScreen(initialReport: state.extra as Report?),
-      ),
-      GoRoute(
-        path: '/history',
-        builder: (context, state) => const ReportHistoryScreen(),
-      ),
-      GoRoute(
-        path: '/report-detail',
-        builder: (context, state) =>
-            ReportDetailScreen(report: state.extra as Report),
-      ),
-      GoRoute(
-        path: '/map',
-        builder: (context, state) => const AdminMapScreen(),
-      ),
-      GoRoute(
-        path: '/superadmin-reports',
-        builder: (context, state) => const SuperAdminReportsScreen(),
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
+          GoRoute(
+            path: '/locations',
+            builder: (context, state) => const LocationManagementScreen(),
+          ),
+          GoRoute(
+            path: '/analytics',
+            builder: (context, state) => const AdminAnalyticsScreen(),
+          ),
+          GoRoute(
+            path: '/report',
+            builder: (context, state) => ReportFormScreen(initialReport: state.extra as Report?),
+          ),
+          GoRoute(
+            path: '/history',
+            builder: (context, state) => const ReportHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/report-detail',
+            builder: (context, state) =>
+                ReportDetailScreen(report: state.extra as Report),
+          ),
+          GoRoute(
+            path: '/map',
+            builder: (context, state) => const AdminMapScreen(),
+          ),
+          GoRoute(
+            path: '/superadmin-reports',
+            builder: (context, state) => const SuperAdminReportsScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+        ],
       ),
     ],
   );

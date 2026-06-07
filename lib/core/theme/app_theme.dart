@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryGreen = Color(0xFF1D7423); // Sayurbox Dark Green
-  static const Color primaryBlue = Color(0xFF0052D4); // Deep Blue
-  static const Color secondaryBlue = Color(0xFF0984E3); // Modern Blue
-  static const Color accentPurple = Color(0xFF6C5CE7);
-  static const Color backgroundLight = Color(0xFFF1F2F6);
-  static const Color textDark = Color(0xFF2D3436);
+  static const Color primaryGreen = Color(0xFF68B744); // Bright Green from Logo
+  static const Color primaryBlue = Color(0xFF10365F); // Deep Blue from Banner
+  static const Color secondaryBlue = Color(0xFF29B6F6); // Light Blue from Bucket
+  static const Color accentPurple = Color(0xFF2E7D32); // Dark Green from Vest
+  static const Color backgroundLight = Color(0xFFF4F8FA); // Light Sky tint
+  static const Color textDark = Color(0xFF10365F); // Deep Blue for text
 
   static ThemeData get lightTheme {
     return ThemeData(
