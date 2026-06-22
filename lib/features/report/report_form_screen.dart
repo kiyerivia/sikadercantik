@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
-import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
 

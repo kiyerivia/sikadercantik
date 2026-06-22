@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../core/theme/app_theme.dart';
