@@ -32,6 +32,14 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1100;
+    final isTablet = screenWidth >= 650 && screenWidth < 1100;
+    final horizontalPadding = isDesktop
+        ? (screenWidth - 1000) / 2
+        : (isTablet ? (screenWidth - 680) / 2 : 20.0);
+    final heroHeight = isDesktop ? 340.0 : (isTablet ? 320.0 : 280.0);
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -47,195 +55,315 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
           const SizedBox(width: 16),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: SingleChildScrollView(
-            child: Column(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Hero Section
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Hero Section
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 300,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/superadmin_dashboard_illustration.png.png'),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
+                Container(
+                  width: double.infinity,
+                  height: heroHeight,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(
+                        'assets/images/superadmin_dashboard_illustration.png',
                       ),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
                     ),
-                    Positioned(
-                      bottom: -40,
-                      left: 20,
-                      right: 20,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Selamat Datang,',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'Superadmin',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.primaryGreen,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Dinas Kesehatan',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark.withOpacity(0.6),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Icon(Icons.eco, color: AppTheme.primaryGreen.withOpacity(0.2), size: 48),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 60),
-                
-                // Menu Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DASHBOARD SUPERADMIN',
-                        style: GoogleFonts.outfit(
-                          color: AppTheme.textDark,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                Positioned(
+                  bottom: -40,
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Kelola Wilayah',
-                              subtitle: 'Kelola data wilayah\ndan puskesmas',
-                              icon: Icons.location_on,
-                              iconColor: AppTheme.primaryBlue,
-                              onTap: () => context.push('/locations'),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Selamat Datang,',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Kelola Pengguna',
-                              subtitle: 'Kelola admin dan\nsuperadmin',
-                              icon: Icons.people_alt,
-                              iconColor: AppTheme.secondaryBlue,
-                              onTap: () {},
+                            Text(
+                              'Superadmin',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.primaryGreen,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Monitoring Laporan',
-                              subtitle: 'Monitoring laporan\nseluruh wilayah',
-                              icon: Icons.bar_chart,
-                              iconColor: AppTheme.primaryBlue,
-                              onTap: () => context.push('/analytics'),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Dinas Kesehatan',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Pengaturan Sistem',
-                              subtitle: 'Pengaturan aplikasi\ndan sistem',
-                              icon: Icons.settings,
-                              iconColor: AppTheme.primaryBlue,
-                              onTap: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Statistik Nasional
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Statistik Nasional',
-                            style: GoogleFonts.outfit(
-                              color: AppTheme.textDark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Text('Tahun Ini', style: GoogleFonts.outfit(fontSize: 12)),
-                                const Icon(Icons.arrow_drop_down, size: 16),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _StatItem(val: '12.456', label: 'Total Laporan', icon: Icons.description, color: Colors.green),
-                          _StatItem(val: '10.987', label: 'Terverifikasi', icon: Icons.check_circle, color: Colors.blue),
-                          _StatItem(val: '1.234', label: 'Menunggu', icon: Icons.schedule, color: Colors.orange),
-                          _StatItem(val: '235', label: 'Ditolak', icon: Icons.cancel, color: Colors.red),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                          ],
+                        ),
+                        Icon(
+                          Icons.eco,
+                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          size: 48,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 60),
+
+            // Menu Section
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DASHBOARD SUPERADMIN',
+                    style: GoogleFonts.outfit(
+                      color: AppTheme.textDark,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (isDesktop)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Wilayah',
+                            subtitle: 'Kelola data wilayah\ndan puskesmas',
+                            icon: Icons.location_on,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/locations'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Pengguna',
+                            subtitle: 'Kelola admin dan\nsuperadmin',
+                            icon: Icons.people_alt,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Monitoring Laporan',
+                            subtitle: 'Monitoring laporan\nseluruh wilayah',
+                            icon: Icons.bar_chart,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/analytics'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Pengaturan Sistem',
+                            subtitle: 'Pengaturan aplikasi\ndan sistem',
+                            icon: Icons.settings,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Wilayah',
+                            subtitle: 'Kelola data wilayah\ndan puskesmas',
+                            icon: Icons.location_on,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/locations'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Pengguna',
+                            subtitle: 'Kelola admin dan\nsuperadmin',
+                            icon: Icons.people_alt,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Monitoring Laporan',
+                            subtitle: 'Monitoring laporan\nseluruh wilayah',
+                            icon: Icons.bar_chart,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/analytics'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Pengaturan Sistem',
+                            subtitle: 'Pengaturan aplikasi\ndan sistem',
+                            icon: Icons.settings,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+
+                  // Statistik Nasional
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Statistik Nasional',
+                        style: GoogleFonts.outfit(
+                          color: AppTheme.textDark,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Tahun Ini',
+                              style: GoogleFonts.outfit(fontSize: 12),
+                            ),
+                            const Icon(Icons.arrow_drop_down, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (screenWidth < 500)
+                    const Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatItem(
+                                val: '12.456',
+                                label: 'Total Laporan',
+                                icon: Icons.description,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                val: '10.987',
+                                label: 'Terverifikasi',
+                                icon: Icons.check_circle,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatItem(
+                                val: '1.234',
+                                label: 'Menunggu',
+                                icon: Icons.schedule,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                val: '235',
+                                label: 'Ditolak',
+                                icon: Icons.cancel,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _StatItem(
+                          val: '12.456',
+                          label: 'Total Laporan',
+                          icon: Icons.description,
+                          color: Colors.green,
+                        ),
+                        _StatItem(
+                          val: '10.987',
+                          label: 'Terverifikasi',
+                          icon: Icons.check_circle,
+                          color: Colors.blue,
+                        ),
+                        _StatItem(
+                          val: '1.234',
+                          label: 'Menunggu',
+                          icon: Icons.schedule,
+                          color: Colors.orange,
+                        ),
+                        _StatItem(
+                          val: '235',
+                          label: 'Ditolak',
+                          icon: Icons.cancel,
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

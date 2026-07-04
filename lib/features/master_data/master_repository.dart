@@ -8,7 +8,28 @@ class MasterRepository {
 
   Future<List<Village>> getVillages() async {
     final response = await _client.from('villages').select().order('name');
-    return (response as List).map((m) => Village.fromMap(m)).toList();
+    final allVillages = (response as List).map((m) => Village.fromMap(m)).toList();
+    
+    // Filter hanya 10 desa yang terdata di wilayah kerja Puskesmas Gumelar
+    const gumelarVillages = [
+      'cilangkap',
+      'cihonje',
+      'paningkaban',
+      'karangkemojing',
+      'gancang',
+      'kedungurang',
+      'gumelar',
+      'tlaga',
+      'samudra',
+      'samudra kulon',
+    ];
+
+    final filtered = allVillages
+        .where((v) => gumelarVillages.contains(v.name.trim().toLowerCase()))
+        .toList();
+    
+    filtered.sort((a, b) => a.name.compareTo(b.name));
+    return filtered;
   }
 
   Future<List<RW>> getRWs(String villageId) async {

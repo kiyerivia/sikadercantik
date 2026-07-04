@@ -25,6 +25,35 @@ final userProfileProvider = FutureProvider<Profile?>((ref) async {
   
   final repo = ref.watch(authRepositoryProvider);
   final data = await repo.getUserProfile(user.id);
-  if (data == null) return null;
+  if (data == null) {
+    final emailPrefix = user.email?.split('@').first ?? 'Kader';
+    final roleClean = emailPrefix.toLowerCase();
+    String assignedRole = 'kader';
+    if (roleClean.contains('superadmin')) {
+      assignedRole = 'superadmin';
+    } else if (roleClean.contains('admin')) {
+      assignedRole = 'admin';
+    } else {
+      assignedRole = roleClean.startsWith('kader') ? roleClean : 'kader';
+    }
+
+    // Auto-insert profile into Supabase so foreign keys won't fail when saving reports/drafts
+    try {
+      final client = ref.watch(supabaseClientProvider);
+      await client.from('profiles').upsert({
+        'id': user.id,
+        'full_name': emailPrefix,
+        'role': assignedRole,
+      });
+    } catch (e) {
+      print('Auto-create profile error: $e');
+    }
+
+    return Profile(
+      id: user.id,
+      fullName: emailPrefix,
+      role: assignedRole,
+    );
+  }
   return Profile.fromMap(data);
 });

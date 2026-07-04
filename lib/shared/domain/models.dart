@@ -17,12 +17,12 @@ class Profile {
 
   factory Profile.fromMap(Map<String, dynamic> map) {
     return Profile(
-      id: map['id'] as String,
-      fullName: map['full_name'] as String,
-      role: map['role'] as String,
-      posyanduId: map['posyandu_id'] as String?,
-      phoneNumber: map['phone_number'] as String?,
-      avatarUrl: map['avatar_url'] as String?,
+      id: map['id']?.toString() ?? '',
+      fullName: map['full_name']?.toString() ?? 'Pengguna',
+      role: map['role']?.toString() ?? 'kader',
+      posyanduId: map['posyandu_id']?.toString(),
+      phoneNumber: map['phone_number']?.toString(),
+      avatarUrl: map['avatar_url']?.toString(),
     );
   }
 }
@@ -35,8 +35,8 @@ class Village {
 
   factory Village.fromMap(Map<String, dynamic> map) {
     return Village(
-      id: map['id'] as String,
-      name: map['name'] as String,
+      id: map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
     );
   }
 }
@@ -50,9 +50,9 @@ class RW {
 
   factory RW.fromMap(Map<String, dynamic> map) {
     return RW(
-      id: map['id'] as String,
-      villageId: map['village_id'] as String,
-      rwNumber: map['rw_number'] as String,
+      id: map['id']?.toString() ?? '',
+      villageId: map['village_id']?.toString() ?? '',
+      rwNumber: map['rw_number']?.toString() ?? '',
     );
   }
 }
@@ -82,9 +82,9 @@ class Posyandu {
 
   factory Posyandu.fromMap(Map<String, dynamic> map) {
     return Posyandu(
-      id: map['id'] as String,
-      rwId: map['rw_id'] as String,
-      name: map['name'] as String,
+      id: map['id']?.toString() ?? '',
+      rwId: map['rw_id']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
       tahunPendirian: map['tahun_pendirian']?.toString(),
       alamat: map['alamat']?.toString(),
       namaKetua: map['nama_ketua']?.toString(),
@@ -133,23 +133,25 @@ class Report {
     String? vName;
     String? pName;
     
-    if (map['posyandus'] != null) {
-      pName = map['posyandus']['name'] as String?;
-      if (map['posyandus']['rws'] != null && map['posyandus']['rws']['villages'] != null) {
-        vName = map['posyandus']['rws']['villages']['name'] as String?;
+    if (map['posyandus'] != null && map['posyandus'] is Map) {
+      pName = map['posyandus']['name']?.toString();
+      if (map['posyandus']['rws'] != null && map['posyandus']['rws'] is Map) {
+        if (map['posyandus']['rws']['villages'] != null && map['posyandus']['rws']['villages'] is Map) {
+          vName = map['posyandus']['rws']['villages']['name']?.toString();
+        }
       }
     }
 
     return Report(
-      id: map['id'] as String,
-      kaderId: map['kader_id'] as String,
-      posyanduId: map['posyandu_id'] as String,
-      reportDate: DateTime.parse(map['report_date'] as String),
-      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String).toLocal() : DateTime.now(),
-      housesInspected: map['houses_inspected'] as int,
-      housesPositive: map['houses_positive'] as int,
-      notes: map['notes'] as String?,
-      status: map['status'] as String,
+      id: map['id']?.toString() ?? '',
+      kaderId: map['kader_id']?.toString() ?? '',
+      posyanduId: map['posyandu_id']?.toString() ?? '',
+      reportDate: map['report_date'] != null ? DateTime.tryParse(map['report_date'].toString()) ?? DateTime.now() : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.tryParse(map['created_at'].toString())?.toLocal() ?? DateTime.now() : DateTime.now(),
+      housesInspected: (map['houses_inspected'] as num?)?.toInt() ?? 0,
+      housesPositive: (map['houses_positive'] as num?)?.toInt() ?? 0,
+      notes: map['notes']?.toString(),
+      status: map['status']?.toString() ?? 'submitted',
       breedingPlaceIds: breedingPlaceIds ?? [],
       villageName: vName,
       posyanduName: pName,

@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_providers.dart';
 import '../domain/models.dart';
 import '../../core/theme/app_theme.dart';
+import 'user_profile_menu.dart';
+import '../../features/dashboard/map_providers.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -14,6 +16,7 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
+    ref.watch(posyanduListProvider);
     final routerState = GoRouterState.of(context);
     final String location = routerState.matchedLocation;
 
@@ -23,13 +26,13 @@ class MainShell extends ConsumerWidget {
           return child;
         }
 
-        final role = profile.role;
+        final roleClean = profile.role.toLowerCase();
 
-        if (role == 'kader') {
+        if (roleClean == 'kader' || roleClean.startsWith('kader')) {
           return _buildKaderShell(context, ref, profile, location);
-        } else if (role == 'admin') {
+        } else if (roleClean == 'admin' || (roleClean.startsWith('admin') && !roleClean.startsWith('superadmin'))) {
           return _buildAdminShell(context, ref, profile, location);
-        } else if (role == 'superadmin') {
+        } else if (roleClean == 'superadmin' || roleClean.startsWith('superadmin')) {
           return _buildSuperAdminShell(context, ref, profile, location);
         }
 
@@ -40,6 +43,22 @@ class MainShell extends ConsumerWidget {
       ),
       error: (err, stack) => Scaffold(
         body: Center(child: Text('Error: $err')),
+      ),
+    );
+  }
+
+  void _showProfileDialog(BuildContext context, WidgetRef ref, Profile profile) {
+    final posyandusAsync = ref.read(posyanduListProvider);
+    final currentUser = ref.read(supabaseClientProvider).auth.currentUser;
+    final email = currentUser?.email ?? '-';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => ProfileDetailDialog(
+        profile: profile,
+        email: email,
+        posyandus: posyandusAsync.value,
+        onAvatarUpdated: () => ref.invalidate(userProfileProvider),
       ),
     );
   }
@@ -69,8 +88,7 @@ class MainShell extends ConsumerWidget {
           } else if (index == 1) {
             context.go('/history');
           } else if (index == 3) {
-            ref.read(authRepositoryProvider).signOut();
-            context.go('/login');
+            _showProfileDialog(context, ref, profile);
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -124,8 +142,7 @@ class MainShell extends ConsumerWidget {
           } else if (index == 3) {
             context.go('/analytics');
           } else if (index == 5) {
-            ref.read(authRepositoryProvider).signOut();
-            context.go('/login');
+            _showProfileDialog(context, ref, profile);
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -179,8 +196,7 @@ class MainShell extends ConsumerWidget {
           } else if (index == 3) {
             context.go('/analytics');
           } else if (index == 5) {
-            ref.read(authRepositoryProvider).signOut();
-            context.go('/login');
+            _showProfileDialog(context, ref, profile);
           }
         },
         type: BottomNavigationBarType.fixed,

@@ -650,7 +650,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     // Table
                     reportsAsync.when(
                       data: (reports) {
-                        var filtered = reports;
+                        var filtered = reports.where((r) => r.status != 'draft').toList();
 
                         // Month filter
                         if (selectedMonth.value != 'Semua') {

@@ -13,6 +13,14 @@ final myReportsProvider = FutureProvider<List<Report>>((ref) async {
   return await repo.getMyReports();
 });
 
+final myDraftReportsProvider = Provider<List<Report>>((ref) {
+  final reportsAsync = ref.watch(myReportsProvider);
+  return reportsAsync.maybeWhen(
+    data: (reports) => reports.where((r) => r.status == 'draft').toList(),
+    orElse: () => [],
+  );
+});
+
 final allReportsProvider = FutureProvider<List<Report>>((ref) async {
   final repo = ref.watch(reportRepositoryProvider);
   return await repo.getAllReports();

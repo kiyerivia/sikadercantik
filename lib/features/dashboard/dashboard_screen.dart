@@ -24,11 +24,12 @@ class DashboardScreen extends ConsumerWidget {
           );
         }
 
-        if (profile.role == 'kader') {
+        final roleClean = profile.role.toLowerCase();
+        if (roleClean == 'kader' || roleClean.startsWith('kader')) {
           return _KaderDashboard(profile: profile);
-        } else if (profile.role == 'admin') {
+        } else if (roleClean == 'admin' || (roleClean.startsWith('admin') && !roleClean.startsWith('superadmin'))) {
           return _AdminDashboard(profile: profile);
-        } else if (profile.role == 'superadmin') {
+        } else if (roleClean == 'superadmin' || roleClean.startsWith('superadmin')) {
           return SuperAdminDashboardScreen(profile: profile);
         }
 
@@ -63,6 +64,14 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1100;
+    final isTablet = screenWidth >= 650 && screenWidth < 1100;
+    final horizontalPadding = isDesktop
+        ? (screenWidth - 1000) / 2
+        : (isTablet ? (screenWidth - 680) / 2 : 20.0);
+    final heroHeight = isDesktop ? 340.0 : (isTablet ? 320.0 : 280.0);
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -78,136 +87,159 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
           const SizedBox(width: 20),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: SingleChildScrollView(
-            child: Column(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Hero Section
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Hero Section
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 300,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage(
-                            'assets/images/kader/kader_dashboard.jpg',
-                          ),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
+                Container(
+                  width: double.infinity,
+                  height: heroHeight,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(
+                        'assets/images/kader/kader_dashboard.jpg',
                       ),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
                     ),
-                    Positioned(
-                      bottom: -40,
-                      left: 20,
-                      right: 20,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Selamat Datang,',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'Kader PSN',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.primaryGreen,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Puskesmas Gumelar',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark.withOpacity(0.6),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Icon(
-                              Icons.eco,
-                              color: AppTheme.primaryGreen.withOpacity(0.2),
-                              size: 48,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 60), // Space for floating card
-                // Menu Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PILIH MENU',
-                        style: GoogleFonts.outfit(
-                          color: AppTheme.textDark,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                Positioned(
+                  bottom: -40,
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _MenuCardFull(
-                        title: 'Input Laporan PSN (Baru)',
-                        subtitle: 'Klik untuk membuat laporan PSN baru',
-                        icon: Icons.note_add_rounded,
-                        iconColor: AppTheme.primaryGreen,
-                        bgColor: const Color(0xFFF1F8EE),
-                        onTap: () => context.push('/report'),
-                      ),
-                      const SizedBox(height: 12),
-                      _MenuCardFull(
-                        title: 'Riwayat Laporan PSN',
-                        subtitle:
-                            'Lihat dan kelola laporan PSN yang sudah dikirim',
-                        icon: Icons.history_rounded,
-                        iconColor: AppTheme.secondaryBlue,
-                        bgColor: const Color(0xFFEBF8FE),
-                        onTap: () => context.push('/history'),
-                      ),
-                      const SizedBox(height: 12),
-                      const _InfoCard(
-                        text:
-                            'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Selamat Datang,',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              'Kader PSN',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.primaryGreen,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Puskesmas Gumelar',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.eco,
+                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          size: 48,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 60), // Space for floating card
+            // Menu Section
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PILIH MENU',
+                    style: GoogleFonts.outfit(
+                      color: AppTheme.textDark,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (screenWidth >= 650)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuCardFull(
+                            title: 'Input Laporan PSN (Baru)',
+                            subtitle: 'Klik untuk membuat laporan PSN baru',
+                            icon: Icons.note_add_rounded,
+                            iconColor: AppTheme.primaryGreen,
+                            bgColor: const Color(0xFFF1F8EE),
+                            onTap: () => context.push('/report'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _MenuCardFull(
+                            title: 'Riwayat Laporan PSN',
+                            subtitle: 'Lihat dan kelola laporan PSN yang sudah dikirim',
+                            icon: Icons.history_rounded,
+                            iconColor: AppTheme.secondaryBlue,
+                            bgColor: const Color(0xFFEBF8FE),
+                            onTap: () => context.push('/history'),
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _MenuCardFull(
+                      title: 'Input Laporan PSN (Baru)',
+                      subtitle: 'Klik untuk membuat laporan PSN baru',
+                      icon: Icons.note_add_rounded,
+                      iconColor: AppTheme.primaryGreen,
+                      bgColor: const Color(0xFFF1F8EE),
+                      onTap: () => context.push('/report'),
+                    ),
+                    const SizedBox(height: 12),
+                    _MenuCardFull(
+                      title: 'Riwayat Laporan PSN',
+                      subtitle:
+                          'Lihat dan kelola laporan PSN yang sudah dikirim',
+                      icon: Icons.history_rounded,
+                      iconColor: AppTheme.secondaryBlue,
+                      bgColor: const Color(0xFFEBF8FE),
+                      onTap: () => context.push('/history'),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  const _InfoCard(
+                    text:
+                        'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
+                  ),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -226,6 +258,14 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1100;
+    final isTablet = screenWidth >= 650 && screenWidth < 1100;
+    final horizontalPadding = isDesktop
+        ? (screenWidth - 1000) / 2
+        : (isTablet ? (screenWidth - 680) / 2 : 20.0);
+    final heroHeight = isDesktop ? 340.0 : (isTablet ? 320.0 : 280.0);
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -241,227 +281,315 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
           const SizedBox(width: 20),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: SingleChildScrollView(
-            child: Column(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Hero Section
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Hero Section
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 300,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage(
-                            'assets/images/admin_dashboard_illustration.png',
-                          ),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
+                Container(
+                  width: double.infinity,
+                  height: heroHeight,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(
+                        'assets/images/admin_dashboard_illustration.png',
                       ),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
                     ),
-                    Positioned(
-                      bottom: -40,
-                      left: 20,
-                      right: 20,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Selamat Datang,',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'Admin Puskesmas',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.primaryGreen,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Puskesmas Gumelar',
-                                  style: GoogleFonts.outfit(
-                                    color: AppTheme.textDark.withOpacity(0.6),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Icon(
-                              Icons.eco,
-                              color: AppTheme.primaryGreen.withOpacity(0.2),
-                              size: 48,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 60),
-
-                // Menu Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DASHBOARD ADMIN',
-                        style: GoogleFonts.outfit(
-                          color: AppTheme.textDark,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                Positioned(
+                  bottom: -40,
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Kelola Kader',
-                              subtitle: 'Kelola data dan\nakun kader',
-                              icon: Icons.people_alt,
-                              iconColor: AppTheme.primaryGreen,
-                              onTap: () {},
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Selamat Datang,',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Verifikasi Laporan',
-                              subtitle: 'Verifikasi laporan\nPSN dari kader',
-                              icon: Icons.fact_check,
-                              iconColor: const Color(0xFF81C784),
-                              onTap: () => context.push('/history'),
+                            Text(
+                              'Admin Puskesmas',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.primaryGreen,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Rekapitulasi',
-                              subtitle: 'Lihat rekapitulasi\nlaporan PSN',
-                              icon: Icons.bar_chart,
-                              iconColor: AppTheme.primaryBlue,
-                              onTap: () => context.push('/analytics'),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Puskesmas Gumelar',
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textDark.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _MenuGridItem(
-                              title: 'Info & Pengumuman',
-                              subtitle: 'Kelola informasi\ndan pengumuman',
-                              icon: Icons.campaign,
-                              iconColor: AppTheme.secondaryBlue,
-                              onTap: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Ringkasan Laporan
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Ringkasan Laporan',
-                            style: GoogleFonts.outfit(
-                              color: AppTheme.textDark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Bulan Ini',
-                                  style: GoogleFonts.outfit(fontSize: 12),
-                                ),
-                                const Icon(Icons.arrow_drop_down, size: 16),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _StatItem(
-                            val: '128',
-                            label: 'Total Laporan',
-                            icon: Icons.description,
-                            color: Colors.green,
-                          ),
-                          _StatItem(
-                            val: '112',
-                            label: 'Terverifikasi',
-                            icon: Icons.check_circle,
-                            color: Colors.blue,
-                          ),
-                          _StatItem(
-                            val: '16',
-                            label: 'Menunggu',
-                            icon: Icons.schedule,
-                            color: Colors.orange,
-                          ),
-                          _StatItem(
-                            val: '0',
-                            label: 'Ditolak',
-                            icon: Icons.cancel,
-                            color: Colors.red,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                          ],
+                        ),
+                        Icon(
+                          Icons.eco,
+                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          size: 48,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 60),
+
+            // Menu Section
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DASHBOARD ADMIN',
+                    style: GoogleFonts.outfit(
+                      color: AppTheme.textDark,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (isDesktop)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Kader',
+                            subtitle: 'Kelola data dan\nakun kader',
+                            icon: Icons.people_alt,
+                            iconColor: AppTheme.primaryGreen,
+                            onTap: () {},
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Verifikasi Laporan',
+                            subtitle: 'Verifikasi laporan\nPSN dari kader',
+                            icon: Icons.fact_check,
+                            iconColor: const Color(0xFF81C784),
+                            onTap: () => context.push('/history'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Rekapitulasi',
+                            subtitle: 'Lihat rekapitulasi\nlaporan PSN',
+                            icon: Icons.bar_chart,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/analytics'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Info & Pengumuman',
+                            subtitle: 'Kelola informasi\ndan pengumuman',
+                            icon: Icons.campaign,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Kelola Kader',
+                            subtitle: 'Kelola data dan\nakun kader',
+                            icon: Icons.people_alt,
+                            iconColor: AppTheme.primaryGreen,
+                            onTap: () {},
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Verifikasi Laporan',
+                            subtitle: 'Verifikasi laporan\nPSN dari kader',
+                            icon: Icons.fact_check,
+                            iconColor: const Color(0xFF81C784),
+                            onTap: () => context.push('/history'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Rekapitulasi',
+                            subtitle: 'Lihat rekapitulasi\nlaporan PSN',
+                            icon: Icons.bar_chart,
+                            iconColor: AppTheme.primaryBlue,
+                            onTap: () => context.push('/analytics'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MenuGridItem(
+                            title: 'Info & Pengumuman',
+                            subtitle: 'Kelola informasi\ndan pengumuman',
+                            icon: Icons.campaign,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+
+                  // Ringkasan Laporan
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Ringkasan Laporan',
+                        style: GoogleFonts.outfit(
+                          color: AppTheme.textDark,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Bulan Ini',
+                              style: GoogleFonts.outfit(fontSize: 12),
+                            ),
+                            const Icon(Icons.arrow_drop_down, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (screenWidth < 500)
+                    const Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatItem(
+                                val: '128',
+                                label: 'Total Laporan',
+                                icon: Icons.description,
+                                color: Colors.green,
+                              ),
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                val: '112',
+                                label: 'Terverifikasi',
+                                icon: Icons.check_circle,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatItem(
+                                val: '16',
+                                label: 'Menunggu',
+                                icon: Icons.schedule,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                val: '0',
+                                label: 'Ditolak',
+                                icon: Icons.cancel,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _StatItem(
+                          val: '128',
+                          label: 'Total Laporan',
+                          icon: Icons.description,
+                          color: Colors.green,
+                        ),
+                        _StatItem(
+                          val: '112',
+                          label: 'Terverifikasi',
+                          icon: Icons.check_circle,
+                          color: Colors.blue,
+                        ),
+                        _StatItem(
+                          val: '16',
+                          label: 'Menunggu',
+                          icon: Icons.schedule,
+                          color: Colors.orange,
+                        ),
+                        _StatItem(
+                          val: '0',
+                          label: 'Ditolak',
+                          icon: Icons.cancel,
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

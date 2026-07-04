@@ -9,6 +9,7 @@ import '../features/report/report_form_screen.dart';
 import '../features/report/report_history_screen.dart';
 import '../features/report/report_detail_screen.dart';
 import '../features/report/superadmin_reports_screen.dart';
+import '../features/report/draft_reports_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../shared/providers/auth_providers.dart';
 import '../shared/domain/models.dart';
@@ -71,6 +72,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/drafts',
+            builder: (context, state) => const DraftReportsScreen(),
           ),
         ],
       ),

@@ -6,6 +6,35 @@ class ReportRepository {
 
   ReportRepository(this._client);
 
+  Future<void> _ensureProfileExists(String userId, {String? posyanduId}) async {
+    try {
+      final profileCheck = await _client
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+      if (profileCheck == null) {
+        final email = _client.auth.currentUser?.email ?? 'kader@example.com';
+        final emailPrefix = email.split('@').first;
+        final roleClean = emailPrefix.toLowerCase();
+        String assignedRole = 'kader';
+        if (roleClean.contains('superadmin')) {
+          assignedRole = 'superadmin';
+        } else if (roleClean.contains('admin')) {
+          assignedRole = 'admin';
+        }
+        await _client.from('profiles').upsert({
+          'id': userId,
+          'full_name': emailPrefix,
+          'role': assignedRole,
+          if (posyanduId != null) 'posyandu_id': posyanduId,
+        });
+      }
+    } catch (e) {
+      print('Warning: could not ensure profile exists: $e');
+    }
+  }
+
   Future<void> submitReport({
     required String posyanduId,
     required int housesInspected,
@@ -13,9 +42,12 @@ class ReportRepository {
     required List<String> breedingPlaceIds,
     required DateTime reportDate,
     String? notes,
+    String status = 'submitted',
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
+
+    await _ensureProfileExists(userId, posyanduId: posyanduId);
 
     // 1. Insert Report
     final reportResponse = await _client.from('reports').insert({
@@ -25,7 +57,7 @@ class ReportRepository {
       'houses_positive': housesPositive,
       'report_date': reportDate.toIso8601String(),
       'notes': notes,
-      'status': 'submitted',
+      'status': status,
     }).select().single();
 
     final reportId = reportResponse['id'] as String;
@@ -55,10 +87,14 @@ class ReportRepository {
         .order('id', ascending: true);
 
     return (response as List).map((data) {
-      final breedingPlaces = (data['report_breeding_places'] as List)
-          .map((bp) => bp['breeding_place_id'] as String)
-          .toList();
-      return Report.fromMap(data, breedingPlaceIds: breedingPlaces);
+      final bpList = data['report_breeding_places'] as List?;
+      final breedingPlaces = bpList != null
+          ? bpList
+              .map((bp) => bp['breeding_place_id']?.toString() ?? '')
+              .where((id) => id.isNotEmpty)
+              .toList()
+          : <String>[];
+      return Report.fromMap(data as Map<String, dynamic>, breedingPlaceIds: breedingPlaces);
     }).toList();
   }
 
@@ -70,12 +106,14 @@ class ReportRepository {
         .order('id', ascending: true);
 
     return (response as List).map((data) {
-      print("KEYS: ${data.keys.toList()}");
-      final breedingPlaces = (data['report_breeding_places'] as List)
-          .map((bp) => bp['breeding_place_id'] as String)
-          .toList();
-      // We'll store the profile name in a temporary way or handle it in UI
-      return Report.fromMap(data, breedingPlaceIds: breedingPlaces);
+      final bpList = data['report_breeding_places'] as List?;
+      final breedingPlaces = bpList != null
+          ? bpList
+              .map((bp) => bp['breeding_place_id']?.toString() ?? '')
+              .where((id) => id.isNotEmpty)
+              .toList()
+          : <String>[];
+      return Report.fromMap(data as Map<String, dynamic>, breedingPlaceIds: breedingPlaces);
     }).toList();
   }
 
@@ -94,6 +132,8 @@ class ReportRepository {
     final adminId = _client.auth.currentUser?.id;
     if (adminId == null) throw Exception('Admin not authenticated');
 
+    await _ensureProfileExists(adminId);
+
     await _client.from('interventions').insert({
       'report_id': reportId,
       'type': type,
@@ -111,14 +151,20 @@ class ReportRepository {
     required List<String> breedingPlaceIds,
     required DateTime reportDate,
     String? notes,
+    String status = 'submitted',
   }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId != null) {
+      await _ensureProfileExists(userId);
+    }
+
     // 1. Update Report & reset status to submitted for re-verification
     await _client.from('reports').update({
       'houses_inspected': housesInspected,
       'houses_positive': housesPositive,
       'report_date': reportDate.toIso8601String(),
       'notes': notes,
-      'status': 'submitted', // Change back to submitted
+      'status': status,
     }).eq('id', reportId);
 
     // 2. Refresh breeding places

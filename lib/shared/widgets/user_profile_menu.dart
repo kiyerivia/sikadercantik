@@ -15,29 +15,18 @@ import '../../features/dashboard/map_providers.dart';
 // ─────────────────────────────────────────────────────────
 
 String _getDefaultAvatarAsset(String role) {
-  switch (role.toLowerCase()) {
-    case 'kader':
-      return 'assets/images/avatar_kader.png';
-    case 'admin':
-      return 'assets/images/admin_dashboard_illustration.png';
-    case 'superadmin':
-      return 'assets/images/superadmin_bg.png';
-    default:
-      return 'assets/images/avatar_kader.png';
-  }
+  final r = role.toLowerCase();
+  if (r.startsWith('superadmin')) return 'assets/images/superadmin_dashboard_illustration.png';
+  if (r.startsWith('admin')) return 'assets/images/admin_dashboard_illustration.png';
+  return 'assets/images/kader/kader_dashboard.jpg';
 }
 
 String _getRoleLabel(String role) {
-  switch (role.toLowerCase()) {
-    case 'kader':
-      return 'Kader PSN';
-    case 'admin':
-      return 'Admin Puskesmas';
-    case 'superadmin':
-      return 'Superadmin Dinkes';
-    default:
-      return role;
-  }
+  final r = role.toLowerCase();
+  if (r.startsWith('superadmin')) return 'Superadmin Dinkes';
+  if (r.startsWith('admin')) return 'Admin Puskesmas';
+  if (r.startsWith('kader')) return 'Kader PSN';
+  return role;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -88,6 +77,9 @@ class UserProfileMenu extends ConsumerWidget {
                     onAvatarUpdated: () => ref.invalidate(userProfileProvider),
                   ),
                 );
+                break;
+              case 'drafts':
+                context.push('/drafts');
                 break;
               case 'password':
                 _showChangePasswordDialog(context);
@@ -165,6 +157,15 @@ class UserProfileMenu extends ConsumerWidget {
                 Text('Lihat Profil', style: GoogleFonts.outfit(fontSize: 14)),
               ]),
             ),
+            if (profile.role.toLowerCase().startsWith('kader'))
+              PopupMenuItem<String>(
+                value: 'drafts',
+                child: Row(children: [
+                  const Icon(Icons.drafts_outlined, size: 20, color: AppTheme.textDark),
+                  const SizedBox(width: 12),
+                  Text('Laporan Draft', style: GoogleFonts.outfit(fontSize: 14)),
+                ]),
+              ),
             PopupMenuItem<String>(
               value: 'password',
               child: Row(children: [

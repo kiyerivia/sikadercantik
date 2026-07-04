@@ -123,15 +123,10 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   String _getRoleLabel(String role) {
-    switch (role.toLowerCase()) {
-      case 'kader':
-        return 'Kader PSN';
-      case 'admin':
-        return 'Admin Puskesmas';
-      case 'superadmin':
-        return 'Superadmin Dinkes';
-      default:
-        return role.isEmpty ? '-' : role;
-    }
+    final r = role.toLowerCase();
+    if (r.startsWith('superadmin')) return 'Superadmin Dinkes';
+    if (r.startsWith('admin')) return 'Admin Puskesmas';
+    if (r.startsWith('kader')) return 'Kader PSN';
+    return role.isEmpty ? '-' : role;
   }
 }

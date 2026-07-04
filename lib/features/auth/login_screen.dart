@@ -16,15 +16,20 @@ class LoginScreen extends HookConsumerWidget {
     Future<void> handleLogin() async {
       if (emailController.text.isEmpty || passwordController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email dan Password harus diisi')),
+          const SnackBar(content: Text('Username/Email dan Password harus diisi')),
         );
         return;
       }
 
       isLoading.value = true;
       try {
+        String loginIdentifier = emailController.text.trim();
+        if (!loginIdentifier.contains('@')) {
+          loginIdentifier = '$loginIdentifier@sikatik.id';
+        }
+
         await ref.read(authRepositoryProvider).signIn(
-              email: emailController.text.trim(),
+              email: loginIdentifier,
               password: passwordController.text.trim(),
             );
       } catch (e) {
@@ -106,12 +111,12 @@ class LoginScreen extends HookConsumerWidget {
                     TextField(
                       controller: emailController,
                       decoration: const InputDecoration(
-                        hintText: 'Email Anda',
-                        prefixIcon: Icon(Icons.email_outlined),
+                        hintText: 'Username atau Email',
+                        prefixIcon: Icon(Icons.person_outline),
                         fillColor: Colors.white,
                         filled: true,
                       ),
-                      keyboardType: TextInputType.emailAddress,
+                      keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
