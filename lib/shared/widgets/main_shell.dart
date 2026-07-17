@@ -6,6 +6,7 @@ import '../providers/auth_providers.dart';
 import '../domain/models.dart';
 import '../../core/theme/app_theme.dart';
 import 'user_profile_menu.dart';
+import 'psn_recap_dialog.dart';
 import '../../features/dashboard/map_providers.dart';
 
 class MainShell extends ConsumerWidget {
@@ -63,6 +64,13 @@ class MainShell extends ConsumerWidget {
     );
   }
 
+  void _showPsnRecapDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => const PsnRecapDialog(),
+    );
+  }
+
   Widget _buildKaderShell(
     BuildContext context,
     WidgetRef ref,
@@ -87,6 +95,8 @@ class MainShell extends ConsumerWidget {
             context.go('/');
           } else if (index == 1) {
             context.go('/history');
+          } else if (index == 2) {
+            _showPsnRecapDialog(context);
           } else if (index == 3) {
             _showProfileDialog(context, ref, profile);
           }
@@ -141,6 +151,8 @@ class MainShell extends ConsumerWidget {
             context.go('/history');
           } else if (index == 3) {
             context.go('/analytics');
+          } else if (index == 4) {
+            _showPsnRecapDialog(context);
           } else if (index == 5) {
             _showProfileDialog(context, ref, profile);
           }

@@ -464,8 +464,6 @@ class ReportFormScreen extends HookConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.menu, color: Colors.white),
-                  const SizedBox(width: 16),
                   Container(
                     width: 36,
                     height: 36,

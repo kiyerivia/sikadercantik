@@ -12,7 +12,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Warning: Could not load .env file ($e). Using environment fallbacks.");
+  }
   await initializeDateFormatting('id_ID', null);
 
   await Supabase.initialize(

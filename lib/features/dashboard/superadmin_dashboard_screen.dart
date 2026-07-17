@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/domain/models.dart';
+import '../../shared/providers/report_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/user_profile_menu.dart';
@@ -39,6 +40,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
         ? (screenWidth - 1000) / 2
         : (isTablet ? (screenWidth - 680) / 2 : 20.0);
     final heroHeight = isDesktop ? 340.0 : (isTablet ? 320.0 : 280.0);
+    final reportsAsync = ref.watch(allReportsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -46,7 +48,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
         backgroundColor: AppTheme.primaryBlue,
         elevation: 0,
         centerTitle: true,
-        leading: const Icon(Icons.menu, color: Colors.white),
+        automaticallyImplyLeading: false,
         title: _buildAppBarTitle(),
         actions: [
           const NotificationBadge(),
@@ -273,7 +275,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                         child: Row(
                           children: [
                             Text(
-                              'Tahun Ini',
+                              'Semua Waktu',
                               style: GoogleFonts.outfit(fontSize: 12),
                             ),
                             const Icon(Icons.arrow_drop_down, size: 16),
@@ -283,82 +285,102 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (screenWidth < 500)
-                    const Column(
-                      children: [
-                        Row(
+                  reportsAsync.when(
+                    data: (reports) {
+                      final total = reports.length;
+                      final verified = reports.where((r) => r.status == 'verified').length;
+                      final waiting = reports.where((r) => r.status == 'submitted').length;
+                      final intervention = reports.where((r) => r.status == 'need_intervention' || r.status == 'draft').length;
+
+                      if (screenWidth < 500) {
+                        return Column(
                           children: [
-                            Expanded(
-                              child: _StatItem(
-                                val: '12.456',
-                                label: 'Total Laporan',
-                                icon: Icons.description,
-                                color: Colors.green,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _StatItem(
+                                    val: '$total',
+                                    label: 'Total Laporan',
+                                    icon: Icons.description,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _StatItem(
+                                    val: '$verified',
+                                    label: 'Terverifikasi',
+                                    icon: Icons.check_circle,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Expanded(
-                              child: _StatItem(
-                                val: '10.987',
-                                label: 'Terverifikasi',
-                                icon: Icons.check_circle,
-                                color: Colors.blue,
-                              ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _StatItem(
+                                    val: '$waiting',
+                                    label: 'Menunggu',
+                                    icon: Icons.schedule,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _StatItem(
+                                    val: '$intervention',
+                                    label: 'Perlu Perbaikan',
+                                    icon: Icons.warning_amber_rounded,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                        SizedBox(height: 16),
-                        Row(
+                        );
+                      } else {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: _StatItem(
-                                val: '1.234',
-                                label: 'Menunggu',
-                                icon: Icons.schedule,
-                                color: Colors.orange,
-                              ),
+                            _StatItem(
+                              val: '$total',
+                              label: 'Total Laporan',
+                              icon: Icons.description,
+                              color: Colors.green,
                             ),
-                            Expanded(
-                              child: _StatItem(
-                                val: '235',
-                                label: 'Ditolak',
-                                icon: Icons.cancel,
-                                color: Colors.red,
-                              ),
+                            _StatItem(
+                              val: '$verified',
+                              label: 'Terverifikasi',
+                              icon: Icons.check_circle,
+                              color: Colors.blue,
+                            ),
+                            _StatItem(
+                              val: '$waiting',
+                              label: 'Menunggu',
+                              icon: Icons.schedule,
+                              color: Colors.orange,
+                            ),
+                            _StatItem(
+                              val: '$intervention',
+                              label: 'Perlu Perbaikan',
+                              icon: Icons.warning_amber_rounded,
+                              color: Colors.red,
                             ),
                           ],
-                        ),
-                      ],
-                    )
-                  else
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _StatItem(
-                          val: '12.456',
-                          label: 'Total Laporan',
-                          icon: Icons.description,
-                          color: Colors.green,
-                        ),
-                        _StatItem(
-                          val: '10.987',
-                          label: 'Terverifikasi',
-                          icon: Icons.check_circle,
-                          color: Colors.blue,
-                        ),
-                        _StatItem(
-                          val: '1.234',
-                          label: 'Menunggu',
-                          icon: Icons.schedule,
-                          color: Colors.orange,
-                        ),
-                        _StatItem(
-                          val: '235',
-                          label: 'Ditolak',
-                          icon: Icons.cancel,
-                          color: Colors.red,
-                        ),
-                      ],
+                        );
+                      }
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(),
+                      ),
                     ),
+                    error: (err, stack) => Text(
+                      'Gagal memuat rekap: $err',
+                      style: GoogleFonts.outfit(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
                   const SizedBox(height: 30),
                 ],
               ),
