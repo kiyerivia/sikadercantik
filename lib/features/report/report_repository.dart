@@ -27,7 +27,7 @@ class ReportRepository {
           'id': userId,
           'full_name': emailPrefix,
           'role': assignedRole,
-          if (posyanduId != null) 'posyandu_id': posyanduId,
+          'posyandu_id': ?posyanduId,
         });
       }
     } catch (e) {
@@ -50,25 +50,28 @@ class ReportRepository {
     await _ensureProfileExists(userId, posyanduId: posyanduId);
 
     // 1. Insert Report
-    final reportResponse = await _client.from('reports').insert({
-      'kader_id': userId,
-      'posyandu_id': posyanduId,
-      'houses_inspected': housesInspected,
-      'houses_positive': housesPositive,
-      'report_date': reportDate.toIso8601String(),
-      'notes': notes,
-      'status': status,
-    }).select().single();
+    final reportResponse = await _client
+        .from('reports')
+        .insert({
+          'kader_id': userId,
+          'posyandu_id': posyanduId,
+          'houses_inspected': housesInspected,
+          'houses_positive': housesPositive,
+          'report_date': reportDate.toIso8601String(),
+          'notes': notes,
+          'status': status,
+        })
+        .select()
+        .single();
 
     final reportId = reportResponse['id'] as String;
 
     // 2. Insert Junction records for breeding places
     if (breedingPlaceIds.isNotEmpty) {
-      final junctionData = breedingPlaceIds.map((id) => {
-        'report_id': reportId,
-        'breeding_place_id': id,
-      }).toList();
-      
+      final junctionData = breedingPlaceIds
+          .map((id) => {'report_id': reportId, 'breeding_place_id': id})
+          .toList();
+
       await _client.from('report_breeding_places').insert(junctionData);
     }
   }
@@ -81,7 +84,9 @@ class ReportRepository {
 
     final response = await _client
         .from('reports')
-        .select('*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
+        .select(
+          '*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)',
+        )
         .eq('kader_id', userId!)
         .order('report_date', ascending: false)
         .order('id', ascending: true);
@@ -90,18 +95,23 @@ class ReportRepository {
       final bpList = data['report_breeding_places'] as List?;
       final breedingPlaces = bpList != null
           ? bpList
-              .map((bp) => bp['breeding_place_id']?.toString() ?? '')
-              .where((id) => id.isNotEmpty)
-              .toList()
+                .map((bp) => bp['breeding_place_id']?.toString() ?? '')
+                .where((id) => id.isNotEmpty)
+                .toList()
           : <String>[];
-      return Report.fromMap(data as Map<String, dynamic>, breedingPlaceIds: breedingPlaces);
+      return Report.fromMap(
+        data as Map<String, dynamic>,
+        breedingPlaceIds: breedingPlaces,
+      );
     }).toList();
   }
 
   Future<List<Report>> getAllReports() async {
     final response = await _client
         .from('reports')
-        .select('*, profiles(full_name), posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)')
+        .select(
+          '*, profiles(full_name), posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)',
+        )
         .order('report_date', ascending: false)
         .order('id', ascending: true);
 
@@ -109,19 +119,19 @@ class ReportRepository {
       final bpList = data['report_breeding_places'] as List?;
       final breedingPlaces = bpList != null
           ? bpList
-              .map((bp) => bp['breeding_place_id']?.toString() ?? '')
-              .where((id) => id.isNotEmpty)
-              .toList()
+                .map((bp) => bp['breeding_place_id']?.toString() ?? '')
+                .where((id) => id.isNotEmpty)
+                .toList()
           : <String>[];
-      return Report.fromMap(data as Map<String, dynamic>, breedingPlaceIds: breedingPlaces);
+      return Report.fromMap(
+        data as Map<String, dynamic>,
+        breedingPlaceIds: breedingPlaces,
+      );
     }).toList();
   }
 
   Future<void> updateReportStatus(String reportId, String status) async {
-    await _client
-        .from('reports')
-        .update({'status': status})
-        .eq('id', reportId);
+    await _client.from('reports').update({'status': status}).eq('id', reportId);
   }
 
   Future<void> addIntervention({
@@ -159,34 +169,44 @@ class ReportRepository {
     }
 
     // 1. Update Report & reset status to submitted for re-verification
-    await _client.from('reports').update({
-      'houses_inspected': housesInspected,
-      'houses_positive': housesPositive,
-      'report_date': reportDate.toIso8601String(),
-      'notes': notes,
-      'status': status,
-    }).eq('id', reportId);
+    await _client
+        .from('reports')
+        .update({
+          'houses_inspected': housesInspected,
+          'houses_positive': housesPositive,
+          'report_date': reportDate.toIso8601String(),
+          'notes': notes,
+          'status': status,
+        })
+        .eq('id', reportId);
 
     // 2. Refresh breeding places
-    await _client.from('report_breeding_places').delete().eq('report_id', reportId);
+    await _client
+        .from('report_breeding_places')
+        .delete()
+        .eq('report_id', reportId);
     if (breedingPlaceIds.isNotEmpty) {
-      final junctionData = breedingPlaceIds.map((id) => {
-        'report_id': reportId,
-        'breeding_place_id': id,
-      }).toList();
+      final junctionData = breedingPlaceIds
+          .map((id) => {'report_id': reportId, 'breeding_place_id': id})
+          .toList();
       await _client.from('report_breeding_places').insert(junctionData);
     }
   }
 
   Future<void> deleteReport(String reportId) async {
     // 1. Delete junctions
-    await _client.from('report_breeding_places').delete().eq('report_id', reportId);
-    
+    await _client
+        .from('report_breeding_places')
+        .delete()
+        .eq('report_id', reportId);
+
     // 2. Delete report
     await _client.from('reports').delete().eq('id', reportId);
   }
 
-  Future<List<Map<String, dynamic>>> getInterventionsByReport(String reportId) async {
+  Future<List<Map<String, dynamic>>> getInterventionsByReport(
+    String reportId,
+  ) async {
     final response = await _client
         .from('interventions')
         .select('*')

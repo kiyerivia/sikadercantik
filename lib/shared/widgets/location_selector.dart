@@ -39,31 +39,14 @@ class LocationSelector extends HookConsumerWidget {
               labelText: 'Desa/Kelurahan',
               prefixIcon: Icon(Icons.map_outlined),
             ),
-            items: () {
-              const gumelarVillages = [
-                'cilangkap',
-                'cihonje',
-                'paningkaban',
-                'karangkemojing',
-                'gancang',
-                'kedungurang',
-                'gumelar',
-                'tlaga',
-                'samudra',
-                'samudra kulon',
-              ];
-              final gumelarOnly = villages
-                  .where((v) => gumelarVillages.contains(v.name.trim().toLowerCase()))
-                  .toList();
-              return gumelarOnly
-                  .map(
-                    (v) => DropdownMenuItem(
-                      value: v.id,
-                      child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)),
-                    ),
-                  )
-                  .toList();
-            }(),
+            items: villages
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v.id,
+                    child: Text(v.name, style: GoogleFonts.outfit(fontSize: 12)),
+                  ),
+                )
+                .toList(),
             onChanged: (val) {
               selectedVillage.value = val;
               selectedRW.value = null;

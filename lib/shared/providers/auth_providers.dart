@@ -34,7 +34,7 @@ final userProfileProvider = FutureProvider<Profile?>((ref) async {
     } else if (roleClean.contains('admin')) {
       assignedRole = 'admin';
     } else {
-      assignedRole = roleClean.startsWith('kader') ? roleClean : 'kader';
+      assignedRole = 'kader';
     }
 
     // Auto-insert profile into Supabase so foreign keys won't fail when saving reports/drafts

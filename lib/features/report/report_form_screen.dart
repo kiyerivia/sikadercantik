@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
+import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
@@ -55,8 +56,9 @@ class ResponsiveRow extends StatelessWidget {
       List<Widget> colChildren = [];
       for (int i = 0; i < children.length; i++) {
         colChildren.add(children[i]);
-        if (i < children.length - 1)
+        if (i < children.length - 1) {
           colChildren.add(const SizedBox(height: 16));
+        }
       }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,8 +85,10 @@ class ReportFormScreen extends HookConsumerWidget {
     final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
     final globalResult = useState<String?>('Ada Jentik (Positif)');
     final isLoading = useState(false);
+    final tableScrollController = useScrollController();
 
-    // Watch Master Data
+    // Watch Master Data & Profile
+    final userProfileAsync = ref.watch(userProfileProvider);
     final villagesAsync = ref.watch(villagesProvider);
     final posyandusAsync = selectedVillageId.value != null
         ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
@@ -112,7 +116,9 @@ class ReportFormScreen extends HookConsumerWidget {
             .read(masterRepositoryProvider)
             .getVillageIdByPosyandu(initialReport!.posyanduId)
             .then((vId) {
-              selectedVillageId.value = vId;
+              if (vId != null) {
+                selectedVillageId.value = vId;
+              }
             });
 
         if (initialReport!.notes != null) {
@@ -153,8 +159,25 @@ class ReportFormScreen extends HookConsumerWidget {
           }
           if (parsed.isNotEmpty) houseEntries.value = parsed;
         }
-      } else if (houseEntries.value.isEmpty) {
-        houseEntries.value = [HouseReportEntry()];
+      } else {
+        if (houseEntries.value.isEmpty) {
+          houseEntries.value = [HouseReportEntry()];
+        }
+        userProfileAsync.whenData((profile) {
+          if (profile?.posyanduId != null && selectedPosyanduId.value == null) {
+            selectedPosyanduId.value = profile!.posyanduId;
+            ref
+                .read(masterRepositoryProvider)
+                .getVillageIdByPosyandu(profile.posyanduId!)
+                .then((vId) {
+                  if (vId != null && selectedVillageId.value == null) {
+                    selectedVillageId.value = vId;
+                  }
+                });
+          } else if (selectedVillageId.value == null) {
+            selectedVillageId.value = 'v-gumelar';
+          }
+        });
       }
 
       return () {
@@ -162,7 +185,7 @@ class ReportFormScreen extends HookConsumerWidget {
           entry.dispose();
         }
       };
-    }, [initialReport]);
+    }, [initialReport, userProfileAsync.value]);
 
     Future<void> handleSubmit() async {
       if (selectedVillageId.value == null) {
@@ -365,14 +388,17 @@ class ReportFormScreen extends HookConsumerWidget {
       if (selectedVillageId.value == null || selectedPosyanduId.value == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Silakan pilih Desa dan Posyandu terlebih dahulu untuk menyimpan draft!'),
+            content: Text(
+              'Silakan pilih Desa dan Posyandu terlebih dahulu untuk menyimpan draft!',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
         return;
       }
 
-      final expectedInspected = int.tryParse(housesInspectedController.text) ?? 0;
+      final expectedInspected =
+          int.tryParse(housesInspectedController.text) ?? 0;
       final expectedPositive = int.tryParse(housesPositiveController.text) ?? 0;
 
       isLoading.value = true;
@@ -384,8 +410,12 @@ class ReportFormScreen extends HookConsumerWidget {
           for (int i = 0; i < houseEntries.value.length; i++) {
             final entry = houseEntries.value[i];
             notesBuffer.writeln('--- KK ${i + 1} ---');
-            notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
-            notesBuffer.writeln('RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}');
+            notesBuffer.writeln(
+              'Nama KK: ${entry.kkNameController.text.trim()}',
+            );
+            notesBuffer.writeln(
+              'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
+            );
             notesBuffer.writeln('Hasil: Ada Jentik');
 
             final breedingPlaces = breedingPlacesAsync.value ?? [];
@@ -400,7 +430,9 @@ class ReportFormScreen extends HookConsumerWidget {
             }
 
             notesBuffer.writeln('Tempat: $placeName');
-            notesBuffer.writeln('Jumlah: ${entry.positivePlacesCountController.text.trim()}');
+            notesBuffer.writeln(
+              'Jumlah: ${entry.positivePlacesCountController.text.trim()}',
+            );
             notesBuffer.writeln('');
           }
         } else {
@@ -408,7 +440,9 @@ class ReportFormScreen extends HookConsumerWidget {
         }
 
         if (isEdit) {
-          await ref.read(reportRepositoryProvider).updateReport(
+          await ref
+              .read(reportRepositoryProvider)
+              .updateReport(
                 reportId: initialReport!.id,
                 housesInspected: expectedInspected,
                 housesPositive: expectedPositive,
@@ -418,7 +452,9 @@ class ReportFormScreen extends HookConsumerWidget {
                 status: 'draft',
               );
         } else {
-          await ref.read(reportRepositoryProvider).submitReport(
+          await ref
+              .read(reportRepositoryProvider)
+              .submitReport(
                 posyanduId: selectedPosyanduId.value!,
                 housesInspected: expectedInspected,
                 housesPositive: expectedPositive,
@@ -442,9 +478,9 @@ class ReportFormScreen extends HookConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menyimpan draft: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Gagal menyimpan draft: $e')));
         }
       } finally {
         isLoading.value = false;
@@ -595,6 +631,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                   child: _buildDropdown(
                                     value: selectedVillageId.value,
                                     hint: 'Pilih Desa',
+                                    isLoading: villagesAsync.isLoading,
                                     items: villagesAsync.maybeWhen(
                                       data: (villages) {
                                         return villages
@@ -619,7 +656,10 @@ class ReportFormScreen extends HookConsumerWidget {
                                   icon: Icons.people,
                                   child: _buildDropdown(
                                     value: selectedPosyanduId.value,
-                                    hint: 'Pilih Posyandu',
+                                    hint: selectedVillageId.value == null
+                                        ? 'Pilih Desa Terlebih Dahulu'
+                                        : 'Pilih Posyandu',
+                                    isLoading: posyandusAsync.isLoading,
                                     items: posyandusAsync.maybeWhen(
                                       data: (posyandus) {
                                         return posyandus
@@ -931,7 +971,30 @@ class ReportFormScreen extends HookConsumerWidget {
                           ),
                         const SizedBox(height: 16),
 
-                        // Table Data inside Horizontal Scroll
+                        // Table Data inside Horizontal Scrollbar
+                        if (!isDesktop)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.swipe_left,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Geser tabel ke samping ➔',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -939,15 +1002,25 @@ class ReportFormScreen extends HookConsumerWidget {
                             border: Border.all(color: Colors.grey[300]!),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: SizedBox(
-                              width: (screenWidth - (isDesktop ? 48 : 32)) < 800
-                                  ? 800
-                                  : (screenWidth - (isDesktop ? 48 : 32)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
+                          child: RawScrollbar(
+                            controller: tableScrollController,
+                            thumbVisibility: true,
+                            trackVisibility: true,
+                            thickness: 8.0,
+                            radius: const Radius.circular(4),
+                            thumbColor: const Color(0xFF27AE60),
+                            trackColor: const Color(0xFFE8F5E9),
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: SingleChildScrollView(
+                              controller: tableScrollController,
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: (screenWidth - (isDesktop ? 48 : 32)) < 800
+                                    ? 800
+                                    : (screenWidth - (isDesktop ? 48 : 32)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
                                   // Table Header
                                   Container(
                                     color: const Color(0xFFE8F5E9),
@@ -1059,7 +1132,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                         ),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
+                                        vertical: 14,
                                         horizontal: 8,
                                       ),
                                       child: Row(
@@ -1337,12 +1410,14 @@ class ReportFormScreen extends HookConsumerWidget {
                                       ),
                                     );
                                   }),
+                                  const SizedBox(height: 12),
                                 ],
                               ),
-                            ),
-                          ),
-                        ),
-                      ],
+                             ),
+                           ),
+                         ),
+                       ),
+                     ],
                       const SizedBox(height: 24),
 
                       // Bottom Actions
@@ -1516,7 +1591,41 @@ class ReportFormScreen extends HookConsumerWidget {
     required List<DropdownMenuItem<String>> items,
     required void Function(String?)? onChanged,
     bool isDense = false,
+    bool isLoading = false,
   }) {
+    if (isLoading) {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isDense ? 8 : 12,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey[50],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Memuat data...',
+              style: GoogleFonts.outfit(
+                color: Colors.grey[600],
+                fontSize: isDense ? 12 : 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final safeValue = (items.any((item) => item.value == value)) ? value : null;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isDense ? 8 : 12),
       decoration: BoxDecoration(
@@ -1526,7 +1635,7 @@ class ReportFormScreen extends HookConsumerWidget {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: value,
+          value: safeValue,
           hint: Text(
             hint,
             style: GoogleFonts.outfit(
@@ -1543,7 +1652,7 @@ class ReportFormScreen extends HookConsumerWidget {
             size: isDense ? 16 : 24,
           ),
           items: items,
-          onChanged: onChanged,
+          onChanged: items.isEmpty ? null : onChanged,
         ),
       ),
     );
