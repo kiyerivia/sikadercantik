@@ -16,11 +16,21 @@ class HouseReportEntry {
   final TextEditingController kkNameController = TextEditingController();
   final TextEditingController rtController = TextEditingController();
   final TextEditingController rwController = TextEditingController();
-  String? selectedPlaceId;
+  List<String?> selectedPlaceIds = [null];
   final TextEditingController positivePlacesCountController =
       TextEditingController();
 
   HouseReportEntry();
+
+  String? get selectedPlaceId =>
+      selectedPlaceIds.isNotEmpty ? selectedPlaceIds.first : null;
+  set selectedPlaceId(String? val) {
+    if (selectedPlaceIds.isEmpty) {
+      selectedPlaceIds = [val];
+    } else {
+      selectedPlaceIds[0] = val;
+    }
+  }
 
   void dispose() {
     kkNameController.dispose();
@@ -163,21 +173,6 @@ class ReportFormScreen extends HookConsumerWidget {
         if (houseEntries.value.isEmpty) {
           houseEntries.value = [HouseReportEntry()];
         }
-        userProfileAsync.whenData((profile) {
-          if (profile?.posyanduId != null && selectedPosyanduId.value == null) {
-            selectedPosyanduId.value = profile!.posyanduId;
-            ref
-                .read(masterRepositoryProvider)
-                .getVillageIdByPosyandu(profile.posyanduId!)
-                .then((vId) {
-                  if (vId != null && selectedVillageId.value == null) {
-                    selectedVillageId.value = vId;
-                  }
-                });
-          } else if (selectedVillageId.value == null) {
-            selectedVillageId.value = 'v-gumelar';
-          }
-        });
       }
 
       return () {
@@ -186,6 +181,151 @@ class ReportFormScreen extends HookConsumerWidget {
         }
       };
     }, [initialReport, userProfileAsync.value]);
+
+    Future<void> showAddBreedingPlaceDialog(
+      HouseReportEntry entry, [
+      int targetIdx = 0,
+    ]) async {
+      final textController = TextEditingController();
+
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return HookBuilder(
+            builder: (ctx) {
+              final isSubmitting = useState(false);
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Row(
+                  children: [
+                    const Icon(Icons.add_circle, color: Color(0xFF27AE60)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Tambah Tempat Jentik',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF10365F),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Masukkan nama tempat jentik baru (cth: Ember, Tatakan Kulkas, Pot Bunga):',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: textController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Nama tempat jentik...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        isDense: true,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting.value
+                        ? null
+                        : () => Navigator.of(ctx).pop(),
+                    child: Text(
+                      'Batal',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: isSubmitting.value
+                        ? null
+                        : () async {
+                            final name = textController.text.trim();
+                            if (name.isEmpty) return;
+
+                            isSubmitting.value = true;
+                            try {
+                              final newPlace = await ref
+                                  .read(masterRepositoryProvider)
+                                  .addBreedingPlace(name);
+
+                              ref.invalidate(breedingPlacesProvider);
+
+                              final newId = newPlace['id'] as String;
+                              if (targetIdx < entry.selectedPlaceIds.length) {
+                                entry.selectedPlaceIds[targetIdx] = newId;
+                              } else {
+                                entry.selectedPlaceIds.add(newId);
+                              }
+                              houseEntries.value = [...houseEntries.value];
+
+                              if (ctx.mounted) {
+                                Navigator.of(ctx).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Tempat "$name" berhasil ditambahkan!',
+                                    ),
+                                    backgroundColor: const Color(0xFF27AE60),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Gagal menambahkan: $e'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              isSubmitting.value = false;
+                            }
+                          },
+                    icon: isSubmitting.value
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                    label: const Text(
+                      'Simpan & Pilih',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF27AE60),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
 
     Future<void> handleSubmit() async {
       if (selectedVillageId.value == null) {
@@ -269,7 +409,11 @@ class ReportFormScreen extends HookConsumerWidget {
             );
             return;
           }
-          if (entry.selectedPlaceId == null) {
+          final validPlaceIds = entry.selectedPlaceIds
+              .where((id) => id != null && id.isNotEmpty)
+              .cast<String>()
+              .toList();
+          if (validPlaceIds.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -313,17 +457,21 @@ class ReportFormScreen extends HookConsumerWidget {
             notesBuffer.writeln('Hasil: Ada Jentik');
 
             final breedingPlaces = breedingPlacesAsync.value ?? [];
-            String placeName = '-';
-            if (entry.selectedPlaceId != null) {
-              final found = breedingPlaces.firstWhere(
-                (p) => p['id'] == entry.selectedPlaceId,
-                orElse: () => {'name': '-'},
-              );
-              placeName = found['name'] as String;
-              allBreedingPlaceIds.add(entry.selectedPlaceId!);
+            List<String> placeNames = [];
+            for (var pId in entry.selectedPlaceIds) {
+              if (pId != null && pId.isNotEmpty) {
+                allBreedingPlaceIds.add(pId);
+                final found = breedingPlaces.firstWhere(
+                  (p) => p['id'] == pId,
+                  orElse: () => {'name': '-'},
+                );
+                placeNames.add(found['name'] as String);
+              }
             }
 
-            notesBuffer.writeln('Tempat: $placeName');
+            notesBuffer.writeln(
+              'Tempat: ${placeNames.isEmpty ? '-' : placeNames.join(', ')}',
+            );
             notesBuffer.writeln(
               'Jumlah: ${entry.positivePlacesCountController.text.trim()}',
             );
@@ -1136,15 +1284,19 @@ class ReportFormScreen extends HookConsumerWidget {
                                         horizontal: 8,
                                       ),
                                       child: Row(
+                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           SizedBox(
                                             width: 40,
-                                            child: Text(
+                                            child: Padding(
+                                               padding: const EdgeInsets.only(top: 8),
+                                               child: Text(
                                               '${idx + 1}',
                                               textAlign: TextAlign.center,
                                               style: GoogleFonts.outfit(
                                                 fontWeight: FontWeight.bold,
                                               ),
+                                           ),
                                             ),
                                           ),
                                           Expanded(
@@ -1160,13 +1312,18 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 decoration: InputDecoration(
                                                   prefixIcon: const Icon(
                                                     Icons.person,
-                                                    size: 18,
+                                                    size: 16,
                                                     color: Colors.blue,
+                                                  ),
+                                                  prefixIconConstraints: const BoxConstraints(
+                                                    minWidth: 30,
+                                                    minHeight: 38,
+                                                    maxHeight: 38,
                                                   ),
                                                   contentPadding:
                                                       const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8,
+                                                        horizontal: 8,
+                                                        vertical: 10,
                                                       ),
                                                   border: OutlineInputBorder(
                                                     borderRadius:
@@ -1286,38 +1443,119 @@ class ReportFormScreen extends HookConsumerWidget {
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 4,
                                                   ),
-                                              child: _buildDropdown(
-                                                value: entry.selectedPlaceId,
-                                                hint: 'Pilih Tempat',
-                                                items: breedingPlacesAsync
-                                                    .maybeWhen(
-                                                      data: (places) => places
-                                                          .map(
-                                                            (
-                                                              p,
-                                                            ) => DropdownMenuItem(
-                                                              value:
-                                                                  p['id']
-                                                                      as String,
-                                                              child: Text(
-                                                                p['name']
-                                                                    as String,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  ...entry.selectedPlaceIds
+                                                      .asMap()
+                                                      .entries
+                                                      .map((pEntry) {
+                                                    final pIdx = pEntry.key;
+                                                    final pValue = pEntry.value;
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                        bottom: 4.0,
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: _buildDropdown(
+                                                              value: pValue,
+                                                              hint: 'Pilih Tempat',
+                                                              items: breedingPlacesAsync
+                                                                  .maybeWhen(
+                                                                    data: (places) => places
+                                                                        .map(
+                                                                          (p) => DropdownMenuItem(
+                                                                            value: p['id'] as String,
+                                                                            child: Padding(
+                                                                              padding: const EdgeInsets.symmetric(vertical: 4),
+                                                                              child: Text(
+                                                                                p['name'] as String,
+                                                                                style: GoogleFonts.outfit(fontSize: 12),
+                                                                                softWrap: true,
+                                                                                maxLines: 3,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        )
+                                                                        .toList(),
+                                                                    orElse: () => [],
+                                                                  ),
+                                                              onChanged: (val) {
+                                                                entry.selectedPlaceIds[pIdx] = val;
+                                                                houseEntries.value = [
+                                                                  ...houseEntries.value,
+                                                                ];
+                                                              },
+                                                              isDense: true,
+                                                            ),
+                                                          ),
+                                                          if (entry.selectedPlaceIds.length > 1) ...[
+                                                            const SizedBox(width: 4),
+                                                            Tooltip(
+                                                              message: 'Hapus Tempat Ini',
+                                                              child: InkWell(
+                                                                onTap: () {
+                                                                  entry.selectedPlaceIds.removeAt(pIdx);
+                                                                  houseEntries.value = [
+                                                                    ...houseEntries.value,
+                                                                  ];
+                                                                },
+                                                                borderRadius: BorderRadius.circular(6),
+                                                                child: Container(
+                                                                  padding: const EdgeInsets.all(6),
+                                                                  decoration: BoxDecoration(
+                                                                    color: Colors.red[100],
+                                                                    borderRadius: BorderRadius.circular(6),
+                                                                  ),
+                                                                  child: const Icon(
+                                                                    Icons.remove,
+                                                                    color: Colors.red,
+                                                                    size: 16,
+                                                                  ),
+                                                                ),
                                                               ),
                                                             ),
-                                                          )
-                                                          .toList(),
-                                                      orElse: () => [],
+                                                          ],
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }),
+                                                  InkWell(
+                                                    onTap: () {
+                                                      entry.selectedPlaceIds.add(null);
+                                                      houseEntries.value = [
+                                                        ...houseEntries.value,
+                                                      ];
+                                                    },
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.only(top: 2.0),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(
+                                                            Icons.add_circle_outline,
+                                                            size: 14,
+                                                            color: Color(0xFF27AE60),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            'Tambah pilihan tempat',
+                                                            style: GoogleFonts.outfit(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: const Color(0xFF27AE60),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                onChanged: (val) {
-                                                  entry.selectedPlaceId = val;
-                                                  houseEntries.value = [
-                                                    ...houseEntries.value,
-                                                  ];
-                                                },
-                                                isDense: true,
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -1418,7 +1656,7 @@ class ReportFormScreen extends HookConsumerWidget {
                          ),
                        ),
                      ],
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 40),
 
                       // Bottom Actions
                       ResponsiveRow(
@@ -1627,7 +1865,10 @@ class ReportFormScreen extends HookConsumerWidget {
     final safeValue = (items.any((item) => item.value == value)) ? value : null;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isDense ? 8 : 12),
+      height: isDense ? 38 : null,
+      padding: EdgeInsets.symmetric(
+        horizontal: isDense ? 8 : 12,
+      ),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
@@ -1636,6 +1877,8 @@ class ReportFormScreen extends HookConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: safeValue,
+          itemHeight: null,
+          menuMaxHeight: 400,
           hint: Text(
             hint,
             style: GoogleFonts.outfit(
@@ -1645,7 +1888,7 @@ class ReportFormScreen extends HookConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
           isExpanded: true,
-          isDense: true,
+          isDense: isDense,
           icon: Icon(
             Icons.keyboard_arrow_down,
             color: Colors.grey,

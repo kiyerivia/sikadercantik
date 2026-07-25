@@ -83,24 +83,29 @@ ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_breeding_places ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interventions ENABLE ROW LEVEL SECURITY;
 
+-- POLICIES (Master Data)
+CREATE POLICY "Public villages viewable by everyone." ON villages FOR SELECT USING (true);
+CREATE POLICY "Public rws viewable by everyone." ON rws FOR SELECT USING (true);
+CREATE POLICY "Public posyandus viewable by everyone." ON posyandus FOR SELECT USING (true);
+CREATE POLICY "Public mosquito breeding places viewable by everyone." ON mosquito_breeding_places FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can insert villages." ON villages FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can insert rws." ON rws FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can insert posyandus." ON posyandus FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
 -- POLICIES (Example: Profiles)
 CREATE POLICY "Public profiles are viewable by everyone." ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can update own profile." ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Authenticated users can insert profiles." ON profiles FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Users can update own profile." ON profiles FOR UPDATE USING (auth.uid() = id OR auth.role() = 'authenticated');
 
 -- POLICIES (Example: Report Junctions)
 CREATE POLICY "Report junction viewable by everyone." ON report_breeding_places FOR SELECT USING (true);
-CREATE POLICY "Kader can insert report junctions." ON report_breeding_places 
-FOR INSERT WITH CHECK (
-    EXISTS (
-        SELECT 1 FROM reports 
-        WHERE reports.id = report_breeding_places.report_id 
-        AND reports.kader_id = auth.uid()
-    )
-);
+CREATE POLICY "Authenticated users can insert report junctions." ON report_breeding_places FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- POLICIES (Example: Reports)
-CREATE POLICY "Kader can insert their own reports." ON reports FOR INSERT WITH CHECK (auth.uid() = kader_id);
-CREATE POLICY "Kader can view their own reports." ON reports FOR SELECT USING (auth.uid() = kader_id);
+CREATE POLICY "Public reports viewable by everyone." ON reports FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert reports." ON reports FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Kader can update their own reports." ON reports FOR UPDATE USING (auth.uid() = kader_id OR auth.role() = 'authenticated');
 CREATE POLICY "Admins can view and update all reports." ON reports FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );

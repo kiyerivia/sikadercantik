@@ -27,11 +27,87 @@ class ReportRepository {
           'id': userId,
           'full_name': emailPrefix,
           'role': assignedRole,
-          'posyandu_id': ?posyanduId,
+          'posyandu_id': posyanduId,
         });
       }
     } catch (e) {
       print('Warning: could not ensure profile exists: $e');
+    }
+  }
+
+  Future<void> _ensurePosyanduExists(String posyanduId) async {
+    try {
+      final check = await _client
+          .from('posyandus')
+          .select('id')
+          .eq('id', posyanduId)
+          .maybeSingle();
+
+      if (check == null) {
+        var villageCheck = await _client
+            .from('villages')
+            .select('id')
+            .limit(1)
+            .maybeSingle();
+        String villageId;
+        if (villageCheck == null) {
+          final vResp = await _client
+              .from('villages')
+              .insert({'id': '10000000-0000-0000-0000-000000000007', 'name': 'Gumelar'})
+              .select('id')
+              .single();
+          villageId = vResp['id'] as String;
+        } else {
+          villageId = villageCheck['id'] as String;
+        }
+
+        var rwCheck = await _client
+            .from('rws')
+            .select('id')
+            .eq('village_id', villageId)
+            .limit(1)
+            .maybeSingle();
+        String rwId;
+        if (rwCheck == null) {
+          final rwResp = await _client
+              .from('rws')
+              .insert({'id': '30000000-0000-0000-0007-000000000001', 'village_id': villageId, 'rw_number': '1'})
+              .select('id')
+              .single();
+          rwId = rwResp['id'] as String;
+        } else {
+          rwId = rwCheck['id'] as String;
+        }
+
+        await _client.from('posyandus').upsert({
+          'id': posyanduId,
+          'rw_id': rwId,
+          'name': 'Posyandu Kader',
+        });
+      }
+    } catch (e) {
+      print('Warning: could not ensure posyandu exists: $e');
+    }
+  }
+
+  Future<void> _ensureBreedingPlacesExist(List<String> breedingPlaceIds) async {
+    for (var id in breedingPlaceIds) {
+      try {
+        final check = await _client
+            .from('mosquito_breeding_places')
+            .select('id')
+            .eq('id', id)
+            .maybeSingle();
+        if (check == null) {
+          await _client.from('mosquito_breeding_places').upsert({
+            'id': id,
+            'name': 'Tempat Jentik',
+            'is_active': true,
+          });
+        }
+      } catch (e) {
+        print('Warning: could not ensure breeding place exists: $e');
+      }
     }
   }
 
@@ -47,6 +123,8 @@ class ReportRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
+    await _ensurePosyanduExists(posyanduId);
+    await _ensureBreedingPlacesExist(breedingPlaceIds);
     await _ensureProfileExists(userId, posyanduId: posyanduId);
 
     // 1. Insert Report
