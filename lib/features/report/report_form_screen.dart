@@ -1590,7 +1590,6 @@ class ReportFormScreen extends HookConsumerWidget {
                            ),
                          ),
                        ),
-                     ],
                       const SizedBox(height: 40),
 
                       // Bottom Actions
