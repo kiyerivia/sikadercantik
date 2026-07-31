@@ -1009,67 +1009,15 @@ class ReportFormScreen extends HookConsumerWidget {
                                   // Table Header
                                   Container(
                                     color: const Color(0xFFE8F5E9),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 8,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 40,
-                                          child: Text(
-                                            'No.',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Nama KK',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: Text(
-                                            'RT',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: Text(
-                                            'RW',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                'Jentik',
+                                    child: IntrinsicHeight(
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          SizedBox(
+                                            width: 40,
+                                            child: Center(
+                                              child: Text(
+                                                'No.',
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
@@ -1077,73 +1025,149 @@ class ReportFormScreen extends HookConsumerWidget {
                                                   color: const Color(0xFF10365F),
                                                 ),
                                               ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      'Positif',
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: const Color(0xFF10365F),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Expanded(
-                                                    child: Text(
-                                                      'Nihil',
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: const Color(0xFF10365F),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                            ),
+                                          ),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 3,
+                                            child: Center(
+                                              child: Text(
+                                                'Nama KK',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Text(
-                                            'Tempat Positif Jentik',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
                                             ),
                                           ),
-                                        ),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Text(
-                                            'Jumlah Tempat Positif',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 1,
+                                            child: Center(
+                                              child: Text(
+                                                'RT',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        SizedBox(
-                                          width: 60,
-                                          child: Text(
-                                            'Aksi',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: const Color(0xFF10365F),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 1,
+                                            child: Center(
+                                              child: Text(
+                                                'RW',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 6.0),
+                                                  child: Text(
+                                                    'Jentik',
+                                                    textAlign: TextAlign.center,
+                                                    style: GoogleFonts.outfit(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 13,
+                                                      color: const Color(0xFF10365F),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Positif',
+                                                        textAlign: TextAlign.center,
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: const Color(0xFF10365F),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Nihil',
+                                                        textAlign: TextAlign.center,
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: const Color(0xFF10365F),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                              ],
+                                            ),
+                                          ),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 3,
+                                            child: Center(
+                                              child: Text(
+                                                'Tempat Positif Jentik',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Center(
+                                              child: Text(
+                                                'Jumlah Tempat Positif',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          SizedBox(
+                                            width: 60,
+                                            child: Center(
+                                              child: Text(
+                                                'Aksi',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                   // Table Rows
