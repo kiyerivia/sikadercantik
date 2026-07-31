@@ -760,55 +760,9 @@ class ReportFormScreen extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Copy Button
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F7FF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue[100]!),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.copy, color: Color(0xFF2980B9)),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Copy Laporan Bulan Lalu',
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF2980B9),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Salin data KK positif jentik dari laporan bulan sebelumnya',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFF2980B9),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: Color(0xFF2980B9),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+
 
                       // Table Section
-                      if (globalResult.value == 'Ada Jentik (Positif)') ...[
                         if (isDesktop)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -827,7 +781,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'DAFTAR RUMAH POSITIF JENTIK',
+                                            'DAFTAR RUMAH YANG DIPERIKSA',
                                             style: GoogleFonts.outfit(
                                               fontWeight: FontWeight.bold,
                                               color: const Color(0xFF10365F),
@@ -835,7 +789,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                             ),
                                           ),
                                           Text(
-                                            'Isikan data rumah yang ditemukan positif jentik',
+                                            'Isikan data rumah yang diperiksa',
                                             style: GoogleFonts.outfit(
                                               color: Colors.grey[600],
                                               fontSize: 12,
@@ -898,7 +852,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'DAFTAR RUMAH POSITIF JENTIK',
+                                          'DAFTAR RUMAH YANG DIPERIKSA',
                                           style: GoogleFonts.outfit(
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFF10365F),
@@ -906,7 +860,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                           ),
                                         ),
                                         Text(
-                                          'Isikan data rumah yang ditemukan positif jentik',
+                                          'Isikan data rumah yang diperiksa',
                                           style: GoogleFonts.outfit(
                                             color: Colors.grey[600],
                                             fontSize: 12,
