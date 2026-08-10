@@ -1531,10 +1531,11 @@ class ReportHistoryScreen extends HookConsumerWidget {
               data['rt'] = parts[0];
               data['rw'] = parts[1];
             }
-          } else if (t.startsWith('Tempat: '))
+          } else if (t.startsWith('Tempat: ')) {
             data['tempat'] = t.substring(8);
-          else if (t.startsWith('Hasil: '))
+          } else if (t.startsWith('Hasil: ')) {
             data['hasil'] = t.substring(7);
+          }
         }
         if (data.isNotEmpty) houses.add(data);
       }

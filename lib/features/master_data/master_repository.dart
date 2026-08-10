@@ -149,7 +149,23 @@ class MasterRepository {
             .where((v) => gumelarVillages.any((g) => v.name.trim().toLowerCase().contains(g)))
             .toList();
 
-        final result = filtered.isNotEmpty ? filtered : allVillages;
+        final rawList = filtered.isNotEmpty ? filtered : allVillages;
+
+        // Deduplicate villages by name
+        final Map<String, Village> uniqueMap = {};
+        for (var v in rawList) {
+          final key = v.name.trim().toLowerCase();
+          if (!uniqueMap.containsKey(key)) {
+            uniqueMap[key] = v;
+          } else {
+            // Prefer canonical UUID (starts with 10000000) if available
+            if (!uniqueMap[key]!.id.startsWith('10000000') && v.id.startsWith('10000000')) {
+              uniqueMap[key] = v;
+            }
+          }
+        }
+
+        final result = uniqueMap.values.toList();
         result.sort((a, b) => a.name.compareTo(b.name));
         return result;
       }
@@ -161,13 +177,37 @@ class MasterRepository {
 
   Future<List<RW>> getRWs(String villageId) async {
     try {
+      final rawVillagesResp = await _client.from('villages').select();
+      final rawVillages = (rawVillagesResp as List).map((m) => Village.fromMap(m)).toList();
+      final currentVillage = rawVillages.firstWhere(
+        (v) => v.id == villageId,
+        orElse: () => _fallbackVillages.firstWhere((v) => v.id == villageId, orElse: () => Village(id: villageId, name: '')),
+      );
+
+      List<String> targetVillageIds = [villageId];
+      if (currentVillage.name.isNotEmpty) {
+        targetVillageIds = rawVillages
+            .where((v) => v.name.trim().toLowerCase() == currentVillage.name.trim().toLowerCase())
+            .map((v) => v.id)
+            .toList();
+        if (!targetVillageIds.contains(villageId)) targetVillageIds.add(villageId);
+      }
+
       final response = await _client
           .from('rws')
           .select()
-          .eq('village_id', villageId)
+          .inFilter('village_id', targetVillageIds)
           .order('rw_number');
       final list = (response as List).map((m) => RW.fromMap(m)).toList();
-      if (list.isNotEmpty) return list;
+      if (list.isNotEmpty) {
+        final Map<String, RW> uniqueRws = {};
+        for (var r in list) {
+          if (!uniqueRws.containsKey(r.rwNumber)) {
+            uniqueRws[r.rwNumber] = r;
+          }
+        }
+        return uniqueRws.values.toList();
+      }
     } catch (_) {}
 
     // Fallback RW list based on posyandus
@@ -217,13 +257,38 @@ class MasterRepository {
     }
 
     try {
+      final rawVillagesResp = await _client.from('villages').select();
+      final rawVillages = (rawVillagesResp as List).map((m) => Village.fromMap(m)).toList();
+      final currentVillage = rawVillages.firstWhere(
+        (v) => v.id == targetVillageId,
+        orElse: () => _fallbackVillages.firstWhere((v) => v.id == targetVillageId, orElse: () => Village(id: targetVillageId, name: '')),
+      );
+
+      List<String> targetVillageIds = [targetVillageId];
+      if (currentVillage.name.isNotEmpty) {
+        targetVillageIds = rawVillages
+            .where((v) => v.name.trim().toLowerCase() == currentVillage.name.trim().toLowerCase())
+            .map((v) => v.id)
+            .toList();
+        if (!targetVillageIds.contains(targetVillageId)) targetVillageIds.add(targetVillageId);
+      }
+
       final response = await _client
           .from('posyandus')
           .select('*, rws!inner(*)')
-          .eq('rws.village_id', targetVillageId)
+          .inFilter('rws.village_id', targetVillageIds)
           .order('name');
       final list = (response as List).map((m) => Posyandu.fromMap(m)).toList();
-      if (list.isNotEmpty) return list;
+      if (list.isNotEmpty) {
+        final Map<String, Posyandu> uniquePosyandus = {};
+        for (var p in list) {
+          final key = p.name.trim().toLowerCase();
+          if (!uniquePosyandus.containsKey(key)) {
+            uniquePosyandus[key] = p;
+          }
+        }
+        return uniquePosyandus.values.toList();
+      }
     } catch (e) {
       print('Error fetching posyandus for village: $e');
     }
@@ -251,7 +316,20 @@ class MasterRepository {
           .eq('id', posyanduId)
           .single();
       final vId = response['rws']['village_id'] as String?;
-      if (vId != null && vId.isNotEmpty) return vId;
+      if (vId != null && vId.isNotEmpty) {
+        final villages = await getVillages();
+        final rawVillagesResp = await _client.from('villages').select();
+        final rawVillages = (rawVillagesResp as List).map((m) => Village.fromMap(m)).toList();
+        final matchedRaw = rawVillages.firstWhere((v) => v.id == vId, orElse: () => Village(id: vId, name: ''));
+        if (matchedRaw.name.isNotEmpty) {
+          final matchedDeduplicated = villages.firstWhere(
+            (v) => v.name.trim().toLowerCase() == matchedRaw.name.trim().toLowerCase(),
+            orElse: () => matchedRaw,
+          );
+          return matchedDeduplicated.id;
+        }
+        return vId;
+      }
     } catch (_) {}
 
     for (var entry in _fallbackPosyandusByVillage.entries) {

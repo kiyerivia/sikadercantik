@@ -20,8 +20,9 @@ class HouseReportEntry {
   final TextEditingController positivePlacesCountController =
       TextEditingController();
   bool? isPositive;
+  bool isEditing = false;
 
-  HouseReportEntry({this.isPositive});
+  HouseReportEntry({this.isPositive, this.isEditing = false});
 
   String? get selectedPlaceId =>
       selectedPlaceIds.isNotEmpty ? selectedPlaceIds.first : null;
@@ -97,6 +98,11 @@ class ReportFormScreen extends HookConsumerWidget {
     final globalResult = useState<String?>('Ada Jentik (Positif)');
     final isLoading = useState(false);
     final tableScrollController = useScrollController();
+    final tempKkNameController = useTextEditingController();
+    final tempRtRwController = useTextEditingController();
+    final tempHasilPemeriksaan = useState<String?>(null);
+    final tempSelectedPlaceIds = useState<List<String?>>([null]);
+    final tempPositiveCountController = useTextEditingController();
 
     // Watch Master Data & Profile
     final userProfileAsync = ref.watch(userProfileProvider);
@@ -171,9 +177,7 @@ class ReportFormScreen extends HookConsumerWidget {
           if (parsed.isNotEmpty) houseEntries.value = parsed;
         }
       } else {
-        if (houseEntries.value.isEmpty) {
-          houseEntries.value = [HouseReportEntry()];
-        }
+        // Leave table empty by default for new report
       }
 
       return () {
@@ -730,31 +734,722 @@ class ReportFormScreen extends HookConsumerWidget {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            ResponsiveRow(
-                              isDesktop: isDesktop,
-                              children: [
-                                _buildInputGroup(
-                                  label: 'Jumlah Rumah Diperiksa',
-                                  icon: Icons.home,
-                                  child: _buildTextInput(
-                                    housesInspectedController,
-                                    '-',
-                                    isNumber: true,
+                            const Divider(height: 1, color: Color(0xFFE0E0E0)),
+                            const SizedBox(height: 16),
+                            // Row 1: NAMA, RT/RW, Hasil Pemeriksaan (Checkboxes default null)
+                            isDesktop
+                                ? Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: _buildInputGroup(
+                                          label: 'NAMA',
+                                          icon: Icons.person,
+                                          child: TextFormField(
+                                            controller: tempKkNameController,
+                                            decoration: InputDecoration(
+                                              hintText: 'Masukkan Nama KK',
+                                              contentPadding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 10,
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                              ),
+                                              isDense: true,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        flex: 1,
+                                        child: _buildInputGroup(
+                                          label: 'RT/RW',
+                                          icon: Icons.home,
+                                          child: TextFormField(
+                                            controller: tempRtRwController,
+                                            decoration: InputDecoration(
+                                              hintText: '- / -',
+                                              contentPadding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 10,
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                              ),
+                                              isDense: true,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.checklist,
+                                                  size: 16,
+                                                  color: Colors.blueGrey,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Hasil Pemeriksaan',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    color: const Color(0xFF10365F),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                InkWell(
+                                                  onTap: () {
+                                                    tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                  },
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Checkbox(
+                                                        value: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)',
+                                                        onChanged: (val) {
+                                                          if (val == true) {
+                                                            tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                          } else {
+                                                            tempHasilPemeriksaan.value = null;
+                                                          }
+                                                        },
+                                                        activeColor: const Color(0xFF27AE60),
+                                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        visualDensity: VisualDensity.compact,
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      Text(
+                                                        'Positif',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                InkWell(
+                                                  onTap: () {
+                                                    tempHasilPemeriksaan.value = 'Nihil';
+                                                    tempSelectedPlaceIds.value = [null];
+                                                    tempPositiveCountController.clear();
+                                                  },
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Checkbox(
+                                                        value: tempHasilPemeriksaan.value == 'Nihil',
+                                                        onChanged: (val) {
+                                                          if (val == true) {
+                                                            tempHasilPemeriksaan.value = 'Nihil';
+                                                            tempSelectedPlaceIds.value = [null];
+                                                            tempPositiveCountController.clear();
+                                                          } else {
+                                                            tempHasilPemeriksaan.value = null;
+                                                          }
+                                                        },
+                                                        activeColor: const Color(0xFF27AE60),
+                                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        visualDensity: VisualDensity.compact,
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      Text(
+                                                        'Nihil',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildInputGroup(
+                                        label: 'NAMA',
+                                        icon: Icons.person,
+                                        child: TextFormField(
+                                          controller: tempKkNameController,
+                                          decoration: InputDecoration(
+                                            hintText: 'Masukkan Nama KK',
+                                            contentPadding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10,
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                            ),
+                                            isDense: true,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _buildInputGroup(
+                                        label: 'RT/RW',
+                                        icon: Icons.home,
+                                        child: TextFormField(
+                                          controller: tempRtRwController,
+                                          decoration: InputDecoration(
+                                            hintText: '- / -',
+                                            contentPadding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10,
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                            ),
+                                            isDense: true,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.checklist,
+                                                size: 16,
+                                                color: Colors.blueGrey,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Hasil Pemeriksaan',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 12,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                },
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Checkbox(
+                                                      value: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)',
+                                                      onChanged: (val) {
+                                                        if (val == true) {
+                                                          tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                        } else {
+                                                          tempHasilPemeriksaan.value = null;
+                                                        }
+                                                      },
+                                                      activeColor: const Color(0xFF27AE60),
+                                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                      visualDensity: VisualDensity.compact,
+                                                    ),
+                                                    const SizedBox(width: 2),
+                                                    Text(
+                                                      'Positif',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              InkWell(
+                                                onTap: () {
+                                                  tempHasilPemeriksaan.value = 'Nihil';
+                                                  tempSelectedPlaceIds.value = [null];
+                                                  tempPositiveCountController.clear();
+                                                },
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Checkbox(
+                                                      value: tempHasilPemeriksaan.value == 'Nihil',
+                                                      onChanged: (val) {
+                                                        if (val == true) {
+                                                          tempHasilPemeriksaan.value = 'Nihil';
+                                                          tempSelectedPlaceIds.value = [null];
+                                                          tempPositiveCountController.clear();
+                                                        } else {
+                                                          tempHasilPemeriksaan.value = null;
+                                                        }
+                                                      },
+                                                      activeColor: const Color(0xFF27AE60),
+                                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                      visualDensity: VisualDensity.compact,
+                                                    ),
+                                                    const SizedBox(width: 2),
+                                                    Text(
+                                                      'Nihil',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                _buildInputGroup(
-                                  label: 'Jumlah Rumah Positif Jentik',
-                                  icon: Icons.add_box,
-                                  iconColor: Colors.green,
-                                  child: _buildTextInput(
-                                    housesPositiveController,
-                                    '-',
-                                    isNumber: true,
+                            const SizedBox(height: 16),
+                            // Row 2: Tempat Positif Jentik (+ button) & Jumlah Tempat Positif (Enter subtext)
+                            isDesktop
+                                ? Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.water_drop,
+                                                  size: 16,
+                                                  color: Colors.blueGrey,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Tempat Positif Jentik',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    color: const Color(0xFF10365F),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                InkWell(
+                                                  onTap: () {
+                                                    tempSelectedPlaceIds.value = [
+                                                      ...tempSelectedPlaceIds.value,
+                                                      null
+                                                    ];
+                                                  },
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(2),
+                                                    decoration: const BoxDecoration(
+                                                      color: Color(0xFF27AE60),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.add,
+                                                      size: 14,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                                ? Column(
+                                                    children: List.generate(
+                                                      tempSelectedPlaceIds.value.length,
+                                                      (pIdx) => Padding(
+                                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                                        child: Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child: _buildDropdown(
+                                                                value: tempSelectedPlaceIds.value[pIdx],
+                                                                hint: 'Pilih Tempat Positif',
+                                                                isLoading: breedingPlacesAsync.isLoading,
+                                                                items: breedingPlacesAsync.maybeWhen(
+                                                                  data: (places) => places
+                                                                      .map(
+                                                                        (p) => DropdownMenuItem(
+                                                                          value: p['id'] as String,
+                                                                          child: Text(p['name'] as String),
+                                                                        ),
+                                                                      )
+                                                                      .toList(),
+                                                                  orElse: () => [],
+                                                                ),
+                                                                onChanged: (val) {
+                                                                  final newList = List<String?>.from(tempSelectedPlaceIds.value);
+                                                                  newList[pIdx] = val;
+                                                                  tempSelectedPlaceIds.value = newList;
+                                                                },
+                                                              ),
+                                                            ),
+                                                            if (tempSelectedPlaceIds.value.length > 1) ...[
+                                                              const SizedBox(width: 4),
+                                                              InkWell(
+                                                                onTap: () {
+                                                                  final newList = List<String?>.from(tempSelectedPlaceIds.value);
+                                                                  newList.removeAt(pIdx);
+                                                                  tempSelectedPlaceIds.value = newList;
+                                                                },
+                                                                child: Container(
+                                                                  padding: const EdgeInsets.all(6),
+                                                                  decoration: BoxDecoration(
+                                                                    color: Colors.red[50],
+                                                                    borderRadius: BorderRadius.circular(6),
+                                                                  ),
+                                                                  child: const Icon(
+                                                                    Icons.delete_outline,
+                                                                    color: Colors.red,
+                                                                    size: 18,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: double.infinity,
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey[100],
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(color: Colors.grey[300]!),
+                                                    ),
+                                                    child: Text(
+                                                      '-',
+                                                      style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                    ),
+                                                  ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Icon(
+                                                  Icons.numbers,
+                                                  size: 16,
+                                                  color: Colors.blueGrey,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'Jumlah Tempat Positif',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 12,
+                                                          color: const Color(0xFF10365F),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        '(DALAM SATU TEMPAT YANG DIPERIKSA)',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 9,
+                                                          color: Colors.grey[600],
+                                                          fontWeight: FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                                ? TextFormField(
+                                                    controller: tempPositiveCountController,
+                                                    keyboardType: TextInputType.number,
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Jumlah tempat',
+                                                      contentPadding: const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 10,
+                                                      ),
+                                                      border: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                                      ),
+                                                      enabledBorder: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                                      ),
+                                                      isDense: true,
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: double.infinity,
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey[100],
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(color: Colors.grey[300]!),
+                                                    ),
+                                                    child: Text(
+                                                      '-',
+                                                      style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                    ),
+                                                  ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.water_drop,
+                                                size: 16,
+                                                color: Colors.blueGrey,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Tempat Positif Jentik',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 12,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              InkWell(
+                                                onTap: () {
+                                                  tempSelectedPlaceIds.value = [
+                                                    ...tempSelectedPlaceIds.value,
+                                                    null
+                                                  ];
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(2),
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFF27AE60),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.add,
+                                                    size: 14,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                              ? Column(
+                                                  children: List.generate(
+                                                    tempSelectedPlaceIds.value.length,
+                                                    (pIdx) => Padding(
+                                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: _buildDropdown(
+                                                              value: tempSelectedPlaceIds.value[pIdx],
+                                                              hint: 'Pilih Tempat Positif',
+                                                              isLoading: breedingPlacesAsync.isLoading,
+                                                              items: breedingPlacesAsync.maybeWhen(
+                                                                data: (places) => places
+                                                                    .map(
+                                                                      (p) => DropdownMenuItem(
+                                                                        value: p['id'] as String,
+                                                                        child: Text(p['name'] as String),
+                                                                      ),
+                                                                    )
+                                                                    .toList(),
+                                                                orElse: () => [],
+                                                              ),
+                                                              onChanged: (val) {
+                                                                final newList = List<String?>.from(tempSelectedPlaceIds.value);
+                                                                newList[pIdx] = val;
+                                                                tempSelectedPlaceIds.value = newList;
+                                                              },
+                                                            ),
+                                                          ),
+                                                          if (tempSelectedPlaceIds.value.length > 1) ...[
+                                                            const SizedBox(width: 4),
+                                                            InkWell(
+                                                              onTap: () {
+                                                                final newList = List<String?>.from(tempSelectedPlaceIds.value);
+                                                                newList.removeAt(pIdx);
+                                                                tempSelectedPlaceIds.value = newList;
+                                                              },
+                                                              child: Container(
+                                                                padding: const EdgeInsets.all(6),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.red[50],
+                                                                  borderRadius: BorderRadius.circular(6),
+                                                                ),
+                                                                child: const Icon(
+                                                                  Icons.delete_outline,
+                                                                  color: Colors.red,
+                                                                  size: 18,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              : Container(
+                                                  width: double.infinity,
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[100],
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Colors.grey[300]!),
+                                                  ),
+                                                  child: Text(
+                                                    '-',
+                                                    style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                  ),
+                                                ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Icon(
+                                                Icons.numbers,
+                                                size: 16,
+                                                color: Colors.blueGrey,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Jumlah Tempat Positif',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 12,
+                                                        color: const Color(0xFF10365F),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '(DALAM SATU TEMPAT YANG DIPERIKSA)',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 9,
+                                                        color: Colors.grey[600],
+                                                        fontWeight: FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                              ? TextFormField(
+                                                  controller: tempPositiveCountController,
+                                                  keyboardType: TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    hintText: 'Jumlah tempat',
+                                                    contentPadding: const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                                    ),
+                                                    enabledBorder: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                                    ),
+                                                    isDense: true,
+                                                  ),
+                                                )
+                                              : Container(
+                                                  width: double.infinity,
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[100],
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Colors.grey[300]!),
+                                                  ),
+                                                  child: Text(
+                                                    '-',
+                                                    style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                  ),
+                                                ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ),
-
-                              ],
-                            ),
                           ],
                         ),
                       ),
@@ -804,10 +1499,48 @@ class ReportFormScreen extends HookConsumerWidget {
                               const SizedBox(width: 16),
                               ElevatedButton.icon(
                                 onPressed: () {
+                                  final newEntry = HouseReportEntry(
+                                    isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                        ? true
+                                        : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
+                                    isEditing: false,
+                                  );
+                                  if (tempKkNameController.text.trim().isNotEmpty) {
+                                    newEntry.kkNameController.text = tempKkNameController.text.trim();
+                                  }
+                                  if (tempRtRwController.text.trim().isNotEmpty && tempRtRwController.text.trim() != '- / -') {
+                                    final parts = tempRtRwController.text.trim().split('/');
+                                    if (parts.length >= 1) newEntry.rtController.text = parts[0].trim();
+                                    if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+                                  }
+                                  if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
+                                    final validPlaces = tempSelectedPlaceIds.value.whereType<String>().toList();
+                                    if (validPlaces.isNotEmpty) {
+                                      newEntry.selectedPlaceIds = validPlaces;
+                                    }
+                                    if (tempPositiveCountController.text.trim().isNotEmpty) {
+                                      newEntry.positivePlacesCountController.text =
+                                          tempPositiveCountController.text.trim();
+                                    }
+                                  }
+
                                   houseEntries.value = [
                                     ...houseEntries.value,
-                                    HouseReportEntry(),
+                                    newEntry,
                                   ];
+
+                                  tempKkNameController.clear();
+                                  tempRtRwController.clear();
+                                  tempHasilPemeriksaan.value = null;
+                                  tempSelectedPlaceIds.value = [null];
+                                  tempPositiveCountController.clear();
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Laporan berhasil di-entri ke daftar'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
                                 },
                                 icon: const Icon(
                                   Icons.add,
@@ -815,7 +1548,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                   size: 18,
                                 ),
                                 label: Text(
-                                  'Tambah KK Baru',
+                                  'Entri Laporan',
                                   style: GoogleFonts.outfit(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -876,10 +1609,48 @@ class ReportFormScreen extends HookConsumerWidget {
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: () {
+                                    final newEntry = HouseReportEntry(
+                                      isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                          ? true
+                                          : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
+                                      isEditing: false,
+                                    );
+                                    if (tempKkNameController.text.trim().isNotEmpty) {
+                                      newEntry.kkNameController.text = tempKkNameController.text.trim();
+                                    }
+                                    if (tempRtRwController.text.trim().isNotEmpty && tempRtRwController.text.trim() != '- / -') {
+                                      final parts = tempRtRwController.text.trim().split('/');
+                                      if (parts.length >= 1) newEntry.rtController.text = parts[0].trim();
+                                      if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+                                    }
+                                    if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
+                                      final validPlaces = tempSelectedPlaceIds.value.whereType<String>().toList();
+                                      if (validPlaces.isNotEmpty) {
+                                        newEntry.selectedPlaceIds = validPlaces;
+                                      }
+                                      if (tempPositiveCountController.text.trim().isNotEmpty) {
+                                        newEntry.positivePlacesCountController.text =
+                                            tempPositiveCountController.text.trim();
+                                      }
+                                    }
+
                                     houseEntries.value = [
                                       ...houseEntries.value,
-                                      HouseReportEntry(),
+                                      newEntry,
                                     ];
+
+                                    tempKkNameController.clear();
+                                    tempRtRwController.clear();
+                                    tempHasilPemeriksaan.value = null;
+                                    tempSelectedPlaceIds.value = [null];
+                                    tempPositiveCountController.clear();
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Laporan berhasil di-entri ke daftar'),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
                                   },
                                   icon: const Icon(
                                     Icons.add,
@@ -887,7 +1658,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                     size: 18,
                                   ),
                                   label: Text(
-                                    'Tambah KK Baru',
+                                    'Entri Laporan',
                                     style: GoogleFonts.outfit(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -972,6 +1743,21 @@ class ReportFormScreen extends HookConsumerWidget {
                                             child: Center(
                                               child: Text(
                                                 'No.',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF10365F),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Center(
+                                              child: Text(
+                                                'Tanggal Laporan',
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
@@ -1125,464 +1911,374 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ),
                                   ),
                                   // Table Rows
-                                  ...houseEntries.value.asMap().entries.map((
-                                    e,
-                                  ) {
-                                    final idx = e.key;
-                                    final entry = e.value;
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          top: BorderSide(
-                                            color: Colors.grey[200]!,
-                                          ),
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                        horizontal: 8,
-                                      ),
-                                      child: Row(
-                                         crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          SizedBox(
-                                            width: 40,
-                                            child: Padding(
-                                               padding: const EdgeInsets.only(top: 8),
-                                               child: Text(
-                                              '${idx + 1}',
-                                              textAlign: TextAlign.center,
-                                              style: GoogleFonts.outfit(
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                   // Table Rows
+                                   ...houseEntries.value.asMap().entries.map((
+                                     e,
+                                   ) {
+                                     final idx = e.key;
+                                     final entry = e.value;
+                                     return Container(
+                                       decoration: BoxDecoration(
+                                         border: Border(
+                                           top: BorderSide(
+                                             color: Colors.grey[200]!,
                                            ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: TextFormField(
-                                                controller:
-                                                    entry.kkNameController,
-                                                decoration: InputDecoration(
-                                                  prefixIcon: const Icon(
-                                                    Icons.person,
-                                                    size: 16,
-                                                    color: Colors.blue,
-                                                  ),
-                                                  prefixIconConstraints: const BoxConstraints(
-                                                    minWidth: 30,
-                                                    minHeight: 38,
-                                                    maxHeight: 38,
-                                                  ),
-                                                  contentPadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 10,
-                                                      ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                    borderSide: BorderSide(
-                                                      color: Colors.grey[300]!,
-                                                    ),
-                                                  ),
-                                                  enabledBorder:
-                                                      OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                        borderSide: BorderSide(
-                                                          color:
-                                                              Colors.grey[300]!,
-                                                        ),
-                                                      ),
-                                                  isDense: true,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 1,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: TextFormField(
-                                                controller: entry.rtController,
-                                                keyboardType:
-                                                    TextInputType.number,
-                                                textAlign: TextAlign.center,
-                                                decoration: InputDecoration(
-                                                  contentPadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8,
-                                                      ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                    borderSide: BorderSide(
-                                                      color: Colors.grey[300]!,
-                                                    ),
-                                                  ),
-                                                  enabledBorder:
-                                                      OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                        borderSide: BorderSide(
-                                                          color:
-                                                              Colors.grey[300]!,
-                                                        ),
-                                                      ),
-                                                  isDense: true,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 1,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: TextFormField(
-                                                controller: entry.rwController,
-                                                keyboardType:
-                                                    TextInputType.number,
-                                                textAlign: TextAlign.center,
-                                                decoration: InputDecoration(
-                                                  contentPadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8,
-                                                      ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                    borderSide: BorderSide(
-                                                      color: Colors.grey[300]!,
-                                                    ),
-                                                  ),
-                                                  enabledBorder:
-                                                      OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                        borderSide: BorderSide(
-                                                          color:
-                                                              Colors.grey[300]!,
-                                                        ),
-                                                      ),
-                                                  isDense: true,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          // Kolom Jentik (Positif / Nihil)
-                                          Expanded(
-                                            flex: 2,
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                                children: [
-                                                  Expanded(
-                                                    child: Center(
-                                                      child: InkWell(
-                                                        onTap: () {
-                                                          entry.isPositive = (entry.isPositive == true) ? null : true;
-                                                          houseEntries.value = [...houseEntries.value];
-                                                        },
-                                                        borderRadius: BorderRadius.circular(6),
-                                                        child: Container(
-                                                          width: 26,
-                                                          height: 26,
-                                                          decoration: BoxDecoration(
-                                                            color: entry.isPositive == true ? const Color(0xFFEBF5FF) : Colors.white,
-                                                            borderRadius: BorderRadius.circular(6),
-                                                            border: Border.all(
-                                                              color: entry.isPositive == true ? const Color(0xFF2980B9) : Colors.grey[300]!,
-                                                              width: entry.isPositive == true ? 1.5 : 1,
-                                                            ),
-                                                          ),
-                                                          child: entry.isPositive == true
-                                                              ? const Icon(
-                                                                  Icons.check,
-                                                                  size: 18,
-                                                                  color: Color(0xFF2980B9),
-                                                                )
-                                                              : null,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Expanded(
-                                                    child: Center(
-                                                      child: InkWell(
-                                                        onTap: () {
-                                                          entry.isPositive = (entry.isPositive == false) ? null : false;
-                                                          houseEntries.value = [...houseEntries.value];
-                                                        },
-                                                        borderRadius: BorderRadius.circular(6),
-                                                        child: Container(
-                                                          width: 26,
-                                                          height: 26,
-                                                          decoration: BoxDecoration(
-                                                            color: entry.isPositive == false ? const Color(0xFFEBF5FF) : Colors.white,
-                                                            borderRadius: BorderRadius.circular(6),
-                                                            border: Border.all(
-                                                              color: entry.isPositive == false ? const Color(0xFF2980B9) : Colors.grey[300]!,
-                                                              width: entry.isPositive == false ? 1.5 : 1,
-                                                            ),
-                                                          ),
-                                                          child: entry.isPositive == false
-                                                              ? const Icon(
-                                                                  Icons.check,
-                                                                  size: 18,
-                                                                  color: Color(0xFF2980B9),
-                                                                )
-                                                              : null,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: entry.isPositive == true
-                                                  ? Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.start,
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        ...entry.selectedPlaceIds
-                                                            .asMap()
-                                                            .entries
-                                                            .map((pEntry) {
-                                                          final pIdx = pEntry.key;
-                                                          final pValue = pEntry.value;
-                                                          return Padding(
-                                                            padding:
-                                                                const EdgeInsets.only(
-                                                              bottom: 4.0,
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                Expanded(
-                                                                  child: _buildDropdown(
-                                                                    value: pValue,
-                                                                    hint: 'Pilih Tempat',
-                                                                    items: breedingPlacesAsync
-                                                                        .maybeWhen(
-                                                                          data: (places) => places
-                                                                              .map(
-                                                                                (p) => DropdownMenuItem(
-                                                                                  value: p['id'] as String,
-                                                                                  child: Padding(
-                                                                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                                                                    child: Text(
-                                                                                      p['name'] as String,
-                                                                                      style: GoogleFonts.outfit(fontSize: 12),
-                                                                                      softWrap: true,
-                                                                                      maxLines: 3,
-                                                                                    ),
-                                                                                  ),
-                                                                                ),
-                                                                              )
-                                                                              .toList(),
-                                                                          orElse: () => [],
-                                                                        ),
-                                                                    onChanged: (val) {
-                                                                      entry.selectedPlaceIds[pIdx] = val;
-                                                                      houseEntries.value = [
-                                                                        ...houseEntries.value,
-                                                                      ];
-                                                                    },
-                                                                    isDense: true,
-                                                                  ),
-                                                                ),
-                                                                if (entry.selectedPlaceIds.length > 1) ...[
-                                                                  const SizedBox(width: 4),
-                                                                  Tooltip(
-                                                                    message: 'Hapus Tempat Ini',
-                                                                    child: InkWell(
-                                                                      onTap: () {
-                                                                        entry.selectedPlaceIds.removeAt(pIdx);
-                                                                        houseEntries.value = [
-                                                                          ...houseEntries.value,
-                                                                        ];
-                                                                      },
-                                                                      borderRadius: BorderRadius.circular(6),
-                                                                      child: Container(
-                                                                        padding: const EdgeInsets.all(6),
-                                                                        decoration: BoxDecoration(
-                                                                          color: Colors.red[100],
-                                                                          borderRadius: BorderRadius.circular(6),
-                                                                        ),
-                                                                        child: const Icon(
-                                                                          Icons.remove,
-                                                                          color: Colors.red,
-                                                                          size: 16,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ],
-                                                            ),
-                                                          );
-                                                        }),
-                                                        InkWell(
-                                                          onTap: () {
-                                                            entry.selectedPlaceIds.add(null);
-                                                            houseEntries.value = [
-                                                              ...houseEntries.value,
-                                                            ];
-                                                          },
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.only(top: 2.0),
-                                                            child: Row(
-                                                              mainAxisSize: MainAxisSize.min,
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons.add_circle_outline,
-                                                                  size: 14,
-                                                                  color: Color(0xFF27AE60),
-                                                                ),
-                                                                const SizedBox(width: 4),
-                                                                Text(
-                                                                  'Tambah pilihan tempat',
-                                                                  style: GoogleFonts.outfit(
-                                                                    fontSize: 11,
-                                                                    fontWeight: FontWeight.w600,
-                                                                    color: const Color(0xFF27AE60),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    )
-                                                  : const SizedBox.shrink(),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 4,
-                                                  ),
-                                              child: entry.isPositive == true
-                                                  ? TextFormField(
-                                                      controller: entry
-                                                          .positivePlacesCountController,
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                      textAlign: TextAlign.center,
-                                                      decoration: InputDecoration(
-                                                        contentPadding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 8,
-                                                            ),
-                                                        border: OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                          borderSide: BorderSide(
-                                                            color: Colors.grey[300]!,
-                                                          ),
-                                                        ),
-                                                        enabledBorder:
-                                                            OutlineInputBorder(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    8,
-                                                                  ),
-                                                              borderSide: BorderSide(
-                                                                color:
-                                                                    Colors.grey[300]!,
-                                                              ),
-                                                            ),
-                                                        isDense: true,
-                                                      ),
-                                                    )
-                                                  : const SizedBox.shrink(),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: 60,
-                                            child: Center(
-                                              child: InkWell(
-                                                onTap: () {
-                                                  if (houseEntries
-                                                          .value
-                                                          .length >
-                                                      1) {
-                                                    final newList =
-                                                        List<
-                                                          HouseReportEntry
-                                                        >.from(
-                                                          houseEntries.value,
-                                                        );
-                                                    newList.removeAt(idx);
-                                                    entry.dispose();
-                                                    houseEntries.value =
-                                                        newList;
-                                                  }
-                                                },
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(
-                                                    8,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red[400],
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.delete,
-                                                    color: Colors.white,
-                                                    size: 18,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
+                                         ),
+                                       ),
+                                       padding: const EdgeInsets.symmetric(
+                                         vertical: 12,
+                                         horizontal: 8,
+                                       ),
+                                       child: Row(
+                                         crossAxisAlignment: CrossAxisAlignment.center,
+                                         children: [
+                                           SizedBox(
+                                             width: 40,
+                                             child: Center(
+                                               child: Text(
+                                                 '${idx + 1}',
+                                                 textAlign: TextAlign.center,
+                                                 style: GoogleFonts.outfit(
+                                                   fontWeight: FontWeight.bold,
+                                                 ),
+                                               ),
+                                             ),
+                                           ),
+                                           Expanded(
+                                             flex: 2,
+                                             child: Center(
+                                               child: Text(
+                                                 DateFormat('dd/MM/yyyy').format(reportDate.value),
+                                                 style: GoogleFonts.outfit(fontSize: 12),
+                                                 textAlign: TextAlign.center,
+                                               ),
+                                             ),
+                                           ),
+                                           // Nama KK
+                                           Expanded(
+                                             flex: 3,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 4),
+                                               child: entry.isEditing
+                                                   ? TextFormField(
+                                                       controller: entry.kkNameController,
+                                                       decoration: InputDecoration(
+                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                         isDense: true,
+                                                       ),
+                                                     )
+                                                   : Center(
+                                                       child: Text(
+                                                         entry.kkNameController.text.trim().isEmpty ? '-' : entry.kkNameController.text.trim(),
+                                                         style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10365F)),
+                                                         textAlign: TextAlign.center,
+                                                       ),
+                                                     ),
+                                             ),
+                                           ),
+                                           // RT
+                                           Expanded(
+                                             flex: 1,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 4),
+                                               child: entry.isEditing
+                                                   ? TextFormField(
+                                                       controller: entry.rtController,
+                                                       textAlign: TextAlign.center,
+                                                       decoration: InputDecoration(
+                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                         isDense: true,
+                                                       ),
+                                                     )
+                                                   : Center(
+                                                       child: Text(
+                                                         entry.rtController.text.trim().isEmpty ? '-' : entry.rtController.text.trim(),
+                                                         style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
+                                                         textAlign: TextAlign.center,
+                                                       ),
+                                                     ),
+                                             ),
+                                           ),
+                                           // RW
+                                           Expanded(
+                                             flex: 1,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 4),
+                                               child: entry.isEditing
+                                                   ? TextFormField(
+                                                       controller: entry.rwController,
+                                                       textAlign: TextAlign.center,
+                                                       decoration: InputDecoration(
+                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                         isDense: true,
+                                                       ),
+                                                     )
+                                                   : Center(
+                                                       child: Text(
+                                                         entry.rwController.text.trim().isEmpty ? '-' : entry.rwController.text.trim(),
+                                                         style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
+                                                         textAlign: TextAlign.center,
+                                                       ),
+                                                     ),
+                                             ),
+                                           ),
+                                           // Jentik (Positif / Nihil)
+                                           Expanded(
+                                             flex: 2,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 2),
+                                               child: entry.isEditing
+                                                   ? Row(
+                                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                       children: [
+                                                         Expanded(
+                                                           child: Center(
+                                                             child: InkWell(
+                                                               onTap: () {
+                                                                 entry.isPositive = (entry.isPositive == true) ? null : true;
+                                                                 houseEntries.value = [...houseEntries.value];
+                                                               },
+                                                               child: Container(
+                                                                 width: 24,
+                                                                 height: 24,
+                                                                 decoration: BoxDecoration(
+                                                                   color: entry.isPositive == true ? const Color(0xFFEBF5FF) : Colors.white,
+                                                                   borderRadius: BorderRadius.circular(4),
+                                                                   border: Border.all(color: entry.isPositive == true ? const Color(0xFF2980B9) : Colors.grey[300]!),
+                                                                 ),
+                                                                 child: entry.isPositive == true
+                                                                     ? const Icon(Icons.check, size: 16, color: Color(0xFF2980B9))
+                                                                     : null,
+                                                               ),
+                                                             ),
+                                                           ),
+                                                         ),
+                                                         Expanded(
+                                                           child: Center(
+                                                             child: InkWell(
+                                                               onTap: () {
+                                                                 entry.isPositive = (entry.isPositive == false) ? null : false;
+                                                                 houseEntries.value = [...houseEntries.value];
+                                                               },
+                                                               child: Container(
+                                                                 width: 24,
+                                                                 height: 24,
+                                                                 decoration: BoxDecoration(
+                                                                   color: entry.isPositive == false ? const Color(0xFFEBF5FF) : Colors.white,
+                                                                   borderRadius: BorderRadius.circular(4),
+                                                                   border: Border.all(color: entry.isPositive == false ? const Color(0xFF2980B9) : Colors.grey[300]!),
+                                                                 ),
+                                                                 child: entry.isPositive == false
+                                                                     ? const Icon(Icons.check, size: 16, color: Color(0xFF2980B9))
+                                                                     : null,
+                                                               ),
+                                                             ),
+                                                           ),
+                                                         ),
+                                                       ],
+                                                     )
+                                                   : Row(
+                                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                       children: [
+                                                         Expanded(
+                                                           child: Center(
+                                                             child: Icon(
+                                                               entry.isPositive == true ? Icons.check_box : Icons.check_box_outline_blank,
+                                                               color: entry.isPositive == true ? const Color(0xFF27AE60) : Colors.grey[350],
+                                                               size: 18,
+                                                             ),
+                                                           ),
+                                                         ),
+                                                         Expanded(
+                                                           child: Center(
+                                                             child: Icon(
+                                                               entry.isPositive == false ? Icons.check_box : Icons.check_box_outline_blank,
+                                                               color: entry.isPositive == false ? const Color(0xFF27AE60) : Colors.grey[350],
+                                                               size: 18,
+                                                             ),
+                                                           ),
+                                                         ),
+                                                       ],
+                                                     ),
+                                             ),
+                                           ),
+                                           // Tempat Positif Jentik
+                                           Expanded(
+                                             flex: 3,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 4),
+                                               child: entry.isPositive == true
+                                                   ? (entry.isEditing
+                                                       ? Column(
+                                                           children: [
+                                                             ...entry.selectedPlaceIds.asMap().entries.map((pEntry) {
+                                                               final pIdx = pEntry.key;
+                                                               final pValue = pEntry.value;
+                                                               return Padding(
+                                                                 padding: const EdgeInsets.only(bottom: 4.0),
+                                                                 child: Row(
+                                                                   children: [
+                                                                     Expanded(
+                                                                       child: _buildDropdown(
+                                                                         value: pValue,
+                                                                         hint: 'Pilih Tempat',
+                                                                         items: breedingPlacesAsync.maybeWhen(
+                                                                           data: (places) => places
+                                                                               .map((p) => DropdownMenuItem(
+                                                                                     value: p['id'] as String,
+                                                                                     child: Text(p['name'] as String, style: GoogleFonts.outfit(fontSize: 11)),
+                                                                                   ))
+                                                                               .toList(),
+                                                                           orElse: () => [],
+                                                                         ),
+                                                                         onChanged: (val) {
+                                                                           entry.selectedPlaceIds[pIdx] = val;
+                                                                           houseEntries.value = [...houseEntries.value];
+                                                                         },
+                                                                         isDense: true,
+                                                                       ),
+                                                                     ),
+                                                                   ],
+                                                                 ),
+                                                               );
+                                                             }),
+                                                           ],
+                                                         )
+                                                       : Column(
+                                                           mainAxisSize: MainAxisSize.min,
+                                                           crossAxisAlignment: CrossAxisAlignment.center,
+                                                           children: entry.selectedPlaceIds.map((pId) {
+                                                             final placeName = breedingPlacesAsync.maybeWhen(
+                                                               data: (places) {
+                                                                 try {
+                                                                   return places.firstWhere((p) => p['id'] == pId)['name'] as String;
+                                                                 } catch (_) {
+                                                                   return pId ?? '-';
+                                                                 }
+                                                               },
+                                                               orElse: () => pId ?? '-',
+                                                             );
+                                                             return Text(
+                                                               placeName,
+                                                               style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
+                                                               textAlign: TextAlign.center,
+                                                             );
+                                                           }).toList(),
+                                                         ))
+                                                   : Center(
+                                                       child: Text(
+                                                         '-',
+                                                         style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[500]),
+                                                         textAlign: TextAlign.center,
+                                                       ),
+                                                     ),
+                                             ),
+                                           ),
+                                           // Jumlah Tempat Positif
+                                           Expanded(
+                                             flex: 2,
+                                             child: Padding(
+                                               padding: const EdgeInsets.symmetric(horizontal: 4),
+                                               child: entry.isPositive == true
+                                                   ? (entry.isEditing
+                                                       ? TextFormField(
+                                                           controller: entry.positivePlacesCountController,
+                                                           keyboardType: TextInputType.number,
+                                                           textAlign: TextAlign.center,
+                                                           decoration: InputDecoration(
+                                                             contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                             isDense: true,
+                                                           ),
+                                                         )
+                                                       : Center(
+                                                           child: Text(
+                                                             entry.positivePlacesCountController.text.trim().isEmpty
+                                                                 ? '-'
+                                                                 : entry.positivePlacesCountController.text.trim(),
+                                                             style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF10365F)),
+                                                             textAlign: TextAlign.center,
+                                                           ),
+                                                         ))
+                                                   : Center(
+                                                       child: Text(
+                                                         '-',
+                                                         style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[500]),
+                                                         textAlign: TextAlign.center,
+                                                       ),
+                                                     ),
+                                             ),
+                                           ),
+                                           // Aksi
+                                           SizedBox(
+                                             width: 85,
+                                             child: Center(
+                                               child: Row(
+                                                 mainAxisAlignment: MainAxisAlignment.center,
+                                                 mainAxisSize: MainAxisSize.min,
+                                                 children: [
+                                                   ElevatedButton(
+                                                     onPressed: () {
+                                                       entry.isEditing = !entry.isEditing;
+                                                       houseEntries.value = [...houseEntries.value];
+                                                       if (!entry.isEditing) {
+                                                         ScaffoldMessenger.of(context).showSnackBar(
+                                                           SnackBar(
+                                                             content: Text('Data KK ke-${idx + 1} diperbarui'),
+                                                             duration: const Duration(seconds: 1),
+                                                           ),
+                                                         );
+                                                       }
+                                                     },
+                                                     style: ElevatedButton.styleFrom(
+                                                       backgroundColor: entry.isEditing ? const Color(0xFF2980B9) : const Color(0xFF27AE60),
+                                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                                       minimumSize: const Size(48, 28),
+                                                       shape: RoundedRectangleBorder(
+                                                         borderRadius: BorderRadius.circular(6),
+                                                       ),
+                                                     ),
+                                                     child: Text(
+                                                       entry.isEditing ? 'Simpan' : 'Update',
+                                                       style: GoogleFonts.outfit(
+                                                         fontSize: 10,
+                                                         color: Colors.white,
+                                                         fontWeight: FontWeight.bold,
+                                                       ),
+                                                     ),
+                                                   ),
+                                                   const SizedBox(width: 4),
+                                                   InkWell(
+                                                     onTap: () {
+                                                       final newList = List<HouseReportEntry>.from(houseEntries.value);
+                                                       newList.removeAt(idx);
+                                                       entry.dispose();
+                                                       houseEntries.value = newList;
+                                                     },
+                                                     child: Container(
+                                                       padding: const EdgeInsets.all(4),
+                                                       decoration: BoxDecoration(
+                                                         color: Colors.red[50],
+                                                         borderRadius: BorderRadius.circular(4),
+                                                       ),
+                                                       child: const Icon(
+                                                         Icons.delete_outline,
+                                                         color: Colors.red,
+                                                         size: 14,
+                                                       ),
+                                                     ),
+                                                   ),
+                                                 ],
+                                               ),
+                                             ),
+                                           ),
+                                         ],
+                                       ),
+                                     );
+                                   }),
                                   const SizedBox(height: 12),
                                 ],
                               ),
@@ -1593,96 +2289,49 @@ class ReportFormScreen extends HookConsumerWidget {
                       const SizedBox(height: 40),
 
                       // Bottom Actions
-                      ResponsiveRow(
-                        isDesktop: isDesktop,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: isLoading.value ? null : handleSaveDraft,
-                            icon: const Icon(
-                              Icons.save,
-                              color: Color(0xFF2980B9),
-                            ),
-                            label: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'SIMPAN DRAFT',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFF2980B9),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isLoading.value ? null : handleSubmit,
+                          icon: const Icon(Icons.sync, color: Colors.white),
+                          label: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'UPDATE LAPORAN',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                     ),
-                                    Text(
-                                      'Simpan sementara laporan',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFF2980B9),
-                                        fontSize: 12,
-                                      ),
+                                  ),
+                                  Text(
+                                    'Simpan & perbarui data laporan',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 12,
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 52),
+                            backgroundColor: const Color(0xFF27AE60),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 20,
                             ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 20,
-                              ),
-                              side: const BorderSide(color: Color(0xFF2980B9)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              backgroundColor: const Color(0xFFF0F7FF),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          ElevatedButton.icon(
-                            onPressed: isLoading.value ? null : handleSubmit,
-                            icon: const Icon(Icons.send, color: Colors.white),
-                            label: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'KIRIM LAPORAN',
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Kirim laporan ke admin puskesmas',
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                              backgroundColor: const Color(0xFF27AE60),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 20,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
