@@ -154,6 +154,38 @@ class ReportRepository {
     }
   }
 
+  Future<Report?> getLatestReportByPosyandu(String posyanduId) async {
+    try {
+      final response = await _client
+          .from('reports')
+          .select(
+            '*, posyandus(name, rws(villages(name))), report_breeding_places(breeding_place_id)',
+          )
+          .eq('posyandu_id', posyanduId)
+          .order('report_date', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response == null) return null;
+
+      final bpList = response['report_breeding_places'] as List?;
+      final breedingPlaces = bpList != null
+          ? bpList
+                .map((bp) => bp['breeding_place_id']?.toString() ?? '')
+                .where((id) => id.isNotEmpty)
+                .toList()
+          : <String>[];
+
+      return Report.fromMap(
+        response,
+        breedingPlaceIds: breedingPlaces,
+      );
+    } catch (e) {
+      print('Warning: could not fetch latest report by posyandu: $e');
+      return null;
+    }
+  }
+
   Future<List<Report>> getMyReports() async {
     final userId = _client.auth.currentUser?.id;
     if (_client.auth.currentSession?.user == null) {

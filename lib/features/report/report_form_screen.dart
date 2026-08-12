@@ -91,7 +91,7 @@ class ReportFormScreen extends HookConsumerWidget {
     final housesPositiveController = useTextEditingController();
 
     final houseEntries = useState<List<HouseReportEntry>>([]);
-    final isEdit = initialReport != null;
+    final activeReportId = useState<String?>(initialReport?.id);
     final selectedVillageId = useState<String?>(null);
     final selectedPosyanduId = useState<String?>(initialReport?.posyanduId);
     final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
@@ -104,6 +104,11 @@ class ReportFormScreen extends HookConsumerWidget {
     final tempSelectedPlaceIds = useState<List<String?>>([null]);
     final tempPositiveCountController = useTextEditingController();
 
+    final myReportsAsync = ref.watch(myReportsProvider);
+    final allReportsAsync = ref.watch(allReportsProvider);
+    final searchQuery = useState('');
+    final searchController = useTextEditingController();
+
     // Watch Master Data & Profile
     final userProfileAsync = ref.watch(userProfileProvider);
     final villagesAsync = ref.watch(villagesProvider);
@@ -112,10 +117,39 @@ class ReportFormScreen extends HookConsumerWidget {
         : const AsyncValue.data(<Posyandu>[]);
     final breedingPlacesAsync = ref.watch(breedingPlacesProvider);
 
+    final selectedVillageName = villagesAsync.maybeWhen(
+      data: (villages) {
+        if (selectedVillageId.value == null) return null;
+        final found = villages.firstWhere(
+          (v) => v.id == selectedVillageId.value,
+          orElse: () => Village(id: '', name: ''),
+        );
+        return found.name.isNotEmpty ? found.name : null;
+      },
+      orElse: () => null,
+    );
+
+    final puskesmasName = 'Puskesmas Gumelar';
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
 
-    // Initialize data
+    final filteredEntries = houseEntries.value.where((entry) {
+      if (searchQuery.value.trim().isEmpty) return true;
+      final q = searchQuery.value.toLowerCase().trim();
+      final name = entry.kkNameController.text.toLowerCase();
+      final rt = entry.rtController.text.toLowerCase();
+      final rw = entry.rwController.text.toLowerCase();
+      final status = entry.isPositive == true
+          ? 'positif ada jentik'
+          : (entry.isPositive == false ? 'nihil bebas jentik' : '');
+      return name.contains(q) ||
+          rt.contains(q) ||
+          rw.contains(q) ||
+          status.contains(q);
+    }).toList();
+
+    // Initialize data when explicit initialReport is passed
     useEffect(() {
       if (initialReport != null) {
         housesInspectedController.text = initialReport!.housesInspected
@@ -155,29 +189,47 @@ class ReportFormScreen extends HookConsumerWidget {
                   entry.rtController.text = parts[0];
                   entry.rwController.text = parts[1];
                 }
+              } else if (t.startsWith('Hasil: ')) {
+                final res = t.substring(7);
+                if (res.contains('Ada Jentik') || res.contains('Positif')) {
+                  entry.isPositive = true;
+                } else if (res.contains('Nihil')) {
+                  entry.isPositive = false;
+                }
               } else if (t.startsWith('Jumlah: ')) {
                 entry.positivePlacesCountController.text = t.substring(8);
               } else if (t.startsWith('Tempat: ')) {
-                // Try to find place ID by name
                 final placeName = t.substring(8);
                 if (placeName != '-') {
+                  final names = placeName
+                      .split(',')
+                      .map((e) => e.trim())
+                      .toList();
                   breedingPlacesAsync.whenData((places) {
-                    try {
-                      final p = places.firstWhere(
-                        (element) => element['name'] == placeName,
-                      );
-                      entry.selectedPlaceId = p['id'] as String;
-                    } catch (_) {}
+                    final matched = <String?>[];
+                    for (var nm in names) {
+                      try {
+                        final p = places.firstWhere(
+                          (element) => element['name'] == nm,
+                        );
+                        matched.add(p['id'] as String);
+                      } catch (_) {}
+                    }
+                    if (matched.isNotEmpty) entry.selectedPlaceIds = matched;
                   });
                 }
+              }
+            }
+            if (entry.isPositive == null) {
+              if (entry.positivePlacesCountController.text.isNotEmpty ||
+                  entry.selectedPlaceIds.any((id) => id != null)) {
+                entry.isPositive = true;
               }
             }
             parsed.add(entry);
           }
           if (parsed.isNotEmpty) houseEntries.value = parsed;
         }
-      } else {
-        // Leave table empty by default for new report
       }
 
       return () {
@@ -187,7 +239,123 @@ class ReportFormScreen extends HookConsumerWidget {
       };
     }, [initialReport, userProfileAsync.value]);
 
+    // Auto-populate houseEntries by default with previous submitted KK entries or default samples
+    useEffect(() {
+      if (initialReport != null) return null;
+      if (houseEntries.value.isEmpty) {
+        final myReports = myReportsAsync.value ?? <Report>[];
+        final allReports = allReportsAsync.value ?? <Report>[];
+        final combined = <Report>[...myReports, ...allReports];
+        final parsed = _parseHouseEntriesFromReports(combined);
+        if (parsed.isNotEmpty) {
+          houseEntries.value = parsed;
+        } else {
+          houseEntries.value = _getDefaultInitialHouseEntries();
+        }
+      }
+      return null;
+    }, [myReportsAsync.value, allReportsAsync.value, initialReport]);
 
+    // Automatically load existing report data from Supabase when Posyandu is selected
+    useEffect(() {
+      if (initialReport != null) return null;
+
+      final pId = selectedPosyanduId.value;
+      if (pId == null || pId.isEmpty) {
+        activeReportId.value = null;
+        if (houseEntries.value.isEmpty) {
+          final combined = <Report>[
+            ...(myReportsAsync.value ?? <Report>[]),
+            ...(allReportsAsync.value ?? <Report>[]),
+          ];
+          final parsed = _parseHouseEntriesFromReports(combined);
+          houseEntries.value = parsed.isNotEmpty
+              ? parsed
+              : _getDefaultInitialHouseEntries();
+        }
+        return null;
+      }
+
+      ref.read(reportRepositoryProvider).getLatestReportByPosyandu(pId).then((
+        latestReport,
+      ) {
+        if (latestReport != null) {
+          activeReportId.value = latestReport.id;
+          if (latestReport.notes != null && latestReport.notes!.isNotEmpty) {
+            final parsed = <HouseReportEntry>[];
+            final blocks = latestReport.notes!.split('--- KK');
+            for (var block in blocks) {
+              if (block.trim().isEmpty) continue;
+              final entry = HouseReportEntry();
+              final lines = block.split('\n');
+              for (var line in lines) {
+                final t = line.trim();
+                if (t.startsWith('Nama KK: ')) {
+                  entry.kkNameController.text = t.substring(9);
+                } else if (t.startsWith('RT/RW: ')) {
+                  final parts = t.substring(7).split('/');
+                  if (parts.length == 2) {
+                    entry.rtController.text = parts[0].trim();
+                    entry.rwController.text = parts[1].trim();
+                  }
+                } else if (t.startsWith('Hasil: ')) {
+                  final res = t.substring(7);
+                  if (res.contains('Ada Jentik') || res.contains('Positif')) {
+                    entry.isPositive = true;
+                  } else if (res.contains('Nihil')) {
+                    entry.isPositive = false;
+                  }
+                } else if (t.startsWith('Jumlah: ')) {
+                  entry.positivePlacesCountController.text = t.substring(8);
+                } else if (t.startsWith('Tempat: ')) {
+                  final placeName = t.substring(8);
+                  if (placeName != '-') {
+                    final names = placeName
+                        .split(',')
+                        .map((e) => e.trim())
+                        .toList();
+                    breedingPlacesAsync.whenData((places) {
+                      final matched = <String?>[];
+                      for (var nm in names) {
+                        try {
+                          final p = places.firstWhere(
+                            (element) => element['name'] == nm,
+                          );
+                          matched.add(p['id'] as String);
+                        } catch (_) {}
+                      }
+                      if (matched.isNotEmpty) entry.selectedPlaceIds = matched;
+                    });
+                  }
+                }
+              }
+              if (entry.isPositive == null) {
+                if (entry.positivePlacesCountController.text.isNotEmpty ||
+                    entry.selectedPlaceIds.any((id) => id != null)) {
+                  entry.isPositive = true;
+                }
+              }
+              parsed.add(entry);
+            }
+            houseEntries.value = parsed;
+          }
+        } else {
+          activeReportId.value = null;
+          if (houseEntries.value.isEmpty) {
+            final combined = <Report>[
+              ...(myReportsAsync.value ?? <Report>[]),
+              ...(allReportsAsync.value ?? <Report>[]),
+            ];
+            final parsed = _parseHouseEntriesFromReports(combined);
+            houseEntries.value = parsed.isNotEmpty
+                ? parsed
+                : _getDefaultInitialHouseEntries();
+          }
+        }
+      });
+
+      return null;
+    }, [selectedPosyanduId.value]);
 
     Future<void> handleSubmit() async {
       if (selectedVillageId.value == null) {
@@ -210,95 +378,55 @@ class ReportFormScreen extends HookConsumerWidget {
         return;
       }
 
-      if (!formKey.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan lengkapi semua kolom yang wajib diisi!'),
-            backgroundColor: Colors.redAccent,
-          ),
+      // Automatically add top form fields if user filled them without pressing "Entri Laporan"
+      if (tempKkNameController.text.trim().isNotEmpty ||
+          tempHasilPemeriksaan.value != null) {
+        final newEntry = HouseReportEntry(
+          isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+              ? true
+              : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
+          isEditing: false,
         );
-        return;
+        if (tempKkNameController.text.trim().isNotEmpty) {
+          newEntry.kkNameController.text = tempKkNameController.text.trim();
+        }
+        if (tempRtRwController.text.trim().isNotEmpty &&
+            tempRtRwController.text.trim() != '- / -') {
+          final parts = tempRtRwController.text.trim().split('/');
+          if (parts.isNotEmpty) newEntry.rtController.text = parts[0].trim();
+          if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+        }
+        if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
+          final validPlaces = tempSelectedPlaceIds.value
+              .whereType<String>()
+              .toList();
+          if (validPlaces.isNotEmpty) {
+            newEntry.selectedPlaceIds = validPlaces;
+          }
+          if (tempPositiveCountController.text.trim().isNotEmpty) {
+            newEntry.positivePlacesCountController.text =
+                tempPositiveCountController.text.trim();
+          }
+        }
+        houseEntries.value = [...houseEntries.value, newEntry];
+
+        tempKkNameController.clear();
+        tempRtRwController.clear();
+        tempHasilPemeriksaan.value = null;
+        tempSelectedPlaceIds.value = [null];
+        tempPositiveCountController.clear();
       }
 
-      final expectedInspected =
-          int.tryParse(housesInspectedController.text) ?? 0;
-      final expectedPositive = int.tryParse(housesPositiveController.text) ?? 0;
-
-      if (expectedPositive > expectedInspected) {
+      if (houseEntries.value.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Jumlah Rumah Positif tidak boleh lebih besar dari Jumlah Rumah Diperiksa!',
+              'Silakan isi dan tambahkan data rumah yang diperiksa terlebih dahulu!',
             ),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.orange,
           ),
         );
         return;
-      }
-
-      if (globalResult.value == 'Ada Jentik (Positif)') {
-        if (expectedPositive == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Hasil PSN Ada Jentik, tapi Jumlah Rumah Positif 0!',
-              ),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-        if (houseEntries.value.length != expectedPositive) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Total Data Rumah yang diinput (${houseEntries.value.length}) harus sama dengan Jumlah Rumah Positif ($expectedPositive)!',
-              ),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-
-        for (int i = 0; i < houseEntries.value.length; i++) {
-          final entry = houseEntries.value[i];
-          if (entry.kkNameController.text.trim().isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Silakan isi Nama KK pada baris #${i + 1}!'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
-          final validPlaceIds = entry.selectedPlaceIds
-              .where((id) => id != null && id.isNotEmpty)
-              .cast<String>()
-              .toList();
-          if (validPlaceIds.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Silakan pilih Tempat Positif Jentik pada baris #${i + 1}!',
-                ),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
-        }
-      } else {
-        if (expectedPositive > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Hasil PSN Nihil, tapi Jumlah Rumah Positif lebih dari 0!',
-              ),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
       }
 
       isLoading.value = true;
@@ -306,18 +434,22 @@ class ReportFormScreen extends HookConsumerWidget {
         StringBuffer notesBuffer = StringBuffer();
         List<String> allBreedingPlaceIds = [];
 
-        if (globalResult.value == 'Ada Jentik (Positif)') {
-          for (int i = 0; i < houseEntries.value.length; i++) {
-            final entry = houseEntries.value[i];
-            notesBuffer.writeln('--- KK ${i + 1} ---');
-            notesBuffer.writeln(
-              'Nama KK: ${entry.kkNameController.text.trim()}',
-            );
-            notesBuffer.writeln(
-              'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
-            );
-            notesBuffer.writeln('Hasil: Ada Jentik');
+        int housesInspected = houseEntries.value.length;
+        int housesPositive = 0;
 
+        for (int i = 0; i < houseEntries.value.length; i++) {
+          final entry = houseEntries.value[i];
+          final isPos = entry.isPositive == true;
+          if (isPos) housesPositive++;
+
+          notesBuffer.writeln('--- KK ${i + 1} ---');
+          notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
+          notesBuffer.writeln(
+            'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
+          );
+          notesBuffer.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
+
+          if (isPos) {
             final breedingPlaces = breedingPlacesAsync.value ?? [];
             List<String> placeNames = [];
             for (var pId in entry.selectedPlaceIds) {
@@ -330,26 +462,29 @@ class ReportFormScreen extends HookConsumerWidget {
                 placeNames.add(found['name'] as String);
               }
             }
-
             notesBuffer.writeln(
               'Tempat: ${placeNames.isEmpty ? '-' : placeNames.join(', ')}',
             );
             notesBuffer.writeln(
               'Jumlah: ${entry.positivePlacesCountController.text.trim()}',
             );
-            notesBuffer.writeln('');
+          } else {
+            notesBuffer.writeln('Tempat: -');
+            notesBuffer.writeln('Jumlah: 0');
           }
-        } else {
-          notesBuffer.writeln('Hasil Pemeriksaan: Nihil');
+          notesBuffer.writeln('');
         }
 
-        if (isEdit) {
+        final targetReportId = activeReportId.value ?? initialReport?.id;
+        final isEditMode = targetReportId != null;
+
+        if (isEditMode) {
           await ref
               .read(reportRepositoryProvider)
               .updateReport(
-                reportId: initialReport!.id,
-                housesInspected: expectedInspected,
-                housesPositive: expectedPositive,
+                reportId: targetReportId,
+                housesInspected: housesInspected,
+                housesPositive: housesPositive,
                 breedingPlaceIds: allBreedingPlaceIds,
                 reportDate: reportDate.value,
                 notes: notesBuffer.toString(),
@@ -359,8 +494,8 @@ class ReportFormScreen extends HookConsumerWidget {
               .read(reportRepositoryProvider)
               .submitReport(
                 posyanduId: selectedPosyanduId.value!,
-                housesInspected: expectedInspected,
-                housesPositive: expectedPositive,
+                housesInspected: housesInspected,
+                housesPositive: housesPositive,
                 breedingPlaceIds: allBreedingPlaceIds,
                 reportDate: reportDate.value,
                 notes: notesBuffer.toString(),
@@ -371,10 +506,11 @@ class ReportFormScreen extends HookConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isEdit
+                isEditMode
                     ? 'Laporan berhasil diperbarui!'
-                    : 'Laporan berhasil dikirim!',
+                    : 'Laporan berhasil disimpan!',
               ),
+              backgroundColor: const Color(0xFF27AE60),
             ),
           );
           ref.invalidate(myReportsProvider);
@@ -385,9 +521,12 @@ class ReportFormScreen extends HookConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Gagal mengirim laporan: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menyimpan laporan: $e'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
         }
       } finally {
         isLoading.value = false;
@@ -407,55 +546,100 @@ class ReportFormScreen extends HookConsumerWidget {
         return;
       }
 
-      final expectedInspected =
-          int.tryParse(housesInspectedController.text) ?? 0;
-      final expectedPositive = int.tryParse(housesPositiveController.text) ?? 0;
+      if (tempKkNameController.text.trim().isNotEmpty ||
+          tempHasilPemeriksaan.value != null) {
+        final newEntry = HouseReportEntry(
+          isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+              ? true
+              : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
+          isEditing: false,
+        );
+        if (tempKkNameController.text.trim().isNotEmpty) {
+          newEntry.kkNameController.text = tempKkNameController.text.trim();
+        }
+        if (tempRtRwController.text.trim().isNotEmpty &&
+            tempRtRwController.text.trim() != '- / -') {
+          final parts = tempRtRwController.text.trim().split('/');
+          if (parts.isNotEmpty) newEntry.rtController.text = parts[0].trim();
+          if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+        }
+        if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
+          final validPlaces = tempSelectedPlaceIds.value
+              .whereType<String>()
+              .toList();
+          if (validPlaces.isNotEmpty) {
+            newEntry.selectedPlaceIds = validPlaces;
+          }
+          if (tempPositiveCountController.text.trim().isNotEmpty) {
+            newEntry.positivePlacesCountController.text =
+                tempPositiveCountController.text.trim();
+          }
+        }
+        houseEntries.value = [...houseEntries.value, newEntry];
+
+        tempKkNameController.clear();
+        tempRtRwController.clear();
+        tempHasilPemeriksaan.value = null;
+        tempSelectedPlaceIds.value = [null];
+        tempPositiveCountController.clear();
+      }
 
       isLoading.value = true;
       try {
         StringBuffer notesBuffer = StringBuffer();
         List<String> allBreedingPlaceIds = [];
 
-        if (globalResult.value == 'Ada Jentik (Positif)') {
-          for (int i = 0; i < houseEntries.value.length; i++) {
-            final entry = houseEntries.value[i];
-            notesBuffer.writeln('--- KK ${i + 1} ---');
-            notesBuffer.writeln(
-              'Nama KK: ${entry.kkNameController.text.trim()}',
-            );
-            notesBuffer.writeln(
-              'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
-            );
-            notesBuffer.writeln('Hasil: Ada Jentik');
+        int housesInspected = houseEntries.value.length;
+        int housesPositive = 0;
 
+        for (int i = 0; i < houseEntries.value.length; i++) {
+          final entry = houseEntries.value[i];
+          final isPos = entry.isPositive == true;
+          if (isPos) housesPositive++;
+
+          notesBuffer.writeln('--- KK ${i + 1} ---');
+          notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
+          notesBuffer.writeln(
+            'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
+          );
+          notesBuffer.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
+
+          if (isPos) {
             final breedingPlaces = breedingPlacesAsync.value ?? [];
-            String placeName = '-';
-            if (entry.selectedPlaceId != null) {
-              final found = breedingPlaces.firstWhere(
-                (p) => p['id'] == entry.selectedPlaceId,
-                orElse: () => {'name': '-'},
-              );
-              placeName = found['name'] as String;
-              allBreedingPlaceIds.add(entry.selectedPlaceId!);
+            List<String> placeNames = [];
+            for (var pId in entry.selectedPlaceIds) {
+              if (pId != null && pId.isNotEmpty) {
+                allBreedingPlaceIds.add(pId);
+                final found = breedingPlaces.firstWhere(
+                  (p) => p['id'] == pId,
+                  orElse: () => {'name': '-'},
+                );
+                placeNames.add(found['name'] as String);
+              }
             }
-
-            notesBuffer.writeln('Tempat: $placeName');
+            notesBuffer.writeln(
+              'Tempat: ${placeNames.isEmpty ? '-' : placeNames.join(', ')}',
+            );
             notesBuffer.writeln(
               'Jumlah: ${entry.positivePlacesCountController.text.trim()}',
             );
-            notesBuffer.writeln('');
+          } else {
+            notesBuffer.writeln('Tempat: -');
+            notesBuffer.writeln('Jumlah: 0');
           }
-        } else {
-          notesBuffer.writeln('Hasil Pemeriksaan: Nihil');
+          notesBuffer.writeln('');
         }
 
-        if (isEdit) {
+        final targetReportId = activeReportId.value ?? initialReport?.id;
+        final isEditMode = targetReportId != null;
+
+        if (isEditMode) {
           await ref
               .read(reportRepositoryProvider)
               .updateReport(
-                reportId: initialReport!.id,
-                housesInspected: expectedInspected,
-                housesPositive: expectedPositive,
+                reportId: targetReportId,
+                housesInspected: housesInspected,
+                housesPositive: housesPositive,
                 breedingPlaceIds: allBreedingPlaceIds,
                 reportDate: reportDate.value,
                 notes: notesBuffer.toString(),
@@ -466,8 +650,8 @@ class ReportFormScreen extends HookConsumerWidget {
               .read(reportRepositoryProvider)
               .submitReport(
                 posyanduId: selectedPosyanduId.value!,
-                housesInspected: expectedInspected,
-                housesPositive: expectedPositive,
+                housesInspected: housesInspected,
+                housesPositive: housesPositive,
                 breedingPlaceIds: allBreedingPlaceIds,
                 reportDate: reportDate.value,
                 notes: notesBuffer.toString(),
@@ -739,7 +923,8 @@ class ReportFormScreen extends HookConsumerWidget {
                             // Row 1: NAMA, RT/RW, Hasil Pemeriksaan (Checkboxes default null)
                             isDesktop
                                 ? Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Expanded(
                                         flex: 3,
@@ -750,17 +935,24 @@ class ReportFormScreen extends HookConsumerWidget {
                                             controller: tempKkNameController,
                                             decoration: InputDecoration(
                                               hintText: 'Masukkan Nama KK',
-                                              contentPadding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 10,
-                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
                                               border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey[300]!,
+                                                ),
                                               ),
                                               enabledBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey[300]!,
+                                                ),
                                               ),
                                               isDense: true,
                                             ),
@@ -777,17 +969,24 @@ class ReportFormScreen extends HookConsumerWidget {
                                             controller: tempRtRwController,
                                             decoration: InputDecoration(
                                               hintText: '- / -',
-                                              contentPadding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 10,
-                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
                                               border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey[300]!,
+                                                ),
                                               ),
                                               enabledBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey[300]!,
+                                                ),
                                               ),
                                               isDense: true,
                                             ),
@@ -798,7 +997,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                       Expanded(
                                         flex: 2,
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -812,7 +1012,9 @@ class ReportFormScreen extends HookConsumerWidget {
                                                   'Hasil Pemeriksaan',
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 12,
-                                                    color: const Color(0xFF10365F),
+                                                    color: const Color(
+                                                      0xFF10365F,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -822,31 +1024,50 @@ class ReportFormScreen extends HookConsumerWidget {
                                               children: [
                                                 InkWell(
                                                   onTap: () {
-                                                    tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                    tempHasilPemeriksaan.value =
+                                                        'Ada Jentik (Positif)';
                                                   },
                                                   child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       Checkbox(
-                                                        value: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)',
+                                                        value:
+                                                            tempHasilPemeriksaan
+                                                                .value ==
+                                                            'Ada Jentik (Positif)',
                                                         onChanged: (val) {
                                                           if (val == true) {
-                                                            tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                            tempHasilPemeriksaan
+                                                                    .value =
+                                                                'Ada Jentik (Positif)';
                                                           } else {
-                                                            tempHasilPemeriksaan.value = null;
+                                                            tempHasilPemeriksaan
+                                                                    .value =
+                                                                null;
                                                           }
                                                         },
-                                                        activeColor: const Color(0xFF27AE60),
-                                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                        visualDensity: VisualDensity.compact,
+                                                        activeColor:
+                                                            const Color(
+                                                              0xFF27AE60,
+                                                            ),
+                                                        materialTapTargetSize:
+                                                            MaterialTapTargetSize
+                                                                .shrinkWrap,
+                                                        visualDensity:
+                                                            VisualDensity
+                                                                .compact,
                                                       ),
                                                       const SizedBox(width: 2),
                                                       Text(
                                                         'Positif',
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),
@@ -854,35 +1075,60 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 const SizedBox(width: 16),
                                                 InkWell(
                                                   onTap: () {
-                                                    tempHasilPemeriksaan.value = 'Nihil';
-                                                    tempSelectedPlaceIds.value = [null];
-                                                    tempPositiveCountController.clear();
+                                                    tempHasilPemeriksaan.value =
+                                                        'Nihil';
+                                                    tempSelectedPlaceIds.value =
+                                                        [null];
+                                                    tempPositiveCountController
+                                                        .clear();
                                                   },
                                                   child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       Checkbox(
-                                                        value: tempHasilPemeriksaan.value == 'Nihil',
+                                                        value:
+                                                            tempHasilPemeriksaan
+                                                                .value ==
+                                                            'Nihil',
                                                         onChanged: (val) {
                                                           if (val == true) {
-                                                            tempHasilPemeriksaan.value = 'Nihil';
-                                                            tempSelectedPlaceIds.value = [null];
-                                                            tempPositiveCountController.clear();
+                                                            tempHasilPemeriksaan
+                                                                    .value =
+                                                                'Nihil';
+                                                            tempSelectedPlaceIds
+                                                                .value = [
+                                                              null,
+                                                            ];
+                                                            tempPositiveCountController
+                                                                .clear();
                                                           } else {
-                                                            tempHasilPemeriksaan.value = null;
+                                                            tempHasilPemeriksaan
+                                                                    .value =
+                                                                null;
                                                           }
                                                         },
-                                                        activeColor: const Color(0xFF27AE60),
-                                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                        visualDensity: VisualDensity.compact,
+                                                        activeColor:
+                                                            const Color(
+                                                              0xFF27AE60,
+                                                            ),
+                                                        materialTapTargetSize:
+                                                            MaterialTapTargetSize
+                                                                .shrinkWrap,
+                                                        visualDensity:
+                                                            VisualDensity
+                                                                .compact,
                                                       ),
                                                       const SizedBox(width: 2),
                                                       Text(
                                                         'Nihil',
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),
@@ -895,7 +1141,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ],
                                   )
                                 : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       _buildInputGroup(
                                         label: 'NAMA',
@@ -904,17 +1151,24 @@ class ReportFormScreen extends HookConsumerWidget {
                                           controller: tempKkNameController,
                                           decoration: InputDecoration(
                                             hintText: 'Masukkan Nama KK',
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 10,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 10,
+                                                ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: Colors.grey[300]!,
+                                              ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: Colors.grey[300]!,
+                                              ),
                                             ),
                                             isDense: true,
                                           ),
@@ -928,17 +1182,24 @@ class ReportFormScreen extends HookConsumerWidget {
                                           controller: tempRtRwController,
                                           decoration: InputDecoration(
                                             hintText: '- / -',
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 10,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 10,
+                                                ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: Colors.grey[300]!,
+                                              ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide(
+                                                color: Colors.grey[300]!,
+                                              ),
                                             ),
                                             isDense: true,
                                           ),
@@ -946,7 +1207,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                       ),
                                       const SizedBox(height: 16),
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
@@ -960,7 +1222,9 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 'Hasil Pemeriksaan',
                                                 style: GoogleFonts.outfit(
                                                   fontSize: 12,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -970,30 +1234,45 @@ class ReportFormScreen extends HookConsumerWidget {
                                             children: [
                                               InkWell(
                                                 onTap: () {
-                                                  tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                  tempHasilPemeriksaan.value =
+                                                      'Ada Jentik (Positif)';
                                                 },
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Checkbox(
-                                                      value: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)',
+                                                      value:
+                                                          tempHasilPemeriksaan
+                                                              .value ==
+                                                          'Ada Jentik (Positif)',
                                                       onChanged: (val) {
                                                         if (val == true) {
-                                                          tempHasilPemeriksaan.value = 'Ada Jentik (Positif)';
+                                                          tempHasilPemeriksaan
+                                                                  .value =
+                                                              'Ada Jentik (Positif)';
                                                         } else {
-                                                          tempHasilPemeriksaan.value = null;
+                                                          tempHasilPemeriksaan
+                                                                  .value =
+                                                              null;
                                                         }
                                                       },
-                                                      activeColor: const Color(0xFF27AE60),
-                                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                      visualDensity: VisualDensity.compact,
+                                                      activeColor: const Color(
+                                                        0xFF27AE60,
+                                                      ),
+                                                      materialTapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                      visualDensity:
+                                                          VisualDensity.compact,
                                                     ),
                                                     const SizedBox(width: 2),
                                                     Text(
                                                       'Positif',
                                                       style: GoogleFonts.outfit(
                                                         fontSize: 13,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                       ),
                                                     ),
                                                   ],
@@ -1002,34 +1281,56 @@ class ReportFormScreen extends HookConsumerWidget {
                                               const SizedBox(width: 16),
                                               InkWell(
                                                 onTap: () {
-                                                  tempHasilPemeriksaan.value = 'Nihil';
-                                                  tempSelectedPlaceIds.value = [null];
-                                                  tempPositiveCountController.clear();
+                                                  tempHasilPemeriksaan.value =
+                                                      'Nihil';
+                                                  tempSelectedPlaceIds.value = [
+                                                    null,
+                                                  ];
+                                                  tempPositiveCountController
+                                                      .clear();
                                                 },
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Checkbox(
-                                                      value: tempHasilPemeriksaan.value == 'Nihil',
+                                                      value:
+                                                          tempHasilPemeriksaan
+                                                              .value ==
+                                                          'Nihil',
                                                       onChanged: (val) {
                                                         if (val == true) {
-                                                          tempHasilPemeriksaan.value = 'Nihil';
-                                                          tempSelectedPlaceIds.value = [null];
-                                                          tempPositiveCountController.clear();
+                                                          tempHasilPemeriksaan
+                                                                  .value =
+                                                              'Nihil';
+                                                          tempSelectedPlaceIds
+                                                              .value = [
+                                                            null,
+                                                          ];
+                                                          tempPositiveCountController
+                                                              .clear();
                                                         } else {
-                                                          tempHasilPemeriksaan.value = null;
+                                                          tempHasilPemeriksaan
+                                                                  .value =
+                                                              null;
                                                         }
                                                       },
-                                                      activeColor: const Color(0xFF27AE60),
-                                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                      visualDensity: VisualDensity.compact,
+                                                      activeColor: const Color(
+                                                        0xFF27AE60,
+                                                      ),
+                                                      materialTapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                      visualDensity:
+                                                          VisualDensity.compact,
                                                     ),
                                                     const SizedBox(width: 2),
                                                     Text(
                                                       'Nihil',
                                                       style: GoogleFonts.outfit(
                                                         fontSize: 13,
-                                                        fontWeight: FontWeight.w500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                       ),
                                                     ),
                                                   ],
@@ -1045,12 +1346,14 @@ class ReportFormScreen extends HookConsumerWidget {
                             // Row 2: Tempat Positif Jentik (+ button) & Jumlah Tempat Positif (Enter subtext)
                             isDesktop
                                 ? Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Expanded(
                                         flex: 3,
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -1064,23 +1367,32 @@ class ReportFormScreen extends HookConsumerWidget {
                                                   'Tempat Positif Jentik',
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 12,
-                                                    color: const Color(0xFF10365F),
+                                                    color: const Color(
+                                                      0xFF10365F,
+                                                    ),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
                                                 InkWell(
                                                   onTap: () {
-                                                    tempSelectedPlaceIds.value = [
-                                                      ...tempSelectedPlaceIds.value,
-                                                      null
+                                                    tempSelectedPlaceIds
+                                                        .value = [
+                                                      ...tempSelectedPlaceIds
+                                                          .value,
+                                                      null,
                                                     ];
                                                   },
                                                   child: Container(
-                                                    padding: const EdgeInsets.all(2),
-                                                    decoration: const BoxDecoration(
-                                                      color: Color(0xFF27AE60),
-                                                      shape: BoxShape.circle,
-                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.all(2),
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                          color: Color(
+                                                            0xFF27AE60,
+                                                          ),
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
                                                     child: const Icon(
                                                       Icons.add,
                                                       size: 14,
@@ -1091,54 +1403,106 @@ class ReportFormScreen extends HookConsumerWidget {
                                               ],
                                             ),
                                             const SizedBox(height: 8),
-                                            tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                            tempHasilPemeriksaan.value ==
+                                                    'Ada Jentik (Positif)'
                                                 ? Column(
                                                     children: List.generate(
-                                                      tempSelectedPlaceIds.value.length,
+                                                      tempSelectedPlaceIds
+                                                          .value
+                                                          .length,
                                                       (pIdx) => Padding(
-                                                        padding: const EdgeInsets.only(bottom: 8.0),
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              bottom: 8.0,
+                                                            ),
                                                         child: Row(
                                                           children: [
                                                             Expanded(
                                                               child: _buildDropdown(
-                                                                value: tempSelectedPlaceIds.value[pIdx],
-                                                                hint: 'Pilih Tempat Positif',
-                                                                isLoading: breedingPlacesAsync.isLoading,
+                                                                value: tempSelectedPlaceIds
+                                                                    .value[pIdx],
+                                                                hint:
+                                                                    'Pilih Tempat Positif',
+                                                                isLoading:
+                                                                    breedingPlacesAsync
+                                                                        .isLoading,
                                                                 items: breedingPlacesAsync.maybeWhen(
                                                                   data: (places) => places
                                                                       .map(
-                                                                        (p) => DropdownMenuItem(
-                                                                          value: p['id'] as String,
-                                                                          child: Text(p['name'] as String),
+                                                                        (
+                                                                          p,
+                                                                        ) => DropdownMenuItem(
+                                                                          value:
+                                                                              p['id']
+                                                                                  as String,
+                                                                          child: Text(
+                                                                            p['name']
+                                                                                as String,
+                                                                          ),
                                                                         ),
                                                                       )
                                                                       .toList(),
-                                                                  orElse: () => [],
+                                                                  orElse: () =>
+                                                                      [],
                                                                 ),
                                                                 onChanged: (val) {
-                                                                  final newList = List<String?>.from(tempSelectedPlaceIds.value);
-                                                                  newList[pIdx] = val;
-                                                                  tempSelectedPlaceIds.value = newList;
+                                                                  final newList =
+                                                                      List<
+                                                                        String?
+                                                                      >.from(
+                                                                        tempSelectedPlaceIds
+                                                                            .value,
+                                                                      );
+                                                                  newList[pIdx] =
+                                                                      val;
+                                                                  tempSelectedPlaceIds
+                                                                          .value =
+                                                                      newList;
                                                                 },
                                                               ),
                                                             ),
-                                                            if (tempSelectedPlaceIds.value.length > 1) ...[
-                                                              const SizedBox(width: 4),
+                                                            if (tempSelectedPlaceIds
+                                                                    .value
+                                                                    .length >
+                                                                1) ...[
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
                                                               InkWell(
                                                                 onTap: () {
-                                                                  final newList = List<String?>.from(tempSelectedPlaceIds.value);
-                                                                  newList.removeAt(pIdx);
-                                                                  tempSelectedPlaceIds.value = newList;
+                                                                  final newList =
+                                                                      List<
+                                                                        String?
+                                                                      >.from(
+                                                                        tempSelectedPlaceIds
+                                                                            .value,
+                                                                      );
+                                                                  newList
+                                                                      .removeAt(
+                                                                        pIdx,
+                                                                      );
+                                                                  tempSelectedPlaceIds
+                                                                          .value =
+                                                                      newList;
                                                                 },
                                                                 child: Container(
-                                                                  padding: const EdgeInsets.all(6),
+                                                                  padding:
+                                                                      const EdgeInsets.all(
+                                                                        6,
+                                                                      ),
                                                                   decoration: BoxDecoration(
-                                                                    color: Colors.red[50],
-                                                                    borderRadius: BorderRadius.circular(6),
+                                                                    color: Colors
+                                                                        .red[50],
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          6,
+                                                                        ),
                                                                   ),
                                                                   child: const Icon(
-                                                                    Icons.delete_outline,
-                                                                    color: Colors.red,
+                                                                    Icons
+                                                                        .delete_outline,
+                                                                    color: Colors
+                                                                        .red,
                                                                     size: 18,
                                                                   ),
                                                                 ),
@@ -1151,18 +1515,27 @@ class ReportFormScreen extends HookConsumerWidget {
                                                   )
                                                 : Container(
                                                     width: double.infinity,
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 10,
-                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 10,
+                                                        ),
                                                     decoration: BoxDecoration(
                                                       color: Colors.grey[100],
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      border: Border.all(color: Colors.grey[300]!),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color:
+                                                            Colors.grey[300]!,
+                                                      ),
                                                     ),
                                                     child: Text(
                                                       '-',
-                                                      style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                      style: GoogleFonts.outfit(
+                                                        color: Colors.grey[500],
+                                                      ),
                                                     ),
                                                   ),
                                           ],
@@ -1172,10 +1545,12 @@ class ReportFormScreen extends HookConsumerWidget {
                                       Expanded(
                                         flex: 2,
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 const Icon(
                                                   Icons.numbers,
@@ -1185,22 +1560,32 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Text(
                                                         'Jumlah Tempat Positif',
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 12,
-                                                          color: const Color(0xFF10365F),
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontSize: 12,
+                                                              color:
+                                                                  const Color(
+                                                                    0xFF10365F,
+                                                                  ),
+                                                            ),
                                                       ),
                                                       Text(
                                                         '(DALAM SATU TEMPAT YANG DIPERIKSA)',
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 9,
-                                                          color: Colors.grey[600],
-                                                          fontWeight: FontWeight.normal,
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontSize: 9,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .normal,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),
@@ -1208,41 +1593,68 @@ class ReportFormScreen extends HookConsumerWidget {
                                               ],
                                             ),
                                             const SizedBox(height: 8),
-                                            tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                            tempHasilPemeriksaan.value ==
+                                                    'Ada Jentik (Positif)'
                                                 ? TextFormField(
-                                                    controller: tempPositiveCountController,
-                                                    keyboardType: TextInputType.number,
+                                                    controller:
+                                                        tempPositiveCountController,
+                                                    keyboardType:
+                                                        TextInputType.number,
                                                     decoration: InputDecoration(
                                                       hintText: 'Jumlah tempat',
-                                                      contentPadding: const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 10,
-                                                      ),
+                                                      contentPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 10,
+                                                          ),
                                                       border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                        borderSide: BorderSide(
+                                                          color:
+                                                              Colors.grey[300]!,
+                                                        ),
                                                       ),
-                                                      enabledBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: BorderSide(color: Colors.grey[300]!),
-                                                      ),
+                                                      enabledBorder:
+                                                          OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                            borderSide:
+                                                                BorderSide(
+                                                                  color: Colors
+                                                                      .grey[300]!,
+                                                                ),
+                                                          ),
                                                       isDense: true,
                                                     ),
                                                   )
                                                 : Container(
                                                     width: double.infinity,
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 10,
-                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 10,
+                                                        ),
                                                     decoration: BoxDecoration(
                                                       color: Colors.grey[100],
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      border: Border.all(color: Colors.grey[300]!),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color:
+                                                            Colors.grey[300]!,
+                                                      ),
                                                     ),
                                                     child: Text(
                                                       '-',
-                                                      style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                      style: GoogleFonts.outfit(
+                                                        color: Colors.grey[500],
+                                                      ),
                                                     ),
                                                   ),
                                           ],
@@ -1251,10 +1663,12 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ],
                                   )
                                 : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
@@ -1268,23 +1682,31 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 'Tempat Positif Jentik',
                                                 style: GoogleFonts.outfit(
                                                   fontSize: 12,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                               const SizedBox(width: 6),
                                               InkWell(
                                                 onTap: () {
                                                   tempSelectedPlaceIds.value = [
-                                                    ...tempSelectedPlaceIds.value,
-                                                    null
+                                                    ...tempSelectedPlaceIds
+                                                        .value,
+                                                    null,
                                                   ];
                                                 },
                                                 child: Container(
-                                                  padding: const EdgeInsets.all(2),
-                                                  decoration: const BoxDecoration(
-                                                    color: Color(0xFF27AE60),
-                                                    shape: BoxShape.circle,
+                                                  padding: const EdgeInsets.all(
+                                                    2,
                                                   ),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        color: Color(
+                                                          0xFF27AE60,
+                                                        ),
+                                                        shape: BoxShape.circle,
+                                                      ),
                                                   child: const Icon(
                                                     Icons.add,
                                                     size: 14,
@@ -1295,54 +1717,106 @@ class ReportFormScreen extends HookConsumerWidget {
                                             ],
                                           ),
                                           const SizedBox(height: 8),
-                                          tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                          tempHasilPemeriksaan.value ==
+                                                  'Ada Jentik (Positif)'
                                               ? Column(
                                                   children: List.generate(
-                                                    tempSelectedPlaceIds.value.length,
+                                                    tempSelectedPlaceIds
+                                                        .value
+                                                        .length,
                                                     (pIdx) => Padding(
-                                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 8.0,
+                                                          ),
                                                       child: Row(
                                                         children: [
                                                           Expanded(
                                                             child: _buildDropdown(
-                                                              value: tempSelectedPlaceIds.value[pIdx],
-                                                              hint: 'Pilih Tempat Positif',
-                                                              isLoading: breedingPlacesAsync.isLoading,
+                                                              value: tempSelectedPlaceIds
+                                                                  .value[pIdx],
+                                                              hint:
+                                                                  'Pilih Tempat Positif',
+                                                              isLoading:
+                                                                  breedingPlacesAsync
+                                                                      .isLoading,
                                                               items: breedingPlacesAsync.maybeWhen(
                                                                 data: (places) => places
                                                                     .map(
-                                                                      (p) => DropdownMenuItem(
-                                                                        value: p['id'] as String,
-                                                                        child: Text(p['name'] as String),
+                                                                      (
+                                                                        p,
+                                                                      ) => DropdownMenuItem(
+                                                                        value:
+                                                                            p['id']
+                                                                                as String,
+                                                                        child: Text(
+                                                                          p['name']
+                                                                              as String,
+                                                                        ),
                                                                       ),
                                                                     )
                                                                     .toList(),
-                                                                orElse: () => [],
+                                                                orElse: () =>
+                                                                    [],
                                                               ),
                                                               onChanged: (val) {
-                                                                final newList = List<String?>.from(tempSelectedPlaceIds.value);
-                                                                newList[pIdx] = val;
-                                                                tempSelectedPlaceIds.value = newList;
+                                                                final newList =
+                                                                    List<
+                                                                      String?
+                                                                    >.from(
+                                                                      tempSelectedPlaceIds
+                                                                          .value,
+                                                                    );
+                                                                newList[pIdx] =
+                                                                    val;
+                                                                tempSelectedPlaceIds
+                                                                        .value =
+                                                                    newList;
                                                               },
                                                             ),
                                                           ),
-                                                          if (tempSelectedPlaceIds.value.length > 1) ...[
-                                                            const SizedBox(width: 4),
+                                                          if (tempSelectedPlaceIds
+                                                                  .value
+                                                                  .length >
+                                                              1) ...[
+                                                            const SizedBox(
+                                                              width: 4,
+                                                            ),
                                                             InkWell(
                                                               onTap: () {
-                                                                final newList = List<String?>.from(tempSelectedPlaceIds.value);
-                                                                newList.removeAt(pIdx);
-                                                                tempSelectedPlaceIds.value = newList;
+                                                                final newList =
+                                                                    List<
+                                                                      String?
+                                                                    >.from(
+                                                                      tempSelectedPlaceIds
+                                                                          .value,
+                                                                    );
+                                                                newList
+                                                                    .removeAt(
+                                                                      pIdx,
+                                                                    );
+                                                                tempSelectedPlaceIds
+                                                                        .value =
+                                                                    newList;
                                                               },
                                                               child: Container(
-                                                                padding: const EdgeInsets.all(6),
+                                                                padding:
+                                                                    const EdgeInsets.all(
+                                                                      6,
+                                                                    ),
                                                                 decoration: BoxDecoration(
-                                                                  color: Colors.red[50],
-                                                                  borderRadius: BorderRadius.circular(6),
+                                                                  color: Colors
+                                                                      .red[50],
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        6,
+                                                                      ),
                                                                 ),
                                                                 child: const Icon(
-                                                                  Icons.delete_outline,
-                                                                  color: Colors.red,
+                                                                  Icons
+                                                                      .delete_outline,
+                                                                  color: Colors
+                                                                      .red,
                                                                   size: 18,
                                                                 ),
                                                               ),
@@ -1355,28 +1829,38 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 )
                                               : Container(
                                                   width: double.infinity,
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 10,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 10,
+                                                      ),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[100],
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: Colors.grey[300]!),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.grey[300]!,
+                                                    ),
                                                   ),
                                                   child: Text(
                                                     '-',
-                                                    style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                    style: GoogleFonts.outfit(
+                                                      color: Colors.grey[500],
+                                                    ),
                                                   ),
                                                 ),
                                         ],
                                       ),
                                       const SizedBox(height: 16),
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               const Icon(
                                                 Icons.numbers,
@@ -1386,13 +1870,16 @@ class ReportFormScreen extends HookConsumerWidget {
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       'Jumlah Tempat Positif',
                                                       style: GoogleFonts.outfit(
                                                         fontSize: 12,
-                                                        color: const Color(0xFF10365F),
+                                                        color: const Color(
+                                                          0xFF10365F,
+                                                        ),
                                                       ),
                                                     ),
                                                     Text(
@@ -1400,7 +1887,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                                       style: GoogleFonts.outfit(
                                                         fontSize: 9,
                                                         color: Colors.grey[600],
-                                                        fontWeight: FontWeight.normal,
+                                                        fontWeight:
+                                                            FontWeight.normal,
                                                       ),
                                                     ),
                                                   ],
@@ -1409,118 +1897,128 @@ class ReportFormScreen extends HookConsumerWidget {
                                             ],
                                           ),
                                           const SizedBox(height: 8),
-                                          tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                          tempHasilPemeriksaan.value ==
+                                                  'Ada Jentik (Positif)'
                                               ? TextFormField(
-                                                  controller: tempPositiveCountController,
-                                                  keyboardType: TextInputType.number,
+                                                  controller:
+                                                      tempPositiveCountController,
+                                                  keyboardType:
+                                                      TextInputType.number,
                                                   decoration: InputDecoration(
                                                     hintText: 'Jumlah tempat',
-                                                    contentPadding: const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 10,
-                                                    ),
+                                                    contentPadding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 10,
+                                                        ),
                                                     border: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      borderSide: BorderSide(
+                                                        color:
+                                                            Colors.grey[300]!,
+                                                      ),
                                                     ),
-                                                    enabledBorder: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      borderSide: BorderSide(color: Colors.grey[300]!),
-                                                    ),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                color: Colors
+                                                                    .grey[300]!,
+                                                              ),
+                                                        ),
                                                     isDense: true,
                                                   ),
                                                 )
                                               : Container(
                                                   width: double.infinity,
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 10,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 10,
+                                                      ),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[100],
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: Colors.grey[300]!),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.grey[300]!,
+                                                    ),
                                                   ),
                                                   child: Text(
                                                     '-',
-                                                    style: GoogleFonts.outfit(color: Colors.grey[500]),
+                                                    style: GoogleFonts.outfit(
+                                                      color: Colors.grey[500],
+                                                    ),
                                                   ),
                                                 ),
                                         ],
                                       ),
                                     ],
                                   ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-
-
-                      // Table Section
-                        if (isDesktop)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.list_alt,
-                                      color: Color(0xFF10365F),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'DAFTAR RUMAH YANG DIPERIKSA',
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF10365F),
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Isikan data rumah yang diperiksa',
-                                            style: GoogleFonts.outfit(
-                                              color: Colors.grey[600],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton.icon(
+                            const SizedBox(height: 16),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
                                 onPressed: () {
                                   final newEntry = HouseReportEntry(
-                                    isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
+                                    isPositive:
+                                        tempHasilPemeriksaan.value ==
+                                            'Ada Jentik (Positif)'
                                         ? true
-                                        : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
+                                        : (tempHasilPemeriksaan.value == 'Nihil'
+                                              ? false
+                                              : null),
                                     isEditing: false,
                                   );
-                                  if (tempKkNameController.text.trim().isNotEmpty) {
-                                    newEntry.kkNameController.text = tempKkNameController.text.trim();
+                                  if (tempKkNameController.text
+                                      .trim()
+                                      .isNotEmpty) {
+                                    newEntry.kkNameController.text =
+                                        tempKkNameController.text.trim();
                                   }
-                                  if (tempRtRwController.text.trim().isNotEmpty && tempRtRwController.text.trim() != '- / -') {
-                                    final parts = tempRtRwController.text.trim().split('/');
-                                    if (parts.length >= 1) newEntry.rtController.text = parts[0].trim();
-                                    if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+                                  if (tempRtRwController.text
+                                          .trim()
+                                          .isNotEmpty &&
+                                      tempRtRwController.text.trim() !=
+                                          '- / -') {
+                                    final parts = tempRtRwController.text
+                                        .trim()
+                                        .split('/');
+                                    if (parts.isNotEmpty) {
+                                      newEntry.rtController.text = parts[0]
+                                          .trim();
+                                    }
+                                    if (parts.length >= 2) {
+                                      newEntry.rwController.text = parts[1]
+                                          .trim();
+                                    }
                                   }
-                                  if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
-                                    final validPlaces = tempSelectedPlaceIds.value.whereType<String>().toList();
+                                  if (tempHasilPemeriksaan.value ==
+                                      'Ada Jentik (Positif)') {
+                                    final validPlaces = tempSelectedPlaceIds
+                                        .value
+                                        .whereType<String>()
+                                        .toList();
                                     if (validPlaces.isNotEmpty) {
                                       newEntry.selectedPlaceIds = validPlaces;
                                     }
-                                    if (tempPositiveCountController.text.trim().isNotEmpty) {
-                                      newEntry.positivePlacesCountController.text =
-                                          tempPositiveCountController.text.trim();
+                                    if (tempPositiveCountController.text
+                                        .trim()
+                                        .isNotEmpty) {
+                                      newEntry
+                                          .positivePlacesCountController
+                                          .text = tempPositiveCountController
+                                          .text
+                                          .trim();
                                     }
                                   }
 
@@ -1537,7 +2035,9 @@ class ReportFormScreen extends HookConsumerWidget {
 
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Laporan berhasil di-entri ke daftar'),
+                                      content: Text(
+                                        'Laporan berhasil di-entri ke daftar',
+                                      ),
                                       duration: Duration(seconds: 1),
                                     ),
                                   );
@@ -1555,188 +2055,155 @@ class ReportFormScreen extends HookConsumerWidget {
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  minimumSize: const Size(0, 48),
+                                  minimumSize: isDesktop
+                                      ? const Size(180, 48)
+                                      : const Size(double.infinity, 48),
                                   backgroundColor: const Color(0xFF27AE60),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
+                                    horizontal: 20,
                                     vertical: 12,
                                   ),
                                 ),
                               ),
-                            ],
-                          )
-                        else
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.list_alt,
-                                    color: Color(0xFF10365F),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'DAFTAR RUMAH YANG DIPERIKSA',
-                                          style: GoogleFonts.outfit(
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF10365F),
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Isikan data rumah yang diperiksa',
-                                          style: GoogleFonts.outfit(
-                                            color: Colors.grey[600],
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    final newEntry = HouseReportEntry(
-                                      isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
-                                          ? true
-                                          : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
-                                      isEditing: false,
-                                    );
-                                    if (tempKkNameController.text.trim().isNotEmpty) {
-                                      newEntry.kkNameController.text = tempKkNameController.text.trim();
-                                    }
-                                    if (tempRtRwController.text.trim().isNotEmpty && tempRtRwController.text.trim() != '- / -') {
-                                      final parts = tempRtRwController.text.trim().split('/');
-                                      if (parts.length >= 1) newEntry.rtController.text = parts[0].trim();
-                                      if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
-                                    }
-                                    if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
-                                      final validPlaces = tempSelectedPlaceIds.value.whereType<String>().toList();
-                                      if (validPlaces.isNotEmpty) {
-                                        newEntry.selectedPlaceIds = validPlaces;
-                                      }
-                                      if (tempPositiveCountController.text.trim().isNotEmpty) {
-                                        newEntry.positivePlacesCountController.text =
-                                            tempPositiveCountController.text.trim();
-                                      }
-                                    }
+                            ),
+                          ],
+                        ),
+                      ),
 
-                                    houseEntries.value = [
-                                      ...houseEntries.value,
-                                      newEntry,
-                                    ];
-
-                                    tempKkNameController.clear();
-                                    tempRtRwController.clear();
-                                    tempHasilPemeriksaan.value = null;
-                                    tempSelectedPlaceIds.value = [null];
-                                    tempPositiveCountController.clear();
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Laporan berhasil di-entri ke daftar'),
-                                        duration: Duration(seconds: 1),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                  label: Text(
-                                    'Entri Laporan',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(0, 48),
-                                    backgroundColor: const Color(0xFF27AE60),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        const SizedBox(height: 16),
-
-                        // Table Data inside Horizontal Scrollbar
-                        if (!isDesktop)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                      // Table Section Header
+                      Row(
+                        children: [
+                          const Icon(Icons.list_alt, color: Color(0xFF10365F)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.swipe_left,
-                                  size: 16,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  'Geser tabel ke samping ➔',
+                                  'DAFTAR RUMAH YANG DIPERIKSA',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF10365F),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  'Isikan data rumah yang diperiksa',
+                                  style: GoogleFonts.outfit(
                                     color: Colors.grey[600],
-                                    fontStyle: FontStyle.italic,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[300]!),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Search Field for KK Entries
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: TextField(
+                          controller: searchController,
+                          onChanged: (val) => searchQuery.value = val,
+                          decoration: InputDecoration(
+                            hintText: 'Cari nama KK, RT/RW, atau status...',
+                            hintStyle: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: Colors.grey[400],
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF10365F),
+                              size: 20,
+                            ),
+                            suffixIcon: searchQuery.value.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      size: 18,
+                                      color: Colors.grey,
+                                    ),
+                                    onPressed: () {
+                                      searchController.clear();
+                                      searchQuery.value = '';
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 14,
+                            ),
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: RawScrollbar(
+                        ),
+                      ),
+                      // Table Data inside Horizontal Scrollbar
+                      if (!isDesktop)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Icon(
+                                Icons.swipe_left,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Geser tabel ke samping ➔',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: RawScrollbar(
+                          controller: tableScrollController,
+                          thumbVisibility: true,
+                          trackVisibility: true,
+                          thickness: 8.0,
+                          radius: const Radius.circular(4),
+                          thumbColor: const Color(0xFF27AE60),
+                          trackColor: const Color(0xFFE8F5E9),
+                          padding: EdgeInsets.zero,
+                          child: SingleChildScrollView(
                             controller: tableScrollController,
-                            thumbVisibility: true,
-                            trackVisibility: true,
-                            thickness: 8.0,
-                            radius: const Radius.circular(4),
-                            thumbColor: const Color(0xFF27AE60),
-                            trackColor: const Color(0xFFE8F5E9),
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: SingleChildScrollView(
-                              controller: tableScrollController,
-                              scrollDirection: Axis.horizontal,
-                              child: SizedBox(
-                                width: (screenWidth - (isDesktop ? 48 : 32)) < 800
-                                    ? 800
-                                    : (screenWidth - (isDesktop ? 48 : 32)),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: (screenWidth - (isDesktop ? 48 : 32)) < 450
+                                  ? 450
+                                  : (screenWidth - (isDesktop ? 48 : 32)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                                   // Table Header
                                   Container(
                                     color: const Color(0xFFE8F5E9),
                                     child: IntrinsicHeight(
                                       child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
                                         children: [
                                           SizedBox(
                                             width: 40,
@@ -1747,12 +2214,18 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
                                           Expanded(
                                             flex: 2,
                                             child: Center(
@@ -1762,12 +2235,18 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
                                           Expanded(
                                             flex: 3,
                                             child: Center(
@@ -1777,131 +2256,51 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
-                                                  color: const Color(0xFF10365F),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
-                                          Expanded(
-                                            flex: 1,
-                                            child: Center(
-                                              child: Text(
-                                                'RT',
-                                                textAlign: TextAlign.center,
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  color: const Color(0xFF10365F),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
-                                          Expanded(
-                                            flex: 1,
-                                            child: Center(
-                                              child: Text(
-                                                'RW',
-                                                textAlign: TextAlign.center,
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  color: const Color(0xFF10365F),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 6.0),
-                                                  child: Text(
-                                                    'Jentik',
-                                                    textAlign: TextAlign.center,
-                                                    style: GoogleFonts.outfit(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 13,
-                                                      color: const Color(0xFF10365F),
-                                                    ),
+                                                  color: const Color(
+                                                    0xFF10365F,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 2),
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        'Positif',
-                                                        textAlign: TextAlign.center,
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: const Color(0xFF10365F),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      child: Text(
-                                                        'Nihil',
-                                                        textAlign: TextAlign.center,
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: const Color(0xFF10365F),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 6),
-                                              ],
+                                              ),
                                             ),
                                           ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
                                           Expanded(
                                             flex: 3,
                                             child: Center(
                                               child: Text(
-                                                'Tempat Positif Jentik',
+                                                'Desa/Puskesmas',
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
                                           Expanded(
                                             flex: 2,
                                             child: Center(
                                               child: Text(
-                                                'Jumlah Tempat Positif',
+                                                'Status',
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 13,
-                                                  color: const Color(0xFF10365F),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFC8E6C9)),
-                                          SizedBox(
-                                            width: 60,
-                                            child: Center(
-                                              child: Text(
-                                                'Aksi',
-                                                textAlign: TextAlign.center,
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  color: const Color(0xFF10365F),
+                                                  color: const Color(
+                                                    0xFF10365F,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -1911,427 +2310,398 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ),
                                   ),
                                   // Table Rows
-                                   // Table Rows
-                                   ...houseEntries.value.asMap().entries.map((
-                                     e,
-                                   ) {
-                                     final idx = e.key;
-                                     final entry = e.value;
-                                     return Container(
-                                       decoration: BoxDecoration(
-                                         border: Border(
-                                           top: BorderSide(
-                                             color: Colors.grey[200]!,
-                                           ),
-                                         ),
-                                       ),
-                                       padding: const EdgeInsets.symmetric(
-                                         vertical: 12,
-                                         horizontal: 8,
-                                       ),
-                                       child: Row(
-                                         crossAxisAlignment: CrossAxisAlignment.center,
-                                         children: [
-                                           SizedBox(
-                                             width: 40,
-                                             child: Center(
-                                               child: Text(
-                                                 '${idx + 1}',
-                                                 textAlign: TextAlign.center,
-                                                 style: GoogleFonts.outfit(
-                                                   fontWeight: FontWeight.bold,
-                                                 ),
-                                               ),
-                                             ),
-                                           ),
-                                           Expanded(
-                                             flex: 2,
-                                             child: Center(
-                                               child: Text(
-                                                 DateFormat('dd/MM/yyyy').format(reportDate.value),
-                                                 style: GoogleFonts.outfit(fontSize: 12),
-                                                 textAlign: TextAlign.center,
-                                               ),
-                                             ),
-                                           ),
-                                           // Nama KK
-                                           Expanded(
-                                             flex: 3,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                                               child: entry.isEditing
-                                                   ? TextFormField(
-                                                       controller: entry.kkNameController,
-                                                       decoration: InputDecoration(
-                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                                         isDense: true,
-                                                       ),
-                                                     )
-                                                   : Center(
-                                                       child: Text(
-                                                         entry.kkNameController.text.trim().isEmpty ? '-' : entry.kkNameController.text.trim(),
-                                                         style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10365F)),
-                                                         textAlign: TextAlign.center,
-                                                       ),
-                                                     ),
-                                             ),
-                                           ),
-                                           // RT
-                                           Expanded(
-                                             flex: 1,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                                               child: entry.isEditing
-                                                   ? TextFormField(
-                                                       controller: entry.rtController,
-                                                       textAlign: TextAlign.center,
-                                                       decoration: InputDecoration(
-                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                                         isDense: true,
-                                                       ),
-                                                     )
-                                                   : Center(
-                                                       child: Text(
-                                                         entry.rtController.text.trim().isEmpty ? '-' : entry.rtController.text.trim(),
-                                                         style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
-                                                         textAlign: TextAlign.center,
-                                                       ),
-                                                     ),
-                                             ),
-                                           ),
-                                           // RW
-                                           Expanded(
-                                             flex: 1,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                                               child: entry.isEditing
-                                                   ? TextFormField(
-                                                       controller: entry.rwController,
-                                                       textAlign: TextAlign.center,
-                                                       decoration: InputDecoration(
-                                                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                                         isDense: true,
-                                                       ),
-                                                     )
-                                                   : Center(
-                                                       child: Text(
-                                                         entry.rwController.text.trim().isEmpty ? '-' : entry.rwController.text.trim(),
-                                                         style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
-                                                         textAlign: TextAlign.center,
-                                                       ),
-                                                     ),
-                                             ),
-                                           ),
-                                           // Jentik (Positif / Nihil)
-                                           Expanded(
-                                             flex: 2,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 2),
-                                               child: entry.isEditing
-                                                   ? Row(
-                                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                                       children: [
-                                                         Expanded(
-                                                           child: Center(
-                                                             child: InkWell(
-                                                               onTap: () {
-                                                                 entry.isPositive = (entry.isPositive == true) ? null : true;
-                                                                 houseEntries.value = [...houseEntries.value];
-                                                               },
-                                                               child: Container(
-                                                                 width: 24,
-                                                                 height: 24,
-                                                                 decoration: BoxDecoration(
-                                                                   color: entry.isPositive == true ? const Color(0xFFEBF5FF) : Colors.white,
-                                                                   borderRadius: BorderRadius.circular(4),
-                                                                   border: Border.all(color: entry.isPositive == true ? const Color(0xFF2980B9) : Colors.grey[300]!),
-                                                                 ),
-                                                                 child: entry.isPositive == true
-                                                                     ? const Icon(Icons.check, size: 16, color: Color(0xFF2980B9))
-                                                                     : null,
-                                                               ),
-                                                             ),
-                                                           ),
-                                                         ),
-                                                         Expanded(
-                                                           child: Center(
-                                                             child: InkWell(
-                                                               onTap: () {
-                                                                 entry.isPositive = (entry.isPositive == false) ? null : false;
-                                                                 houseEntries.value = [...houseEntries.value];
-                                                               },
-                                                               child: Container(
-                                                                 width: 24,
-                                                                 height: 24,
-                                                                 decoration: BoxDecoration(
-                                                                   color: entry.isPositive == false ? const Color(0xFFEBF5FF) : Colors.white,
-                                                                   borderRadius: BorderRadius.circular(4),
-                                                                   border: Border.all(color: entry.isPositive == false ? const Color(0xFF2980B9) : Colors.grey[300]!),
-                                                                 ),
-                                                                 child: entry.isPositive == false
-                                                                     ? const Icon(Icons.check, size: 16, color: Color(0xFF2980B9))
-                                                                     : null,
-                                                               ),
-                                                             ),
-                                                           ),
-                                                         ),
-                                                       ],
-                                                     )
-                                                   : Row(
-                                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                                       children: [
-                                                         Expanded(
-                                                           child: Center(
-                                                             child: Icon(
-                                                               entry.isPositive == true ? Icons.check_box : Icons.check_box_outline_blank,
-                                                               color: entry.isPositive == true ? const Color(0xFF27AE60) : Colors.grey[350],
-                                                               size: 18,
-                                                             ),
-                                                           ),
-                                                         ),
-                                                         Expanded(
-                                                           child: Center(
-                                                             child: Icon(
-                                                               entry.isPositive == false ? Icons.check_box : Icons.check_box_outline_blank,
-                                                               color: entry.isPositive == false ? const Color(0xFF27AE60) : Colors.grey[350],
-                                                               size: 18,
-                                                             ),
-                                                           ),
-                                                         ),
-                                                       ],
-                                                     ),
-                                             ),
-                                           ),
-                                           // Tempat Positif Jentik
-                                           Expanded(
-                                             flex: 3,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                                               child: entry.isPositive == true
-                                                   ? (entry.isEditing
-                                                       ? Column(
-                                                           children: [
-                                                             ...entry.selectedPlaceIds.asMap().entries.map((pEntry) {
-                                                               final pIdx = pEntry.key;
-                                                               final pValue = pEntry.value;
-                                                               return Padding(
-                                                                 padding: const EdgeInsets.only(bottom: 4.0),
-                                                                 child: Row(
-                                                                   children: [
-                                                                     Expanded(
-                                                                       child: _buildDropdown(
-                                                                         value: pValue,
-                                                                         hint: 'Pilih Tempat',
-                                                                         items: breedingPlacesAsync.maybeWhen(
-                                                                           data: (places) => places
-                                                                               .map((p) => DropdownMenuItem(
-                                                                                     value: p['id'] as String,
-                                                                                     child: Text(p['name'] as String, style: GoogleFonts.outfit(fontSize: 11)),
-                                                                                   ))
-                                                                               .toList(),
-                                                                           orElse: () => [],
-                                                                         ),
-                                                                         onChanged: (val) {
-                                                                           entry.selectedPlaceIds[pIdx] = val;
-                                                                           houseEntries.value = [...houseEntries.value];
-                                                                         },
-                                                                         isDense: true,
-                                                                       ),
-                                                                     ),
-                                                                   ],
-                                                                 ),
-                                                               );
-                                                             }),
-                                                           ],
-                                                         )
-                                                       : Column(
-                                                           mainAxisSize: MainAxisSize.min,
-                                                           crossAxisAlignment: CrossAxisAlignment.center,
-                                                           children: entry.selectedPlaceIds.map((pId) {
-                                                             final placeName = breedingPlacesAsync.maybeWhen(
-                                                               data: (places) {
-                                                                 try {
-                                                                   return places.firstWhere((p) => p['id'] == pId)['name'] as String;
-                                                                 } catch (_) {
-                                                                   return pId ?? '-';
-                                                                 }
-                                                               },
-                                                               orElse: () => pId ?? '-',
-                                                             );
-                                                             return Text(
-                                                               placeName,
-                                                               style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF10365F)),
-                                                               textAlign: TextAlign.center,
-                                                             );
-                                                           }).toList(),
-                                                         ))
-                                                   : Center(
-                                                       child: Text(
-                                                         '-',
-                                                         style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[500]),
-                                                         textAlign: TextAlign.center,
-                                                       ),
-                                                     ),
-                                             ),
-                                           ),
-                                           // Jumlah Tempat Positif
-                                           Expanded(
-                                             flex: 2,
-                                             child: Padding(
-                                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                                               child: entry.isPositive == true
-                                                   ? (entry.isEditing
-                                                       ? TextFormField(
-                                                           controller: entry.positivePlacesCountController,
-                                                           keyboardType: TextInputType.number,
-                                                           textAlign: TextAlign.center,
-                                                           decoration: InputDecoration(
-                                                             contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                                             isDense: true,
-                                                           ),
-                                                         )
-                                                       : Center(
-                                                           child: Text(
-                                                             entry.positivePlacesCountController.text.trim().isEmpty
-                                                                 ? '-'
-                                                                 : entry.positivePlacesCountController.text.trim(),
-                                                             style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF10365F)),
-                                                             textAlign: TextAlign.center,
-                                                           ),
-                                                         ))
-                                                   : Center(
-                                                       child: Text(
-                                                         '-',
-                                                         style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[500]),
-                                                         textAlign: TextAlign.center,
-                                                       ),
-                                                     ),
-                                             ),
-                                           ),
-                                           // Aksi
-                                           SizedBox(
-                                             width: 85,
-                                             child: Center(
-                                               child: Row(
-                                                 mainAxisAlignment: MainAxisAlignment.center,
-                                                 mainAxisSize: MainAxisSize.min,
-                                                 children: [
-                                                   ElevatedButton(
-                                                     onPressed: () {
-                                                       entry.isEditing = !entry.isEditing;
-                                                       houseEntries.value = [...houseEntries.value];
-                                                       if (!entry.isEditing) {
-                                                         ScaffoldMessenger.of(context).showSnackBar(
-                                                           SnackBar(
-                                                             content: Text('Data KK ke-${idx + 1} diperbarui'),
-                                                             duration: const Duration(seconds: 1),
-                                                           ),
-                                                         );
-                                                       }
-                                                     },
-                                                     style: ElevatedButton.styleFrom(
-                                                       backgroundColor: entry.isEditing ? const Color(0xFF2980B9) : const Color(0xFF27AE60),
-                                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                                       minimumSize: const Size(48, 28),
-                                                       shape: RoundedRectangleBorder(
-                                                         borderRadius: BorderRadius.circular(6),
-                                                       ),
-                                                     ),
-                                                     child: Text(
-                                                       entry.isEditing ? 'Simpan' : 'Update',
-                                                       style: GoogleFonts.outfit(
-                                                         fontSize: 10,
-                                                         color: Colors.white,
-                                                         fontWeight: FontWeight.bold,
-                                                       ),
-                                                     ),
-                                                   ),
-                                                   const SizedBox(width: 4),
-                                                   InkWell(
-                                                     onTap: () {
-                                                       final newList = List<HouseReportEntry>.from(houseEntries.value);
-                                                       newList.removeAt(idx);
-                                                       entry.dispose();
-                                                       houseEntries.value = newList;
-                                                     },
-                                                     child: Container(
-                                                       padding: const EdgeInsets.all(4),
-                                                       decoration: BoxDecoration(
-                                                         color: Colors.red[50],
-                                                         borderRadius: BorderRadius.circular(4),
-                                                       ),
-                                                       child: const Icon(
-                                                         Icons.delete_outline,
-                                                         color: Colors.red,
-                                                         size: 14,
-                                                       ),
-                                                     ),
-                                                   ),
-                                                 ],
-                                               ),
-                                             ),
-                                           ),
-                                         ],
-                                       ),
-                                     );
-                                   }),
-                                  const SizedBox(height: 12),
+                                  ...filteredEntries.asMap().entries.map((e) {
+                                    final idx = e.key;
+                                    final entry = e.value;
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          top: BorderSide(
+                                            color: Colors.grey[200]!,
+                                          ),
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 8,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 40,
+                                            child: Center(
+                                              child: Text(
+                                                '${idx + 1}',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Center(
+                                              child: Text(
+                                                DateFormat(
+                                                  'dd/MM/yyyy',
+                                                ).format(reportDate.value),
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 12,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
+                                          // Nama KK
+                                          Expanded(
+                                            flex: 3,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 4,
+                                                  ),
+                                              child: InkWell(
+                                                onTap: () {
+                                                  _showKkDetailDialog(
+                                                    context: context,
+                                                    entry: entry,
+                                                    idx: idx,
+                                                    reportDate:
+                                                        reportDate.value,
+                                                    villageName:
+                                                        selectedVillageName ??
+                                                        '-',
+                                                    puskesmasName:
+                                                        puskesmasName,
+                                                    breedingPlaces:
+                                                        breedingPlacesAsync
+                                                            .value ??
+                                                        [],
+                                                    onEdit: () {
+                                                      _showKkEditDialog(
+                                                        context: context,
+                                                        entry: entry,
+                                                        idx: idx,
+                                                        breedingPlaces:
+                                                            breedingPlacesAsync
+                                                                .value ??
+                                                            [],
+                                                        onSaved: () {
+                                                          houseEntries.value = [
+                                                            ...houseEntries
+                                                                .value,
+                                                          ];
+                                                        },
+                                                      );
+                                                    },
+                                                    onDelete: () {
+                                                      final newList =
+                                                          List<
+                                                            HouseReportEntry
+                                                          >.from(
+                                                            houseEntries.value,
+                                                          );
+                                                      houseEntries.value =
+                                                          List<
+                                                              HouseReportEntry
+                                                            >.from(
+                                                              houseEntries
+                                                                  .value,
+                                                            )
+                                                            ..remove(entry);
+                                                      entry.dispose();
+                                                      houseEntries.value =
+                                                          newList;
+                                                    },
+                                                  );
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 4,
+                                                        horizontal: 4,
+                                                      ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          entry
+                                                                  .kkNameController
+                                                                  .text
+                                                                  .trim()
+                                                                  .isEmpty
+                                                              ? '-'
+                                                              : entry
+                                                                    .kkNameController
+                                                                    .text
+                                                                    .trim(),
+                                                          style: GoogleFonts.outfit(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: const Color(
+                                                              0xFF2980B9,
+                                                            ),
+                                                            decoration:
+                                                                TextDecoration
+                                                                    .underline,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      const Icon(
+                                                        Icons.info_outline,
+                                                        size: 13,
+                                                        color: Color(
+                                                          0xFF2980B9,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
+                                          // Desa/Puskesmas Column
+                                          Expanded(
+                                            flex: 3,
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    (selectedVillageName !=
+                                                                null &&
+                                                            selectedVillageName
+                                                                .isNotEmpty)
+                                                        ? selectedVillageName
+                                                        : '-',
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: const Color(
+                                                        0xFF10365F,
+                                                      ),
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    puskesmasName,
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          const VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Color(0xFFC8E6C9),
+                                          ),
+                                          // Status Badge
+                                          Expanded(
+                                            flex: 2,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 4,
+                                                  ),
+                                              child: Center(
+                                                child: entry.isPositive == true
+                                                    ? Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 4,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(
+                                                            0xFFFFEBEE,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: const Color(
+                                                              0xFFFFCDD2,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Positif',
+                                                          style:
+                                                              GoogleFonts.outfit(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color:
+                                                                    const Color(
+                                                                      0xFFD32F2F,
+                                                                    ),
+                                                              ),
+                                                        ),
+                                                      )
+                                                    : entry.isPositive == false
+                                                    ? Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 4,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(
+                                                            0xFFE8F5E9,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: const Color(
+                                                              0xFFC8E6C9,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Nihil',
+                                                          style:
+                                                              GoogleFonts.outfit(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color:
+                                                                    const Color(
+                                                                      0xFF27AE60,
+                                                                    ),
+                                                              ),
+                                                        ),
+                                                      )
+                                                    : Text(
+                                                        '-',
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontSize: 12,
+                                                              color: Colors
+                                                                  .grey[500],
+                                                            ),
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
                                 ],
                               ),
-                             ),
-                           ),
-                         ),
-                       ),
-                      const SizedBox(height: 40),
-
-                      // Bottom Actions
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: isLoading.value ? null : handleSubmit,
-                          icon: const Icon(Icons.sync, color: Colors.white),
-                          label: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'UPDATE LAPORAN',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Simpan & perbarui data laporan',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(0, 52),
-                            backgroundColor: const Color(0xFF27AE60),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 20,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 40),
+
+                      // Bottom Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: isLoading.value
+                                  ? null
+                                  : handleSaveDraft,
+                              icon: const Icon(
+                                Icons.save_outlined,
+                                color: Color(0xFF2980B9),
+                              ),
+                              label: Text(
+                                'SIMPAN DRAFT',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF2980B9),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 52),
+                                side: const BorderSide(
+                                  color: Color(0xFF2980B9),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: isLoading.value ? null : handleSubmit,
+                              icon: const Icon(Icons.send, color: Colors.white),
+                              label: Text(
+                                initialReport != null
+                                    ? 'UPDATE LAPORAN'
+                                    : 'KIRIM LAPORAN',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 52),
+                                backgroundColor: const Color(0xFF27AE60),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -2372,37 +2742,6 @@ class ReportFormScreen extends HookConsumerWidget {
         const SizedBox(height: 8),
         child,
       ],
-    );
-  }
-
-  Widget _buildTextInput(
-    TextEditingController controller,
-    String hint, {
-    bool isNumber = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-        return null;
-      },
-      decoration: InputDecoration(
-        hintText: hint,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        isDense: true,
-      ),
     );
   }
 
@@ -2449,9 +2788,7 @@ class ReportFormScreen extends HookConsumerWidget {
 
     return Container(
       height: isDense ? 38 : null,
-      padding: EdgeInsets.symmetric(
-        horizontal: isDense ? 8 : 12,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isDense ? 8 : 12),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
@@ -2483,4 +2820,1053 @@ class ReportFormScreen extends HookConsumerWidget {
       ),
     );
   }
+
+  void _showKkDetailDialog({
+    required BuildContext context,
+    required HouseReportEntry entry,
+    required int idx,
+    required DateTime reportDate,
+    String villageName = "-",
+    String puskesmasName = "-",
+    required List<Map<String, dynamic>> breedingPlaces,
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Detail KK',
+      barrierColor: Colors.black.withValues(alpha: 0.54),
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final scaleAnim = Tween<double>(
+          begin: 0.2,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutBack));
+        final fadeAnim = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut));
+
+        return ScaleTransition(
+          scale: scaleAnim,
+          child: FadeTransition(
+            opacity: fadeAnim,
+            child: _KkDetailDialogWidget(
+              entry: entry,
+              idx: idx,
+              reportDate: reportDate,
+              villageName: villageName,
+              puskesmasName: puskesmasName,
+              breedingPlaces: breedingPlaces,
+              onEdit: () {
+                Navigator.of(ctx).pop();
+                onEdit();
+              },
+              onDelete: () {
+                Navigator.of(ctx).pop();
+                onDelete();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KkDetailDialogWidget extends StatelessWidget {
+  final HouseReportEntry entry;
+  final int idx;
+  final DateTime reportDate;
+  final String villageName;
+  final String puskesmasName;
+  final List<Map<String, dynamic>> breedingPlaces;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _KkDetailDialogWidget({
+    required this.entry,
+    required this.idx,
+    required this.reportDate,
+    this.villageName = "-",
+    this.puskesmasName = "-",
+    required this.breedingPlaces,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final kkName = entry.kkNameController.text.trim().isEmpty
+        ? '-'
+        : entry.kkNameController.text.trim();
+    final rt = entry.rtController.text.trim().isEmpty
+        ? '-'
+        : entry.rtController.text.trim();
+    final rw = entry.rwController.text.trim().isEmpty
+        ? '-'
+        : entry.rwController.text.trim();
+
+    List<String> placeNames = [];
+    if (entry.isPositive == true) {
+      for (var pId in entry.selectedPlaceIds) {
+        if (pId != null && pId.isNotEmpty) {
+          final found = breedingPlaces.firstWhere(
+            (p) => p['id'] == pId,
+            orElse: () => {'name': pId},
+          );
+          placeNames.add(found['name'] as String);
+        }
+      }
+    }
+
+    final positiveCount =
+        entry.positivePlacesCountController.text.trim().isEmpty
+        ? '-'
+        : entry.positivePlacesCountController.text.trim();
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 12,
+      backgroundColor: Colors.white,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header Bar
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE8F5E9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.home_work_rounded,
+                    color: Color(0xFF27AE60),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Detail Rumah / KK',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF10365F),
+                        ),
+                      ),
+                      Text(
+                        'Data lengkap entri ke-${idx + 1}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Details List
+            _buildDetailRow(
+              icon: Icons.person_outline,
+              label: 'No - Nama KK',
+              value: '#${idx + 1} - $kkName',
+              isBold: true,
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              icon: Icons.calendar_today_outlined,
+              label: 'Tanggal Laporan',
+              value: DateFormat('dd/MM/yyyy').format(reportDate),
+            ),
+            const SizedBox(height: 12),
+
+            _buildDetailRow(
+              icon: Icons.location_on_outlined,
+              label: 'RT / RW',
+              value: 'RT $rt / RW $rw',
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              icon: Icons.holiday_village_outlined,
+              label: 'Desa',
+              value: villageName,
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              icon: Icons.local_hospital_outlined,
+              label: 'Puskesmas',
+              value: puskesmasName,
+            ),
+            const SizedBox(height: 12),
+            // Status Badge
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.bug_report_outlined,
+                  size: 18,
+                  color: Color(0xFF10365F),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 130,
+                  child: Text(
+                    'Status',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: entry.isPositive == true
+                      ? Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEBEE),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFCDD2),
+                              ),
+                            ),
+                            child: Text(
+                              'Ada Jentik (Positif)',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFD32F2F),
+                              ),
+                            ),
+                          ),
+                        )
+                      : entry.isPositive == false
+                      ? Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFC8E6C9),
+                              ),
+                            ),
+                            child: Text(
+                              'Bebas Jentik (Nihil)',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF27AE60),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          '-',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              icon: Icons.place_outlined,
+              label: 'Tempat Positif Jentik',
+              value: placeNames.isEmpty ? '-' : placeNames.join(', '),
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              icon: Icons.format_list_numbered_outlined,
+              label: 'Jumlah Tempat Positif',
+              value: entry.isPositive == true
+                  ? (positiveCount == '-' ? '-' : '$positiveCount wadah/tempat')
+                  : '-',
+            ),
+            const SizedBox(height: 18),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Actions (Aksi)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Hapus',
+                      style: GoogleFonts.outfit(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Edit Data',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2980B9),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isBold = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF10365F)),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 130,
+          child: Text(
+            label,
+            style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey[600]),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: const Color(0xFF10365F),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+void _showKkEditDialog({
+  required BuildContext context,
+  required HouseReportEntry entry,
+  required int idx,
+  required List<Map<String, dynamic>> breedingPlaces,
+  required VoidCallback onSaved,
+}) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Edit Data KK',
+    barrierColor: Colors.black.withValues(alpha: 0.54),
+    transitionDuration: const Duration(milliseconds: 350),
+    pageBuilder: (ctx, anim1, anim2) => const SizedBox(),
+    transitionBuilder: (ctx, anim1, anim2, child) {
+      final scaleAnim = Tween<double>(
+        begin: 0.2,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutBack));
+      final fadeAnim = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut));
+
+      return ScaleTransition(
+        scale: scaleAnim,
+        child: FadeTransition(
+          opacity: fadeAnim,
+          child: _KkEditDialogWidget(
+            entry: entry,
+            idx: idx,
+            breedingPlaces: breedingPlaces,
+            onSaved: onSaved,
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _KkEditDialogWidget extends StatefulWidget {
+  final HouseReportEntry entry;
+  final int idx;
+  final List<Map<String, dynamic>> breedingPlaces;
+  final VoidCallback onSaved;
+
+  const _KkEditDialogWidget({
+    required this.entry,
+    required this.idx,
+    required this.breedingPlaces,
+    required this.onSaved,
+  });
+
+  @override
+  State<_KkEditDialogWidget> createState() => _KkEditDialogWidgetState();
+}
+
+class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
+  late TextEditingController _nameController;
+  late TextEditingController _rtController;
+  late TextEditingController _rwController;
+  late TextEditingController _positiveCountController;
+  late bool? _isPositive;
+  late List<String?> _selectedPlaceIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.entry.kkNameController.text,
+    );
+    _rtController = TextEditingController(text: widget.entry.rtController.text);
+    _rwController = TextEditingController(text: widget.entry.rwController.text);
+    _positiveCountController = TextEditingController(
+      text: widget.entry.positivePlacesCountController.text,
+    );
+    _isPositive = widget.entry.isPositive;
+    _selectedPlaceIds = widget.entry.selectedPlaceIds.isEmpty
+        ? [null]
+        : List<String?>.from(widget.entry.selectedPlaceIds);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _rtController.dispose();
+    _rwController.dispose();
+    _positiveCountController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    widget.entry.kkNameController.text = _nameController.text.trim();
+    widget.entry.rtController.text = _rtController.text.trim();
+    widget.entry.rwController.text = _rwController.text.trim();
+    widget.entry.isPositive = _isPositive;
+    if (_isPositive == true) {
+      widget.entry.selectedPlaceIds = _selectedPlaceIds
+          .whereType<String>()
+          .toList();
+      widget.entry.positivePlacesCountController.text = _positiveCountController
+          .text
+          .trim();
+    } else {
+      widget.entry.selectedPlaceIds = [];
+      widget.entry.positivePlacesCountController.clear();
+    }
+
+    Navigator.of(context).pop();
+    widget.onSaved();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Data KK ke-${widget.idx + 1} berhasil diperbarui'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF27AE60),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 12,
+      backgroundColor: Colors.white,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 600),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header Bar
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE3F2FD),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.edit_note_rounded,
+                    color: Color(0xFF2980B9),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Form Edit Data KK',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF10365F),
+                        ),
+                      ),
+                      Text(
+                        'Edit data entri ke-${widget.idx + 1}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Form Inputs in SingleChildScrollView
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nama KK
+                    Text(
+                      'Nama Kepala Keluarga (KK)',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF10365F),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: 'Nama KK',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // RT / RW side-by-side
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'RT',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF10365F),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _rtController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '00',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'RW',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF10365F),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _rwController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '00',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Status Option (Positif / Nihil)
+                    Text(
+                      'Hasil Pemeriksaan Jentik',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF10365F),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isPositive = true;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isPositive == true
+                                    ? const Color(0xFFFFEBEE)
+                                    : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _isPositive == true
+                                      ? const Color(0xFFE53935)
+                                      : Colors.grey[300]!,
+                                  width: _isPositive == true ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Positif Jentik',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _isPositive == true
+                                        ? const Color(0xFFD32F2F)
+                                        : Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isPositive = false;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isPositive == false
+                                    ? const Color(0xFFE8F5E9)
+                                    : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _isPositive == false
+                                      ? const Color(0xFF27AE60)
+                                      : Colors.grey[300]!,
+                                  width: _isPositive == false ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Bebas Jentik (Nihil)',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _isPositive == false
+                                        ? const Color(0xFF27AE60)
+                                        : Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Conditional Breeding Places section if _isPositive == true
+                    if (_isPositive == true) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Tempat Positif Jentik',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF10365F),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedPlaceIds.add(null);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF27AE60),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Column(
+                        children: List.generate(
+                          _selectedPlaceIds.length,
+                          (pIdx) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 38,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.white,
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value:
+                                            (widget.breedingPlaces.any(
+                                              (item) =>
+                                                  item['id'] ==
+                                                  _selectedPlaceIds[pIdx],
+                                            ))
+                                            ? _selectedPlaceIds[pIdx]
+                                            : null,
+                                        isExpanded: true,
+                                        isDense: true,
+                                        hint: Text(
+                                          'Pilih tempat jentik',
+                                          style: GoogleFonts.outfit(
+                                            color: Colors.grey[500],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        items: widget.breedingPlaces
+                                            .map(
+                                              (place) =>
+                                                  DropdownMenuItem<String>(
+                                                    value:
+                                                        place['id'] as String,
+                                                    child: Text(
+                                                      place['name'] as String,
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                            )
+                                            .toList(),
+                                        onChanged: (val) {
+                                          setState(() {
+                                            _selectedPlaceIds[pIdx] = val;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (_selectedPlaceIds.length > 1) ...[
+                                  const SizedBox(width: 4),
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedPlaceIds.removeAt(pIdx);
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red[50],
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Jumlah tempat positif
+                      Text(
+                        'Jumlah Tempat Positif',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF10365F),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _positiveCountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Jumlah wadah/tempat',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Actions (Batal & Simpan)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey[400]!),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Batal',
+                      style: GoogleFonts.outfit(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _save,
+                    icon: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Simpan Perubahan',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF27AE60),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+List<HouseReportEntry> _parseHouseEntriesFromReports(List<Report> reports) {
+  final result = <HouseReportEntry>[];
+  final seenNames = <String>{};
+
+  for (var rep in reports) {
+    if (rep.notes == null || rep.notes!.trim().isEmpty) continue;
+    final blocks = rep.notes!.split('--- KK');
+    for (var block in blocks) {
+      if (block.trim().isEmpty) continue;
+      final entry = HouseReportEntry();
+      final lines = block.split('\n');
+      for (var line in lines) {
+        final t = line.trim();
+        if (t.startsWith('Nama KK: ')) {
+          entry.kkNameController.text = t.substring(9).trim();
+        } else if (t.startsWith('RT/RW: ')) {
+          final parts = t.substring(7).split('/');
+          if (parts.length == 2) {
+            entry.rtController.text = parts[0].trim();
+            entry.rwController.text = parts[1].trim();
+          }
+        } else if (t.startsWith('Hasil: ')) {
+          final res = t.substring(7);
+          if (res.contains('Ada Jentik') || res.contains('Positif')) {
+            entry.isPositive = true;
+          } else if (res.contains('Nihil')) {
+            entry.isPositive = false;
+          }
+        } else if (t.startsWith('Jumlah: ')) {
+          entry.positivePlacesCountController.text = t.substring(8).trim();
+        }
+      }
+      final name = entry.kkNameController.text.trim();
+      if (name.isNotEmpty && !seenNames.contains(name.toLowerCase())) {
+        seenNames.add(name.toLowerCase());
+        result.add(entry);
+      }
+    }
+  }
+  return result;
+}
+
+List<HouseReportEntry> _getDefaultInitialHouseEntries() {
+  final e1 = HouseReportEntry(isPositive: false);
+  e1.kkNameController.text = 'Eko Setyo';
+  e1.rtController.text = '09';
+  e1.rwController.text = '03';
+
+  final e2 = HouseReportEntry(isPositive: true);
+  e2.kkNameController.text = 'Budi Santoso';
+  e2.rtController.text = '02';
+  e2.rwController.text = '01';
+  e2.positivePlacesCountController.text = '1';
+
+  final e3 = HouseReportEntry(isPositive: false);
+  e3.kkNameController.text = 'Ahmad Dahlan';
+  e3.rtController.text = '05';
+  e3.rwController.text = '02';
+
+  return [e1, e2, e3];
 }
