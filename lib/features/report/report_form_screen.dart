@@ -21,8 +21,17 @@ class HouseReportEntry {
       TextEditingController();
   bool? isPositive;
   bool isEditing = false;
+  DateTime? reportDate;
+  String? villageName;
+  String? posyanduName;
 
-  HouseReportEntry({this.isPositive, this.isEditing = false});
+  HouseReportEntry({
+    this.isPositive,
+    this.isEditing = false,
+    this.reportDate,
+    this.villageName,
+    this.posyanduName,
+  });
 
   String? get selectedPlaceId =>
       selectedPlaceIds.isNotEmpty ? selectedPlaceIds.first : null;
@@ -114,22 +123,36 @@ class ReportFormScreen extends HookConsumerWidget {
     final villagesAsync = ref.watch(villagesProvider);
     final posyandusAsync = selectedVillageId.value != null
         ? ref.watch(posyandusByVillageProvider(selectedVillageId.value!))
-        : const AsyncValue.data(<Posyandu>[]);
+        : ref.watch(allPosyandusProvider);
     final breedingPlacesAsync = ref.watch(breedingPlacesProvider);
 
     final selectedVillageName = villagesAsync.maybeWhen(
       data: (villages) {
-        if (selectedVillageId.value == null) return null;
-        final found = villages.firstWhere(
-          (v) => v.id == selectedVillageId.value,
-          orElse: () => Village(id: '', name: ''),
-        );
-        return found.name.isNotEmpty ? found.name : null;
+        if (selectedVillageId.value != null && villages.isNotEmpty) {
+          final found = villages.firstWhere(
+            (v) => v.id == selectedVillageId.value,
+            orElse: () => Village(id: '', name: ''),
+          );
+          if (found.name.isNotEmpty) return found.name;
+        }
+        return 'Semua Desa';
       },
-      orElse: () => null,
+      orElse: () => 'Semua Desa',
     );
 
-    final puskesmasName = 'Puskesmas Gumelar';
+    final selectedPosyanduName = posyandusAsync.maybeWhen(
+      data: (posyandus) {
+        if (selectedPosyanduId.value != null && posyandus.isNotEmpty) {
+          final found = posyandus.firstWhere(
+            (p) => p.id == selectedPosyanduId.value,
+            orElse: () => Posyandu(id: '', rwId: '', name: ''),
+          );
+          if (found.name.isNotEmpty) return found.name;
+        }
+        return 'Semua Posyandu';
+      },
+      orElse: () => 'Semua Posyandu',
+    );
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
@@ -143,10 +166,14 @@ class ReportFormScreen extends HookConsumerWidget {
       final status = entry.isPositive == true
           ? 'positif ada jentik'
           : (entry.isPositive == false ? 'nihil bebas jentik' : '');
+      final vName = (entry.villageName ?? '').toLowerCase();
+      final pName = (entry.posyanduName ?? '').toLowerCase();
       return name.contains(q) ||
           rt.contains(q) ||
           rw.contains(q) ||
-          status.contains(q);
+          status.contains(q) ||
+          vName.contains(q) ||
+          pName.contains(q);
     }).toList();
 
     // Initialize data when explicit initialReport is passed
@@ -177,7 +204,11 @@ class ReportFormScreen extends HookConsumerWidget {
           final blocks = initialReport!.notes!.split('--- KK');
           for (var block in blocks) {
             if (block.trim().isEmpty) continue;
-            final entry = HouseReportEntry();
+            final entry = HouseReportEntry(
+              reportDate: initialReport!.reportDate,
+              villageName: initialReport!.villageName,
+              posyanduName: initialReport!.posyanduName,
+            );
             final lines = block.split('\n');
             for (var line in lines) {
               final t = line.trim();
@@ -239,6 +270,7 @@ class ReportFormScreen extends HookConsumerWidget {
       };
     }, [initialReport, userProfileAsync.value]);
 
+
     // Auto-populate houseEntries by default with previous submitted KK entries or default samples
     useEffect(() {
       if (initialReport != null) return null;
@@ -286,7 +318,11 @@ class ReportFormScreen extends HookConsumerWidget {
             final blocks = latestReport.notes!.split('--- KK');
             for (var block in blocks) {
               if (block.trim().isEmpty) continue;
-              final entry = HouseReportEntry();
+              final entry = HouseReportEntry(
+                reportDate: latestReport.reportDate,
+                villageName: latestReport.villageName,
+                posyanduName: latestReport.posyanduName,
+              );
               final lines = block.split('\n');
               for (var line in lines) {
                 final t = line.trim();
@@ -381,11 +417,24 @@ class ReportFormScreen extends HookConsumerWidget {
       // Automatically add top form fields if user filled them without pressing "Entri Laporan"
       if (tempKkNameController.text.trim().isNotEmpty ||
           tempHasilPemeriksaan.value != null) {
+        final entryVillage =
+            (selectedVillageName != null && selectedVillageName != 'Semua Desa')
+                ? selectedVillageName
+                : 'Gumelar';
+        final entryPosyandu =
+            (selectedPosyanduName != null &&
+                    selectedPosyanduName != 'Semua Posyandu')
+                ? selectedPosyanduName
+                : 'Posyandu Bina Laju Sejahtera 4';
+
         final newEntry = HouseReportEntry(
           isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
               ? true
               : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
           isEditing: false,
+          reportDate: reportDate.value,
+          villageName: entryVillage,
+          posyanduName: entryPosyandu,
         );
         if (tempKkNameController.text.trim().isNotEmpty) {
           newEntry.kkNameController.text = tempKkNameController.text.trim();
@@ -415,13 +464,15 @@ class ReportFormScreen extends HookConsumerWidget {
         tempHasilPemeriksaan.value = null;
         tempSelectedPlaceIds.value = [null];
         tempPositiveCountController.clear();
+        searchQuery.value = '';
+        searchController.clear();
       }
 
       if (houseEntries.value.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Silakan isi dan tambahkan data rumah yang diperiksa terlebih dahulu!',
+              'Silakan isi Nama KK / Hasil Pemeriksaan terlebih dahulu!',
             ),
             backgroundColor: Colors.orange,
           ),
@@ -490,7 +541,7 @@ class ReportFormScreen extends HookConsumerWidget {
                 notes: notesBuffer.toString(),
               );
         } else {
-          await ref
+          final newId = await ref
               .read(reportRepositoryProvider)
               .submitReport(
                 posyanduId: selectedPosyanduId.value!,
@@ -500,6 +551,7 @@ class ReportFormScreen extends HookConsumerWidget {
                 reportDate: reportDate.value,
                 notes: notesBuffer.toString(),
               );
+          activeReportId.value = newId;
         }
 
         if (context.mounted) {
@@ -507,8 +559,8 @@ class ReportFormScreen extends HookConsumerWidget {
             SnackBar(
               content: Text(
                 isEditMode
-                    ? 'Laporan berhasil diperbarui!'
-                    : 'Laporan berhasil disimpan!',
+                    ? 'Laporan berhasil diperbarui dan tersimpan!'
+                    : 'Laporan berhasil dikirim dan tersimpan!',
               ),
               backgroundColor: const Color(0xFF27AE60),
             ),
@@ -517,7 +569,6 @@ class ReportFormScreen extends HookConsumerWidget {
           ref.invalidate(allReportsProvider);
           ref.invalidate(pendingVerificationCountProvider);
           ref.invalidate(interventionCountProvider);
-          context.pop();
         }
       } catch (e) {
         if (context.mounted) {
@@ -527,154 +578,6 @@ class ReportFormScreen extends HookConsumerWidget {
               backgroundColor: Colors.redAccent,
             ),
           );
-        }
-      } finally {
-        isLoading.value = false;
-      }
-    }
-
-    Future<void> handleSaveDraft() async {
-      if (selectedVillageId.value == null || selectedPosyanduId.value == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Silakan pilih Desa dan Posyandu terlebih dahulu untuk menyimpan draft!',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (tempKkNameController.text.trim().isNotEmpty ||
-          tempHasilPemeriksaan.value != null) {
-        final newEntry = HouseReportEntry(
-          isPositive: tempHasilPemeriksaan.value == 'Ada Jentik (Positif)'
-              ? true
-              : (tempHasilPemeriksaan.value == 'Nihil' ? false : null),
-          isEditing: false,
-        );
-        if (tempKkNameController.text.trim().isNotEmpty) {
-          newEntry.kkNameController.text = tempKkNameController.text.trim();
-        }
-        if (tempRtRwController.text.trim().isNotEmpty &&
-            tempRtRwController.text.trim() != '- / -') {
-          final parts = tempRtRwController.text.trim().split('/');
-          if (parts.isNotEmpty) newEntry.rtController.text = parts[0].trim();
-          if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
-        }
-        if (tempHasilPemeriksaan.value == 'Ada Jentik (Positif)') {
-          final validPlaces = tempSelectedPlaceIds.value
-              .whereType<String>()
-              .toList();
-          if (validPlaces.isNotEmpty) {
-            newEntry.selectedPlaceIds = validPlaces;
-          }
-          if (tempPositiveCountController.text.trim().isNotEmpty) {
-            newEntry.positivePlacesCountController.text =
-                tempPositiveCountController.text.trim();
-          }
-        }
-        houseEntries.value = [...houseEntries.value, newEntry];
-
-        tempKkNameController.clear();
-        tempRtRwController.clear();
-        tempHasilPemeriksaan.value = null;
-        tempSelectedPlaceIds.value = [null];
-        tempPositiveCountController.clear();
-      }
-
-      isLoading.value = true;
-      try {
-        StringBuffer notesBuffer = StringBuffer();
-        List<String> allBreedingPlaceIds = [];
-
-        int housesInspected = houseEntries.value.length;
-        int housesPositive = 0;
-
-        for (int i = 0; i < houseEntries.value.length; i++) {
-          final entry = houseEntries.value[i];
-          final isPos = entry.isPositive == true;
-          if (isPos) housesPositive++;
-
-          notesBuffer.writeln('--- KK ${i + 1} ---');
-          notesBuffer.writeln('Nama KK: ${entry.kkNameController.text.trim()}');
-          notesBuffer.writeln(
-            'RT/RW: ${entry.rtController.text.trim()}/${entry.rwController.text.trim()}',
-          );
-          notesBuffer.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
-
-          if (isPos) {
-            final breedingPlaces = breedingPlacesAsync.value ?? [];
-            List<String> placeNames = [];
-            for (var pId in entry.selectedPlaceIds) {
-              if (pId != null && pId.isNotEmpty) {
-                allBreedingPlaceIds.add(pId);
-                final found = breedingPlaces.firstWhere(
-                  (p) => p['id'] == pId,
-                  orElse: () => {'name': '-'},
-                );
-                placeNames.add(found['name'] as String);
-              }
-            }
-            notesBuffer.writeln(
-              'Tempat: ${placeNames.isEmpty ? '-' : placeNames.join(', ')}',
-            );
-            notesBuffer.writeln(
-              'Jumlah: ${entry.positivePlacesCountController.text.trim()}',
-            );
-          } else {
-            notesBuffer.writeln('Tempat: -');
-            notesBuffer.writeln('Jumlah: 0');
-          }
-          notesBuffer.writeln('');
-        }
-
-        final targetReportId = activeReportId.value ?? initialReport?.id;
-        final isEditMode = targetReportId != null;
-
-        if (isEditMode) {
-          await ref
-              .read(reportRepositoryProvider)
-              .updateReport(
-                reportId: targetReportId,
-                housesInspected: housesInspected,
-                housesPositive: housesPositive,
-                breedingPlaceIds: allBreedingPlaceIds,
-                reportDate: reportDate.value,
-                notes: notesBuffer.toString(),
-                status: 'draft',
-              );
-        } else {
-          await ref
-              .read(reportRepositoryProvider)
-              .submitReport(
-                posyanduId: selectedPosyanduId.value!,
-                housesInspected: housesInspected,
-                housesPositive: housesPositive,
-                breedingPlaceIds: allBreedingPlaceIds,
-                reportDate: reportDate.value,
-                notes: notesBuffer.toString(),
-                status: 'draft',
-              );
-        }
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Laporan berhasil disimpan sebagai Draft!'),
-              backgroundColor: Color(0xFF2980B9),
-            ),
-          );
-          ref.invalidate(myReportsProvider);
-          ref.invalidate(allReportsProvider);
-          context.pop();
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Gagal menyimpan draft: $e')));
         }
       } finally {
         isLoading.value = false;
@@ -824,20 +727,29 @@ class ReportFormScreen extends HookConsumerWidget {
                                   icon: Icons.location_on,
                                   child: _buildDropdown(
                                     value: selectedVillageId.value,
-                                    hint: 'Pilih Desa',
+                                    hint: 'Semua Desa',
                                     isLoading: villagesAsync.isLoading,
                                     items: villagesAsync.maybeWhen(
                                       data: (villages) {
-                                        return villages
-                                            .map(
-                                              (v) => DropdownMenuItem(
-                                                value: v.id,
-                                                child: Text(v.name),
-                                              ),
-                                            )
-                                            .toList();
+                                        return [
+                                          const DropdownMenuItem<String?>(
+                                            value: null,
+                                            child: Text('Semua Desa'),
+                                          ),
+                                          ...villages.map(
+                                            (v) => DropdownMenuItem<String?>(
+                                              value: v.id,
+                                              child: Text(v.name),
+                                            ),
+                                          ),
+                                        ];
                                       },
-                                      orElse: () => [],
+                                      orElse: () => [
+                                        const DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text('Semua Desa'),
+                                        ),
+                                      ],
                                     ),
                                     onChanged: (val) {
                                       selectedVillageId.value = val;
@@ -850,22 +762,29 @@ class ReportFormScreen extends HookConsumerWidget {
                                   icon: Icons.people,
                                   child: _buildDropdown(
                                     value: selectedPosyanduId.value,
-                                    hint: selectedVillageId.value == null
-                                        ? 'Pilih Desa Terlebih Dahulu'
-                                        : 'Pilih Posyandu',
+                                    hint: 'Semua Posyandu',
                                     isLoading: posyandusAsync.isLoading,
                                     items: posyandusAsync.maybeWhen(
                                       data: (posyandus) {
-                                        return posyandus
-                                            .map(
-                                              (p) => DropdownMenuItem(
-                                                value: p.id,
-                                                child: Text(p.name),
-                                              ),
-                                            )
-                                            .toList();
+                                        return [
+                                          const DropdownMenuItem<String?>(
+                                            value: null,
+                                            child: Text('Semua Posyandu'),
+                                          ),
+                                          ...posyandus.map(
+                                            (p) => DropdownMenuItem<String?>(
+                                              value: p.id,
+                                              child: Text(p.name),
+                                            ),
+                                          ),
+                                        ];
                                       },
-                                      orElse: () => [],
+                                      orElse: () => [
+                                        const DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text('Semua Posyandu'),
+                                        ),
+                                      ],
                                     ),
                                     onChanged: (val) =>
                                         selectedPosyanduId.value = val,
@@ -1566,26 +1485,21 @@ class ReportFormScreen extends HookConsumerWidget {
                                                     children: [
                                                       Text(
                                                         'Jumlah Tempat Positif',
-                                                        style:
-                                                            GoogleFonts.outfit(
-                                                              fontSize: 12,
-                                                              color:
-                                                                  const Color(
-                                                                    0xFF10365F,
-                                                                  ),
-                                                            ),
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 12,
+                                                          color: const Color(
+                                                            0xFF10365F,
+                                                          ),
+                                                        ),
                                                       ),
                                                       Text(
                                                         '(DALAM SATU TEMPAT YANG DIPERIKSA)',
-                                                        style:
-                                                            GoogleFonts.outfit(
-                                                              fontSize: 9,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .normal,
-                                                            ),
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 9,
+                                                          color: Colors.grey[600],
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -1965,88 +1879,26 @@ class ReportFormScreen extends HookConsumerWidget {
                                     ],
                                   ),
                             const SizedBox(height: 16),
-                            Align(
+                             Align(
                               alignment: Alignment.centerRight,
                               child: ElevatedButton.icon(
-                                onPressed: () {
-                                  final newEntry = HouseReportEntry(
-                                    isPositive:
-                                        tempHasilPemeriksaan.value ==
-                                            'Ada Jentik (Positif)'
-                                        ? true
-                                        : (tempHasilPemeriksaan.value == 'Nihil'
-                                              ? false
-                                              : null),
-                                    isEditing: false,
-                                  );
-                                  if (tempKkNameController.text
-                                      .trim()
-                                      .isNotEmpty) {
-                                    newEntry.kkNameController.text =
-                                        tempKkNameController.text.trim();
-                                  }
-                                  if (tempRtRwController.text
-                                          .trim()
-                                          .isNotEmpty &&
-                                      tempRtRwController.text.trim() !=
-                                          '- / -') {
-                                    final parts = tempRtRwController.text
-                                        .trim()
-                                        .split('/');
-                                    if (parts.isNotEmpty) {
-                                      newEntry.rtController.text = parts[0]
-                                          .trim();
-                                    }
-                                    if (parts.length >= 2) {
-                                      newEntry.rwController.text = parts[1]
-                                          .trim();
-                                    }
-                                  }
-                                  if (tempHasilPemeriksaan.value ==
-                                      'Ada Jentik (Positif)') {
-                                    final validPlaces = tempSelectedPlaceIds
-                                        .value
-                                        .whereType<String>()
-                                        .toList();
-                                    if (validPlaces.isNotEmpty) {
-                                      newEntry.selectedPlaceIds = validPlaces;
-                                    }
-                                    if (tempPositiveCountController.text
-                                        .trim()
-                                        .isNotEmpty) {
-                                      newEntry
-                                          .positivePlacesCountController
-                                          .text = tempPositiveCountController
-                                          .text
-                                          .trim();
-                                    }
-                                  }
-
-                                  houseEntries.value = [
-                                    ...houseEntries.value,
-                                    newEntry,
-                                  ];
-
-                                  tempKkNameController.clear();
-                                  tempRtRwController.clear();
-                                  tempHasilPemeriksaan.value = null;
-                                  tempSelectedPlaceIds.value = [null];
-                                  tempPositiveCountController.clear();
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Laporan berhasil di-entri ke daftar',
+                                onPressed: isLoading.value
+                                    ? null
+                                    : () => handleSubmit(),
+                                icon: isLoading.value
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.send,
+                                        color: Colors.white,
+                                        size: 18,
                                       ),
-                                      duration: Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
                                 label: Text(
                                   'Entri Laporan',
                                   style: GoogleFonts.outfit(
@@ -2269,10 +2121,10 @@ class ReportFormScreen extends HookConsumerWidget {
                                             color: Color(0xFFC8E6C9),
                                           ),
                                           Expanded(
-                                            flex: 3,
+                                            flex: 4,
                                             child: Center(
                                               child: Text(
-                                                'Desa/Puskesmas',
+                                                'Desa / Posyandu',
                                                 textAlign: TextAlign.center,
                                                 style: GoogleFonts.outfit(
                                                   fontWeight: FontWeight.bold,
@@ -2351,8 +2203,9 @@ class ReportFormScreen extends HookConsumerWidget {
                                             child: Center(
                                               child: Text(
                                                 DateFormat(
-                                                  'dd/MM/yyyy',
-                                                ).format(reportDate.value),
+                                                  'dd MMM yyyy',
+                                                  'id_ID',
+                                                ).format(entry.reportDate ?? DateTime.now()),
                                                 style: GoogleFonts.outfit(
                                                   fontSize: 12,
                                                 ),
@@ -2380,12 +2233,10 @@ class ReportFormScreen extends HookConsumerWidget {
                                                     entry: entry,
                                                     idx: idx,
                                                     reportDate:
+                                                        entry.reportDate ??
                                                         reportDate.value,
-                                                    villageName:
-                                                        selectedVillageName ??
-                                                        '-',
-                                                    puskesmasName:
-                                                        puskesmasName,
+                                                    villageName: entry.villageName ?? selectedVillageName ?? '-',
+                                                    posyanduName: entry.posyanduName ?? selectedPosyanduName ?? '-',
                                                     breedingPlaces:
                                                         breedingPlacesAsync
                                                             .value ??
@@ -2399,11 +2250,22 @@ class ReportFormScreen extends HookConsumerWidget {
                                                             breedingPlacesAsync
                                                                 .value ??
                                                             [],
-                                                        onSaved: () {
-                                                          houseEntries.value = [
-                                                            ...houseEntries
-                                                                .value,
-                                                          ];
+                                                        onSaved: ({
+                                                          required bool isNewHistory,
+                                                          HouseReportEntry? newEntry,
+                                                        }) {
+                                                          if (isNewHistory &&
+                                                              newEntry != null) {
+                                                            houseEntries.value = [
+                                                              ...houseEntries.value,
+                                                              newEntry,
+                                                            ];
+                                                          } else {
+                                                            houseEntries.value = [
+                                                              ...houseEntries.value,
+                                                            ];
+                                                          }
+                                                          handleSubmit();
                                                         },
                                                       );
                                                     },
@@ -2425,6 +2287,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                                       entry.dispose();
                                                       houseEntries.value =
                                                           newList;
+                                                      handleSubmit();
                                                     },
                                                   );
                                                 },
@@ -2491,9 +2354,9 @@ class ReportFormScreen extends HookConsumerWidget {
                                             thickness: 1,
                                             color: Color(0xFFC8E6C9),
                                           ),
-                                          // Desa/Puskesmas Column
+                                          // Desa/Posyandu Column
                                           Expanded(
-                                            flex: 3,
+                                            flex: 4,
                                             child: Center(
                                               child: Column(
                                                 mainAxisAlignment:
@@ -2501,12 +2364,14 @@ class ReportFormScreen extends HookConsumerWidget {
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Text(
-                                                    (selectedVillageName !=
-                                                                null &&
-                                                            selectedVillageName
-                                                                .isNotEmpty)
-                                                        ? selectedVillageName
-                                                        : '-',
+                                                    (entry.villageName != null &&
+                                                            entry.villageName!.isNotEmpty &&
+                                                            entry.villageName != 'Semua Desa')
+                                                        ? entry.villageName!
+                                                        : ((selectedVillageName != null &&
+                                                                selectedVillageName != 'Semua Desa')
+                                                            ? selectedVillageName
+                                                            : 'Gumelar'),
                                                     style: GoogleFonts.outfit(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -2516,12 +2381,18 @@ class ReportFormScreen extends HookConsumerWidget {
                                                       ),
                                                     ),
                                                     textAlign: TextAlign.center,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                                    softWrap: true,
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
-                                                    puskesmasName,
+                                                    (entry.posyanduName != null &&
+                                                            entry.posyanduName!.isNotEmpty &&
+                                                            entry.posyanduName != 'Semua Posyandu')
+                                                        ? entry.posyanduName!
+                                                        : ((selectedPosyanduName != null &&
+                                                                selectedPosyanduName != 'Semua Posyandu')
+                                                            ? selectedPosyanduName
+                                                            : 'Posyandu Bina Laju Sejahtera 4'),
                                                     style: GoogleFonts.outfit(
                                                       fontSize: 10,
                                                       fontWeight:
@@ -2529,8 +2400,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                                       color: Colors.grey[600],
                                                     ),
                                                     textAlign: TextAlign.center,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                                    softWrap: true,
                                                   ),
                                                 ],
                                               ),
@@ -2638,71 +2508,28 @@ class ReportFormScreen extends HookConsumerWidget {
                                       ),
                                     );
                                   }),
+                                  if (filteredEntries.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Center(
+                                        child: Text(
+                                          'Tidak ada data rumah yang sesuai dengan filter Desa / Posyandu atau pencarian.',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            color: Colors.grey[600],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
-
-                      // Bottom Actions
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: isLoading.value
-                                  ? null
-                                  : handleSaveDraft,
-                              icon: const Icon(
-                                Icons.save_outlined,
-                                color: Color(0xFF2980B9),
-                              ),
-                              label: Text(
-                                'SIMPAN DRAFT',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFF2980B9),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(0, 52),
-                                side: const BorderSide(
-                                  color: Color(0xFF2980B9),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: isLoading.value ? null : handleSubmit,
-                              icon: const Icon(Icons.send, color: Colors.white),
-                              label: Text(
-                                initialReport != null
-                                    ? 'UPDATE LAPORAN'
-                                    : 'KIRIM LAPORAN',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(0, 52),
-                                backgroundColor: const Color(0xFF27AE60),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -2748,7 +2575,7 @@ class ReportFormScreen extends HookConsumerWidget {
   Widget _buildDropdown({
     required String? value,
     required String hint,
-    required List<DropdownMenuItem<String>> items,
+    required List<DropdownMenuItem<String?>> items,
     required void Function(String?)? onChanged,
     bool isDense = false,
     bool isLoading = false,
@@ -2795,7 +2622,7 @@ class ReportFormScreen extends HookConsumerWidget {
         color: Colors.white,
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
+        child: DropdownButton<String?>(
           value: safeValue,
           itemHeight: null,
           menuMaxHeight: 400,
@@ -2827,7 +2654,7 @@ class ReportFormScreen extends HookConsumerWidget {
     required int idx,
     required DateTime reportDate,
     String villageName = "-",
-    String puskesmasName = "-",
+    String posyanduName = "-",
     required List<Map<String, dynamic>> breedingPlaces,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
@@ -2858,7 +2685,7 @@ class ReportFormScreen extends HookConsumerWidget {
               idx: idx,
               reportDate: reportDate,
               villageName: villageName,
-              puskesmasName: puskesmasName,
+              posyanduName: posyanduName,
               breedingPlaces: breedingPlaces,
               onEdit: () {
                 Navigator.of(ctx).pop();
@@ -2881,7 +2708,7 @@ class _KkDetailDialogWidget extends StatelessWidget {
   final int idx;
   final DateTime reportDate;
   final String villageName;
-  final String puskesmasName;
+  final String posyanduName;
   final List<Map<String, dynamic>> breedingPlaces;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -2891,7 +2718,7 @@ class _KkDetailDialogWidget extends StatelessWidget {
     required this.idx,
     required this.reportDate,
     this.villageName = "-",
-    this.puskesmasName = "-",
+    this.posyanduName = "-",
     required this.breedingPlaces,
     required this.onEdit,
     required this.onDelete,
@@ -2999,7 +2826,7 @@ class _KkDetailDialogWidget extends StatelessWidget {
             _buildDetailRow(
               icon: Icons.calendar_today_outlined,
               label: 'Tanggal Laporan',
-              value: DateFormat('dd/MM/yyyy').format(reportDate),
+              value: DateFormat('dd MMM yyyy', 'id_ID').format(reportDate),
             ),
             const SizedBox(height: 12),
 
@@ -3016,9 +2843,9 @@ class _KkDetailDialogWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildDetailRow(
-              icon: Icons.local_hospital_outlined,
-              label: 'Puskesmas',
-              value: puskesmasName,
+              icon: Icons.storefront_outlined,
+              label: 'Posyandu',
+              value: posyanduName,
             ),
             const SizedBox(height: 12),
             // Status Badge
@@ -3220,7 +3047,10 @@ void _showKkEditDialog({
   required HouseReportEntry entry,
   required int idx,
   required List<Map<String, dynamic>> breedingPlaces,
-  required VoidCallback onSaved,
+  required Function({
+    required bool isNewHistory,
+    HouseReportEntry? newEntry,
+  }) onSaved,
 }) {
   showGeneralDialog(
     context: context,
@@ -3259,7 +3089,10 @@ class _KkEditDialogWidget extends StatefulWidget {
   final HouseReportEntry entry;
   final int idx;
   final List<Map<String, dynamic>> breedingPlaces;
-  final VoidCallback onSaved;
+  final Function({
+    required bool isNewHistory,
+    HouseReportEntry? newEntry,
+  }) onSaved;
 
   const _KkEditDialogWidget({
     required this.entry,
@@ -3279,6 +3112,7 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
   late TextEditingController _positiveCountController;
   late bool? _isPositive;
   late List<String?> _selectedPlaceIds;
+  late DateTime _editReportDate;
 
   @override
   void initState() {
@@ -3295,6 +3129,7 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
     _selectedPlaceIds = widget.entry.selectedPlaceIds.isEmpty
         ? [null]
         : List<String?>.from(widget.entry.selectedPlaceIds);
+    _editReportDate = DateTime.now();
   }
 
   @override
@@ -3306,7 +3141,8 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
     super.dispose();
   }
 
-  void _save() {
+  void _saveAsUpdate() {
+    widget.entry.reportDate = _editReportDate;
     widget.entry.kkNameController.text = _nameController.text.trim();
     widget.entry.rtController.text = _rtController.text.trim();
     widget.entry.rwController.text = _rwController.text.trim();
@@ -3324,13 +3160,45 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
     }
 
     Navigator.of(context).pop();
-    widget.onSaved();
+    widget.onSaved(isNewHistory: false, newEntry: null);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Data KK ke-${widget.idx + 1} berhasil diperbarui'),
+        content: Text('Data KK ke-${widget.idx + 1} berhasil diperbarui!'),
         duration: const Duration(seconds: 2),
         backgroundColor: const Color(0xFF27AE60),
+      ),
+    );
+  }
+
+  void _saveAsNewHistory() {
+    final newEntry = HouseReportEntry(
+      reportDate: _editReportDate,
+      villageName: widget.entry.villageName,
+      posyanduName: widget.entry.posyanduName,
+      isPositive: _isPositive,
+      isEditing: false,
+    );
+    newEntry.kkNameController.text = _nameController.text.trim();
+    newEntry.rtController.text = _rtController.text.trim();
+    newEntry.rwController.text = _rwController.text.trim();
+    if (_isPositive == true) {
+      newEntry.selectedPlaceIds = _selectedPlaceIds
+          .whereType<String>()
+          .toList();
+      newEntry.positivePlacesCountController.text = _positiveCountController
+          .text
+          .trim();
+    }
+
+    Navigator.of(context).pop();
+    widget.onSaved(isNewHistory: true, newEntry: newEntry);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Berhasil ditambahkan sebagai riwayat pemeriksaan baru!'),
+        duration: Duration(seconds: 2),
+        backgroundColor: Color(0xFF27AE60),
       ),
     );
   }
@@ -3404,6 +3272,62 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Tanggal Pemeriksaan Ulang / Laporan
+                    Text(
+                      'Tanggal Pemeriksaan Ulang / Edit Laporan',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF10365F),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _editReportDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _editReportDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              DateFormat('dd MMMM yyyy', 'id_ID').format(_editReportDate),
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF10365F),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: Color(0xFF2980B9),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
                     // Nama KK
                     Text(
                       'Nama Kepala Keluarga (KK)',
@@ -3751,54 +3675,83 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
             const Divider(height: 1),
             const SizedBox(height: 14),
 
-            // Actions (Batal & Simpan)
-            Row(
+            // Actions (Simpan sbg Riwayat Baru / Update / Batal)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.grey[400]!),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                ElevatedButton.icon(
+                  onPressed: _saveAsNewHistory,
+                  icon: const Icon(
+                    Icons.history,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  label: Text(
+                    '+ Simpan Sbg Riwayat Baru (${DateFormat('dd MMM yyyy', 'id_ID').format(_editReportDate)})',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                    child: Text(
-                      'Batal',
-                      style: GoogleFonts.outfit(
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF27AE60),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    label: Text(
-                      'Simpan Perubahan',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey[400]!),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Batal',
+                          style: GoogleFonts.outfit(
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF27AE60),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _saveAsUpdate,
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        label: Text(
+                          'Update Data Ini',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2980B9),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -3809,7 +3762,11 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
   }
 }
 
-List<HouseReportEntry> _parseHouseEntriesFromReports(List<Report> reports) {
+List<HouseReportEntry> _parseHouseEntriesFromReports(
+  List<Report> reports, {
+  String? fallbackVillage,
+  String? fallbackPosyandu,
+}) {
   final result = <HouseReportEntry>[];
   final seenNames = <String>{};
 
@@ -3819,6 +3776,20 @@ List<HouseReportEntry> _parseHouseEntriesFromReports(List<Report> reports) {
     for (var block in blocks) {
       if (block.trim().isEmpty) continue;
       final entry = HouseReportEntry();
+      entry.reportDate = rep.reportDate;
+      entry.villageName =
+          (rep.villageName != null &&
+                  rep.villageName!.isNotEmpty &&
+                  rep.villageName != '-')
+              ? rep.villageName
+              : (fallbackVillage ?? 'Gumelar');
+      entry.posyanduName =
+          (rep.posyanduName != null &&
+                  rep.posyanduName!.isNotEmpty &&
+                  rep.posyanduName != '-')
+              ? rep.posyanduName
+              : (fallbackPosyandu ?? 'Posyandu Bina Laju Sejahtera 4');
+
       final lines = block.split('\n');
       for (var line in lines) {
         final t = line.trim();
@@ -3851,19 +3822,42 @@ List<HouseReportEntry> _parseHouseEntriesFromReports(List<Report> reports) {
   return result;
 }
 
-List<HouseReportEntry> _getDefaultInitialHouseEntries() {
-  final e1 = HouseReportEntry(isPositive: false);
+List<HouseReportEntry> _getDefaultInitialHouseEntries({
+  DateTime? defaultDate,
+  String? defaultVillage,
+  String? defaultPosyandu,
+}) {
+  final now = defaultDate ?? DateTime.now();
+  final vName = defaultVillage ?? 'Gumelar';
+  final pName = defaultPosyandu ?? 'Posyandu Bina Laju Sejahtera 4';
+
+  final e1 = HouseReportEntry(
+    isPositive: false,
+    reportDate: now,
+    villageName: vName,
+    posyanduName: pName,
+  );
   e1.kkNameController.text = 'Eko Setyo';
   e1.rtController.text = '09';
   e1.rwController.text = '03';
 
-  final e2 = HouseReportEntry(isPositive: true);
+  final e2 = HouseReportEntry(
+    isPositive: true,
+    reportDate: now,
+    villageName: vName,
+    posyanduName: pName,
+  );
   e2.kkNameController.text = 'Budi Santoso';
   e2.rtController.text = '02';
   e2.rwController.text = '01';
   e2.positivePlacesCountController.text = '1';
 
-  final e3 = HouseReportEntry(isPositive: false);
+  final e3 = HouseReportEntry(
+    isPositive: false,
+    reportDate: now,
+    villageName: vName,
+    posyanduName: pName,
+  );
   e3.kkNameController.text = 'Ahmad Dahlan';
   e3.rtController.text = '05';
   e3.rwController.text = '02';

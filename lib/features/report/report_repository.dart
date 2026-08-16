@@ -111,7 +111,7 @@ class ReportRepository {
     }
   }
 
-  Future<void> submitReport({
+  Future<String> submitReport({
     required String posyanduId,
     required int housesInspected,
     required int housesPositive,
@@ -152,6 +152,8 @@ class ReportRepository {
 
       await _client.from('report_breeding_places').insert(junctionData);
     }
+
+    return reportId;
   }
 
   Future<Report?> getLatestReportByPosyandu(String posyanduId) async {
