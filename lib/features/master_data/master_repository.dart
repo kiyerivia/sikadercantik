@@ -39,7 +39,7 @@ class MasterRepository {
       Posyandu(id: '20000000-0000-0000-0002-000000000008', rwId: '30000000-0000-0000-0002-000000000014', name: 'Posyandu Laksono Utomo'),
       Posyandu(id: '20000000-0000-0000-0002-000000000009', rwId: '30000000-0000-0000-0002-000000000016', name: 'Posyandu Wijaya Kusuma'),
       Posyandu(id: '20000000-0000-0000-0002-000000000010', rwId: '30000000-0000-0000-0002-000000000017', name: 'Posyandu Budi Sasono 2'),
-      Posyandu(id: '20000000-0000-0000-0002-000000000011', rwId: '30000000-0000-0000-0002-000000000018', name: 'Posyandu Regil Rahayu'),
+      Posyandu(id: '20000000-0000-0000-0002-000000000011', rwId: '30000000-0000-0000-0002-000000000018', name: 'Posyandu Ragil Rahayu'),
     ],
     '10000000-0000-0000-0000-000000000003': [
       Posyandu(id: '20000000-0000-0000-0003-000000000001', rwId: '30000000-0000-0000-0003-000000000001', name: 'Posyandu Jatiwaluyo'),
@@ -117,13 +117,15 @@ class MasterRepository {
 
   static final List<Map<String, dynamic>> _fallbackBreedingPlaces = [
     {'id': '40000000-0000-0000-0000-000000000001', 'name': 'Bak Mandi / WC', 'is_active': true},
-    {'id': '40000000-0000-0000-0000-000000000002', 'name': 'Toren / Penampungan Air', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000002', 'name': 'Tempayan / Ember', 'is_active': true},
     {'id': '40000000-0000-0000-0000-000000000003', 'name': 'Vas Bunga / Pot', 'is_active': true},
-    {'id': '40000000-0000-0000-0000-000000000004', 'name': 'Ban Bekas / Kaleng', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000004', 'name': 'Toren / Penampungan Air', 'is_active': true},
     {'id': '40000000-0000-0000-0000-000000000005', 'name': 'Tatakan Dispenser / Kulkas', 'is_active': true},
-    {'id': '40000000-0000-0000-0000-000000000006', 'name': 'Sampah Plastik / Genangan Air', 'is_active': true},
-    {'id': '40000000-0000-0000-0000-000000000007', 'name': 'Sumur / Kolam Air', 'is_active': true},
-    {'id': '40000000-0000-0000-0000-000000000008', 'name': 'Lain-lain', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000006', 'name': 'Ban Bekas / Kaleng', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000007', 'name': 'Sampah Plastik / Genangan Air', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000008', 'name': 'Sumur / Kolam Air', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000009', 'name': 'Barang Bekas', 'is_active': true},
+    {'id': '40000000-0000-0000-0000-000000000010', 'name': 'Lain-lain', 'is_active': true},
   ];
 
   Future<List<Village>> getVillages() async {

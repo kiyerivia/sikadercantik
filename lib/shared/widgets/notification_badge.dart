@@ -135,7 +135,7 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Notification',
-      barrierColor: Colors.black.withOpacity(0.05),
+      barrierColor: Colors.black.withValues(alpha: 0.05),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, anim1, anim2) {
         return Align(
@@ -151,7 +151,7 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
                   border: Border.all(color: Colors.blue[50]!),
                 ),
@@ -242,8 +242,8 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
                                 return Container(
                                   decoration: BoxDecoration(
                                     color: isRepaired 
-                                        ? Colors.green.withOpacity(0.08)
-                                        : (isUnread ? Colors.blue.withOpacity(0.05) : Colors.transparent),
+                                        ? Colors.green.withValues(alpha: 0.08)
+                                        : (isUnread ? Colors.blue.withValues(alpha: 0.05) : Colors.transparent),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: ListTile(

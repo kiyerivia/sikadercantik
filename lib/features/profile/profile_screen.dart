@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
                 // Avatar
                 CircleAvatar(
                   radius: 56,
-                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                  backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.person,
                     size: 60,
@@ -56,9 +56,9 @@ class ProfileScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withOpacity(0.1),
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _getRoleLabel(profile?.role ?? ''),
@@ -79,7 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),

@@ -54,12 +54,12 @@ class ReportDetailScreen extends ConsumerWidget {
                   ),
                   Text(
                     report.villageName ?? '-',
-                    style: GoogleFonts.outfit(fontSize: 16, color: Colors.white.withOpacity(0.8)),
+                    style: GoogleFonts.outfit(fontSize: 16, color: Colors.white.withValues(alpha: 0.8)),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(report.reportDate),
-                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
                   ),
                 ],
               ),
@@ -92,7 +92,7 @@ class ReportDetailScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                     ),
                     child: Text(
                       (report.notes == null || report.notes!.trim().isEmpty || report.notes == '-') 
@@ -197,15 +197,15 @@ class ReportDetailScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Text(value, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: GoogleFonts.outfit(fontSize: 10, color: color.withOpacity(0.8), fontWeight: FontWeight.w500)),
+            Text(label, style: GoogleFonts.outfit(fontSize: 10, color: color.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -227,9 +227,9 @@ class ReportDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

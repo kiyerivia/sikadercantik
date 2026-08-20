@@ -16,8 +16,7 @@ class AppTheme {
         seedColor: primaryGreen,
         primary: primaryGreen,
         secondary: secondaryBlue,
-        surface: Colors.white,
-        background: backgroundLight,
+        surface: backgroundLight,
       ),
       textTheme: GoogleFonts.interTextTheme(),
       appBarTheme: const AppBarTheme(
@@ -43,7 +42,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(0, 50),
           elevation: 4,
-          shadowColor: primaryGreen.withOpacity(0.4),
+          shadowColor: primaryGreen.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

@@ -41,7 +41,7 @@ class WelcomeScreen extends StatelessWidget {
                     'Sistem Kader Pencatatan Jentik\nuntuk lingkungan yang lebih sehat.',
                     style: GoogleFonts.outfit(
                       fontSize: 16,
-                      color: AppTheme.textDark.withOpacity(0.5),
+                      color: AppTheme.textDark.withValues(alpha: 0.5),
                       height: 1.5,
                     ),
                   ),
@@ -54,7 +54,7 @@ class WelcomeScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textDark.withOpacity(0.4),
+                          color: AppTheme.textDark.withValues(alpha: 0.4),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -64,11 +64,11 @@ class WelcomeScreen extends StatelessWidget {
                           height: 56,
                           width: 56,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withOpacity(0.8),
+                            color: AppTheme.primaryBlue.withValues(alpha: 0.8),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryBlue.withOpacity(0.3),
+                                color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),

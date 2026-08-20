@@ -79,7 +79,7 @@ void main() async {
       {'desa': 'Cihonje', 'rw': '9', 'posyandu': 'Posyandu Cempaka'},
       {'desa': 'Cihonje', 'rw': '13', 'posyandu': 'Posyandu Boby Lestari'},
       {'desa': 'Cihonje', 'rw': '12', 'posyandu': 'Posyandu Budi Sasono 1'},
-      {'desa': 'Cihonje', 'rw': '18', 'posyandu': 'Posyandu Regil Rahayu'},
+      {'desa': 'Cihonje', 'rw': '18', 'posyandu': 'Posyandu Ragil Rahayu'},
       {'desa': 'Cihonje', 'rw': '16', 'posyandu': 'Posyandu Wijaya Kusuma'},
       {'desa': 'Cihonje', 'rw': '17', 'posyandu': 'Posyandu Budi Sasono 2'},
       {'desa': 'Cihonje', 'rw': '14', 'posyandu': 'Posyandu Laksono Utomo'},

@@ -86,7 +86,7 @@ class _SidebarItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF10365F).withOpacity(0.1) : Colors.transparent,
+            color: isActive ? const Color(0xFF10365F).withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isActive 
               ? const Border(left: BorderSide(color: Color(0xFF10365F), width: 4))

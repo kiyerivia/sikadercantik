@@ -79,7 +79,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
       );
 
       final newLocation = LatLng(position.latitude, position.longitude);
@@ -428,7 +430,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 2,
                               ),
                             ],
@@ -438,7 +440,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -463,8 +465,8 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
               .where((v) => v.abj < 100.0)
               .map((v) => CircleMarker(
                   point: LatLng(v.latitude, v.longitude),
-                  color: Colors.red.withOpacity(0.25),
-                  borderColor: Colors.red.withOpacity(0.8),
+                  color: Colors.red.withValues(alpha: 0.25),
+                  borderColor: Colors.red.withValues(alpha: 0.8),
                   borderStrokeWidth: 2,
                   useRadiusInMeter: true,
                   radius: 300,
@@ -517,7 +519,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                                 leading: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: _getColor(v.abj).withOpacity(0.2),
+                                    color: _getColor(v.abj).withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -575,11 +577,11 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                         ),
                       ],
@@ -722,11 +724,11 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -1047,7 +1049,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50.withOpacity(0.4),
+        color: Colors.blue.shade50.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.blue.shade200, width: 1.5),
       ),
@@ -1116,7 +1118,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50.withOpacity(0.4),
+        color: Colors.red.shade50.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.red.shade200, width: 1.5),
       ),

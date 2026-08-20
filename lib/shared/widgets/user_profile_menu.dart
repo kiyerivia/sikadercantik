@@ -103,7 +103,7 @@ class UserProfileMenu extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                      backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
                       backgroundImage: hasCustomAvatar
                           ? NetworkImage(profile.avatarUrl!) as ImageProvider
                           : AssetImage(defaultAsset),
@@ -128,7 +128,7 @@ class UserProfileMenu extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen.withOpacity(0.1),
+                              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -558,13 +558,13 @@ class _ProfileDetailDialogState extends ConsumerState<ProfileDetailDialog> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppTheme.primaryBlue.withOpacity(0.3),
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                         width: 2.5,
                       ),
                     ),
                     child: CircleAvatar(
                       radius: 44,
-                      backgroundColor: AppTheme.primaryBlue.withOpacity(0.08),
+                      backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.08),
                       backgroundImage: _resolveAvatar(),
                       child: _isUploading
                           ? Container(
@@ -595,7 +595,7 @@ class _ProfileDetailDialogState extends ConsumerState<ProfileDetailDialog> {
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),

@@ -88,7 +88,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -120,7 +120,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                             Text(
                               'Dinas Kesehatan',
                               style: GoogleFonts.outfit(
-                                color: AppTheme.textDark.withOpacity(0.6),
+                                color: AppTheme.textDark.withValues(alpha: 0.6),
                                 fontSize: 13,
                               ),
                             ),
@@ -128,7 +128,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                         ),
                         Icon(
                           Icons.eco,
-                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                           size: 48,
                         ),
                       ],
@@ -450,7 +450,7 @@ class _MenuGridItem extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.outfit(
-                        color: AppTheme.textDark.withOpacity(0.6),
+                        color: AppTheme.textDark.withValues(alpha: 0.6),
                         fontSize: 10,
                         height: 1.2,
                       ),
@@ -503,7 +503,7 @@ class _StatItem extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.outfit(
-                color: AppTheme.textDark.withOpacity(0.6),
+                color: AppTheme.textDark.withValues(alpha: 0.6),
                 fontSize: 9,
               ),
             ),

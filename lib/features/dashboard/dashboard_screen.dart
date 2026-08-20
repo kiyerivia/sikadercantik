@@ -119,7 +119,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -151,7 +151,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                             Text(
                               'Puskesmas Gumelar',
                               style: GoogleFonts.outfit(
-                                color: AppTheme.textDark.withOpacity(0.6),
+                                color: AppTheme.textDark.withValues(alpha: 0.6),
                                 fontSize: 13,
                               ),
                             ),
@@ -159,7 +159,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                         ),
                         Icon(
                           Icons.eco,
-                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                           size: 48,
                         ),
                       ],
@@ -314,7 +314,7 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -346,7 +346,7 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
                             Text(
                               'Puskesmas Gumelar',
                               style: GoogleFonts.outfit(
-                                color: AppTheme.textDark.withOpacity(0.6),
+                                color: AppTheme.textDark.withValues(alpha: 0.6),
                                 fontSize: 13,
                               ),
                             ),
@@ -354,7 +354,7 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
                         ),
                         Icon(
                           Icons.eco,
-                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                           size: 48,
                         ),
                       ],
@@ -647,7 +647,7 @@ class _MenuCardFull extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: iconColor.withOpacity(0.2)),
+            border: Border.all(color: iconColor.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
@@ -676,7 +676,7 @@ class _MenuCardFull extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.outfit(
-                        color: AppTheme.textDark.withOpacity(0.6),
+                        color: AppTheme.textDark.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
                     ),
@@ -750,7 +750,7 @@ class _MenuGridItem extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.outfit(
-                        color: AppTheme.textDark.withOpacity(0.6),
+                        color: AppTheme.textDark.withValues(alpha: 0.6),
                         fontSize: 10,
                         height: 1.2,
                       ),
@@ -777,7 +777,7 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFEBF8FE),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.secondaryBlue.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.secondaryBlue.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,7 +800,7 @@ class _InfoCard extends StatelessWidget {
                 Text(
                   text,
                   style: GoogleFonts.outfit(
-                    color: AppTheme.textDark.withOpacity(0.7),
+                    color: AppTheme.textDark.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -852,7 +852,7 @@ class _StatItem extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.outfit(
-                color: AppTheme.textDark.withOpacity(0.6),
+                color: AppTheme.textDark.withValues(alpha: 0.6),
                 fontSize: 9,
               ),
             ),

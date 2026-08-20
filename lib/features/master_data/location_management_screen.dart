@@ -94,7 +94,7 @@ class LocationManagementScreen extends HookConsumerWidget {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xFF2E86C1), Color(0xFF1B4F72)]),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +103,7 @@ class LocationManagementScreen extends HookConsumerWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
                       child: const Icon(Icons.map_outlined, color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
@@ -134,7 +134,7 @@ class LocationManagementScreen extends HookConsumerWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey[200]!),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
                     ),
                     child: TextField(
                       onChanged: (val) => searchQuery.value = val,
@@ -306,7 +306,7 @@ class _VillageExpandable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey[200]!)),
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
@@ -318,7 +318,7 @@ class _VillageExpandable extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: const Color(0xFF10365F).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: const Color(0xFF10365F).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.location_city, color: Color(0xFF10365F), size: 24),
             ),
             const SizedBox(width: 16),
@@ -535,7 +535,7 @@ class _RWExpandable extends ConsumerWidget {
         title: Text('RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F), fontSize: 15)),
         leading: Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+          decoration: BoxDecoration(color: Colors.blueGrey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
           child: const Icon(Icons.people_outline, color: Colors.blueGrey, size: 20),
         ),
         children: [

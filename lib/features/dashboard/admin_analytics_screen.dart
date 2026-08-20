@@ -414,7 +414,7 @@ class _ChartCard extends StatelessWidget {
                       horizontalLines: [
                         HorizontalLine(
                           y: 90,
-                          color: const Color(0xFF22C55E).withOpacity(0.5),
+                          color: const Color(0xFF22C55E).withValues(alpha: 0.5),
                           strokeWidth: 1,
                           dashArray: [5, 5],
                           label: HorizontalLineLabel(
