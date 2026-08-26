@@ -26,7 +26,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
     final selectedMonth = useState<String>('Semua');
     final selectedYear = useState<String>('Semua');
     final selectedVillage = useState<String>('Semua');
+    final selectedPosyandu = useState<String>('Semua');
     final searchQuery = useState<String>('');
+    final searchController = useTextEditingController();
     final scrollController = useScrollController();
     final tempNotes = useRef<Map<String, String>>({});
     final savingLocks = useRef<Map<String, bool>>({});
@@ -215,7 +217,21 @@ class ReportHistoryScreen extends HookConsumerWidget {
                       builder: (context, constraints) {
                         final isMobile = constraints.maxWidth < 600;
 
-                        final puskesmasWidget = Container(
+                        final matchedVillage = villagesAsync.maybeWhen(
+                          data: (villages) {
+                            if (selectedVillage.value == 'Semua') return null;
+                            return villages
+                                .where((v) => v.name.toLowerCase().trim() == selectedVillage.value.toLowerCase().trim())
+                                .firstOrNull;
+                          },
+                          orElse: () => null,
+                        );
+
+                        final posyandusAsync = matchedVillage != null
+                            ? ref.watch(posyandusByVillageProvider(matchedVillage.id))
+                            : ref.watch(allPosyandusProvider);
+
+                        final posyanduWidget = Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
@@ -228,9 +244,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.domain,
+                                Icons.people,
                                 color: Colors.blueGrey,
-                                size: 20,
+                                size: 18,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -238,20 +254,86 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Pilih Puskesmas',
+                                      'Pilih Posyandu',
                                       style: GoogleFonts.outfit(
                                         fontSize: 10,
                                         color: Colors.grey[500],
                                       ),
                                     ),
-                                    Text(
-                                      'Puskesmas Gumelar',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 13,
-                                        color: const Color(0xFF10365F),
-                                        fontWeight: FontWeight.w500,
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownButtonHideUnderline(
+                                        child: posyandusAsync.when(
+                                          data: (posyandus) {
+                                            final posyanduNames = posyandus
+                                                .map((p) => p.name)
+                                                .toSet()
+                                                .toList()
+                                              ..sort();
+                                            return DropdownButton<String>(
+                                              value: posyanduNames.contains(selectedPosyandu.value)
+                                                  ? selectedPosyandu.value
+                                                  : 'Semua',
+                                              isDense: true,
+                                              isExpanded: true,
+                                              icon: const Icon(
+                                                Icons.keyboard_arrow_down,
+                                                color: Colors.grey,
+                                                size: 18,
+                                              ),
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 13,
+                                                color: const Color(0xFF10365F),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  selectedPosyandu.value = val;
+                                                }
+                                              },
+                                              items: [
+                                                const DropdownMenuItem(
+                                                  value: 'Semua',
+                                                  child: Text('Semua'),
+                                                ),
+                                                ...posyanduNames.map(
+                                                  (name) => DropdownMenuItem(
+                                                    value: name,
+                                                    child: Text(
+                                                      name,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                          loading: () => DropdownButton<String>(
+                                            value: 'Semua',
+                                            isDense: true,
+                                            isExpanded: true,
+                                            items: const [
+                                              DropdownMenuItem(
+                                                value: 'Semua',
+                                                child: Text('Memuat...'),
+                                              ),
+                                            ],
+                                            onChanged: null,
+                                          ),
+                                          error: (e, s) => DropdownButton<String>(
+                                            value: 'Semua',
+                                            isDense: true,
+                                            isExpanded: true,
+                                            items: const [
+                                              DropdownMenuItem(
+                                                value: 'Semua',
+                                                child: Text('Semua'),
+                                              ),
+                                            ],
+                                            onChanged: null,
+                                          ),
+                                        ),
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -318,6 +400,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                               onChanged: (val) {
                                                 if (val != null) {
                                                   selectedVillage.value = val;
+                                                  selectedPosyandu.value = 'Semua';
                                                 }
                                               },
                                               items: [
@@ -545,9 +628,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: puskesmasWidget),
-                                  const SizedBox(width: 12),
                                   Expanded(child: desaWidget),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: posyanduWidget),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -563,9 +646,9 @@ class ReportHistoryScreen extends HookConsumerWidget {
                         } else {
                           return Row(
                             children: [
-                              Expanded(child: puskesmasWidget),
-                              const SizedBox(width: 16),
                               Expanded(child: desaWidget),
+                              const SizedBox(width: 16),
+                              Expanded(child: posyanduWidget),
                               const SizedBox(width: 16),
                               Expanded(child: bulanWidget),
                               const SizedBox(width: 16),
@@ -577,12 +660,14 @@ class ReportHistoryScreen extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Search
+                    // Search & Actions
                     Row(
                       children: [
                         Expanded(
                           child: TextField(
+                            controller: searchController,
                             onChanged: (val) => searchQuery.value = val,
+                            onSubmitted: (val) => searchQuery.value = val,
                             decoration: InputDecoration(
                               hintText: 'Ketik untuk mencari...',
                               hintStyle: GoogleFonts.outfit(
@@ -613,9 +698,12 @@ class ReportHistoryScreen extends HookConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 8),
                         ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            searchQuery.value = searchController.text.trim();
+                            FocusScope.of(context).unfocus();
+                          },
                           icon: const Icon(
                             Icons.search,
                             size: 18,
@@ -631,12 +719,71 @@ class ReportHistoryScreen extends HookConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF29B6F6),
                             minimumSize: const Size(
-                              120,
-                              54,
+                              0,
+                              50,
                             ), // Override infinity width global theme
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            ref.invalidate(allReportsProvider);
+                            ref.invalidate(myReportsProvider);
+                            ref.invalidate(allAdminNotesProvider);
+                            ref.invalidate(villagesProvider);
+                            ref.invalidate(allPosyandusProvider);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Data riwayat berhasil diperbarui',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.refresh,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            'Refresh',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            minimumSize: const Size(
+                              0,
+                              50,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -695,6 +842,19 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         .toLowerCase()
                                         .trim() ==
                                     selectedVillage.value.toLowerCase().trim(),
+                              )
+                              .toList();
+                        }
+
+                        // Posyandu filter
+                        if (selectedPosyandu.value != 'Semua') {
+                          filtered = filtered
+                              .where(
+                                (r) =>
+                                    (r.posyanduName ?? '')
+                                        .toLowerCase()
+                                        .trim() ==
+                                    selectedPosyandu.value.toLowerCase().trim(),
                               )
                               .toList();
                         }
