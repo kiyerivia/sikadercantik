@@ -929,7 +929,12 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                           numeric: true,
                                         ),
                                         const DataColumn(label: Text('ABJ')),
-                                        const DataColumn(label: Text('Aksi')),
+                                        const DataColumn(
+                                          label: SizedBox(
+                                            width: 250,
+                                            child: Text('Aksi'),
+                                          ),
+                                        ),
                                         if (isAdmin)
                                           const DataColumn(
                                             label: Text('Intervensi'),
@@ -975,6 +980,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                                 context,
                                                 ref,
                                                 report,
+                                                reports,
                                                 isAdmin,
                                               ),
                                           cells: [
@@ -1058,41 +1064,126 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                               ),
                                             ),
                                             DataCell(
-                                              OutlinedButton.icon(
-                                                onPressed: () => context.push(
-                                                  '/report',
-                                                  extra: report,
-                                                ),
-                                                icon: const Icon(
-                                                  Icons.edit,
-                                                  size: 14,
-                                                  color: Color(0xFF29B6F6),
-                                                ),
-                                                label: Text(
-                                                  'Edit Laporan',
-                                                  textAlign: TextAlign.center,
-                                                  style: GoogleFonts.outfit(
-                                                    fontSize: 10,
-                                                    color: const Color(
-                                                      0xFF29B6F6,
-                                                    ),
-                                                  ),
-                                                ),
-                                                style: OutlinedButton.styleFrom(
-                                                  side: const BorderSide(
-                                                    color: Color(0xFF29B6F6),
-                                                  ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4,
+                                              SingleChildScrollView(
+                                                scrollDirection: Axis.horizontal,
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    // 1. Lihat Laporan
+                                                    OutlinedButton.icon(
+                                                      onPressed: () =>
+                                                          _showReportSummaryDialog(
+                                                            context,
+                                                            ref,
+                                                            report,
+                                                            reports,
+                                                            isAdmin,
+                                                          ),
+                                                      icon: const Icon(
+                                                        Icons.visibility_outlined,
+                                                        size: 13,
+                                                        color: Color(0xFF10365F),
                                                       ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
+                                                      label: Text(
+                                                        'Lihat',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: const Color(0xFF10365F),
                                                         ),
-                                                  ),
+                                                      ),
+                                                      style: OutlinedButton.styleFrom(
+                                                        side: const BorderSide(
+                                                          color: Color(0xFF10365F),
+                                                        ),
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 4,
+                                                        ),
+                                                        visualDensity: VisualDensity.compact,
+                                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 5),
+                                                    // 2. Tambah Laporan (Salin data tanggal sebelumnya)
+                                                    OutlinedButton.icon(
+                                                      onPressed: () => context.push(
+                                                        '/report',
+                                                        extra: {
+                                                          'copyFrom': report,
+                                                          'mode': 'copy',
+                                                        },
+                                                      ),
+                                                      icon: const Icon(
+                                                        Icons.add_circle_outline,
+                                                        size: 13,
+                                                        color: Color(0xFF27AE60),
+                                                      ),
+                                                      label: Text(
+                                                        'Tambah Laporan',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: const Color(0xFF27AE60),
+                                                        ),
+                                                      ),
+                                                      style: OutlinedButton.styleFrom(
+                                                        side: const BorderSide(
+                                                          color: Color(0xFF27AE60),
+                                                        ),
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 4,
+                                                        ),
+                                                        visualDensity: VisualDensity.compact,
+                                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 5),
+                                                    // 3. Edit Laporan
+                                                    OutlinedButton.icon(
+                                                      onPressed: () => context.push(
+                                                        '/report',
+                                                        extra: {
+                                                          'report': report,
+                                                          'mode': 'edit',
+                                                        },
+                                                      ),
+                                                      icon: const Icon(
+                                                        Icons.edit_outlined,
+                                                        size: 13,
+                                                        color: Color(0xFF29B6F6),
+                                                      ),
+                                                      label: Text(
+                                                        'Edit',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Color(0xFF29B6F6),
+                                                        ),
+                                                      ),
+                                                      style: OutlinedButton.styleFrom(
+                                                        side: const BorderSide(
+                                                          color: Color(0xFF29B6F6),
+                                                        ),
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 4,
+                                                        ),
+                                                        visualDensity: VisualDensity.compact,
+                                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
@@ -1672,508 +1763,724 @@ class ReportHistoryScreen extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Report report,
+    List<Report> allReports,
     bool isAdmin,
   ) {
+    showDialog(
+      context: context,
+      builder: (context) => _ViewReportDialog(
+        initialReport: report,
+        allReports: allReports,
+        isAdmin: isAdmin,
+        ref: ref,
+      ),
+    );
+  }
+}
+
+class _ViewReportDialog extends StatefulWidget {
+  final Report initialReport;
+  final List<Report> allReports;
+  final bool isAdmin;
+  final WidgetRef ref;
+
+  const _ViewReportDialog({
+    required this.initialReport,
+    required this.allReports,
+    required this.isAdmin,
+    required this.ref,
+  });
+
+  @override
+  State<_ViewReportDialog> createState() => _ViewReportDialogState();
+}
+
+class _ViewReportDialogState extends State<_ViewReportDialog> {
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.initialReport.reportDate;
+  }
+
+  Report? _findReportForDate(DateTime date) {
+    for (var r in widget.allReports) {
+      final isSamePosyandu = (r.posyanduId == widget.initialReport.posyanduId) ||
+          (r.posyanduName != null &&
+              r.posyanduName!.isNotEmpty &&
+              r.posyanduName == widget.initialReport.posyanduName);
+      final isSameDate = r.reportDate.year == date.year &&
+          r.reportDate.month == date.month &&
+          r.reportDate.day == date.day;
+      if (isSamePosyandu && isSameDate) {
+        return r;
+      }
+    }
+    return null;
+  }
+
+  List<DateTime> _getAvailableDates() {
+    final dates = <DateTime>[];
+    for (var r in widget.allReports) {
+      final isSamePosyandu = (r.posyanduId == widget.initialReport.posyanduId) ||
+          (r.posyanduName != null &&
+              r.posyanduName!.isNotEmpty &&
+              r.posyanduName == widget.initialReport.posyanduName);
+      if (isSamePosyandu) {
+        if (!dates.any((d) =>
+            d.year == r.reportDate.year &&
+            d.month == r.reportDate.month &&
+            d.day == r.reportDate.day)) {
+          dates.add(r.reportDate);
+        }
+      }
+    }
+    dates.sort((a, b) => b.compareTo(a));
+    return dates;
+  }
+
+  List<Map<String, String>> _parseHouses(String? notes) {
     final houses = <Map<String, String>>[];
-    if (report.notes != null) {
-      final blocks = report.notes!.split('--- KK');
+    if (notes != null) {
+      final blocks = notes.split('--- KK');
       for (var block in blocks) {
         if (block.trim().isEmpty) continue;
         final data = <String, String>{};
         final lines = block.split('\n');
         for (var line in lines) {
           final t = line.trim();
-          if (t.startsWith('Nama KK: ')) {
-            data['kk'] = t.substring(9);
+          if (t.startsWith('NIK: ')) {
+            data['nik'] = t.substring(5).trim();
+          } else if (t.startsWith('Nama KK: ')) {
+            data['kk'] = t.substring(9).trim();
           } else if (t.startsWith('RT/RW: ')) {
             final parts = t.substring(7).split('/');
             if (parts.length == 2) {
-              data['rt'] = parts[0];
-              data['rw'] = parts[1];
+              data['rt'] = parts[0].trim();
+              data['rw'] = parts[1].trim();
+            } else {
+              data['rtrw'] = t.substring(7).trim();
             }
           } else if (t.startsWith('Tempat: ')) {
-            data['tempat'] = t.substring(8);
+            data['tempat'] = t.substring(8).trim();
           } else if (t.startsWith('Hasil: ')) {
-            data['hasil'] = t.substring(7);
+            data['hasil'] = t.substring(7).trim();
+          } else if (t.startsWith('Jumlah: ')) {
+            data['jumlah'] = t.substring(8).trim();
           }
         }
         if (data.isNotEmpty) houses.add(data);
       }
     }
+    return houses;
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Detail Laporan',
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF10365F),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F8FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue[100]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+  @override
+  Widget build(BuildContext context) {
+    final report = _findReportForDate(_selectedDate);
+    final availableDates = _getAvailableDates();
+    final houses = report != null ? _parseHouses(report.notes) : <Map<String, String>>[];
+    final abjValue = report != null
+        ? ((report.housesInspected - report.housesPositive) /
+            (report.housesInspected > 0 ? report.housesInspected : 1) *
+            100)
+        : 0.0;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 680,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Tanggal',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            DateFormat(
-                              'dd MMMM yyyy',
-                            ).format(report.reportDate),
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10365F).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.visibility_outlined,
+                        color: Color(0xFF10365F),
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    const SizedBox(width: 10),
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Desa',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        Text(
+                          'LIHAT LAPORAN PSN',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF10365F),
                           ),
                         ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
+                        Text(
+                          '${widget.initialReport.posyanduName ?? "-"} • ${widget.initialReport.villageName ?? "-"}',
+                          style: GoogleFonts.outfit(
                             fontSize: 12,
                             color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            report.villageName ?? '-',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Posyandu',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            report.posyanduName ?? '-',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Diperiksa',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            '${report.housesInspected} Rumah',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Positif Jentik',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            '${report.housesPositive} Rumah',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: report.housesPositive > 0
-                                  ? Colors.red
-                                  : Colors.green,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            'Status',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ': ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            report.status == 'verified'
-                                ? 'TERKIRIM'
-                                : (report.status == 'need_intervention'
-                                      ? 'PERLU PERBAIKAN'
-                                      : 'MENUNGGU VERIFIKASI'),
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
-              if (report.status == 'need_intervention') ...[
-                Consumer(
-                  builder: (context, ref, child) {
-                    final interventionsAsync = ref.watch(
-                      interventionsByReportProvider(report.id),
-                    );
-                    return interventionsAsync.when(
-                      data: (items) {
-                        if (items.isEmpty) return const SizedBox.shrink();
-                        final latest = items.first;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.orange.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_rounded,
-                                    color: Colors.orange.shade800,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'CATATAN PERBAIKAN DARI ADMIN:',
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                      color: Colors.orange.shade900,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                latest['description'] ?? '-',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  color: Colors.orange.shade900,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: LinearProgressIndicator(),
-                      ),
-                      error: (e, _) => const SizedBox.shrink(),
-                    );
-                  },
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
                 ),
               ],
-              Text(
-                'Data Detail KK:',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF10365F),
-                ),
+            ),
+            const Divider(height: 20),
+
+            // Date Picker Selector Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F8FA),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: houses.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.notes_outlined,
-                                color: Colors.grey[400],
-                                size: 48,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Data detail KK tidak tersedia untuk laporan ini.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.outfit(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month, color: Color(0xFF10365F), size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_selectedDate),
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF10365F),
+                            ),
+                          ),
+                        ],
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              _selectedDate = date;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.edit_calendar, size: 14, color: Color(0xFF10365F)),
+                        label: Text(
+                          'Ganti Tanggal',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF10365F),
                           ),
                         ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: houses.length,
-                        itemBuilder: (context, index) {
-                          final h = houses[index];
-                          final isPositive = h['hasil'] == 'Ada Jentik';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isPositive
-                                  ? Colors.red[50]
-                                  : Colors.green[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isPositive
-                                    ? Colors.red[100]!
-                                    : Colors.green[100]!,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Data KK Jentik Nyamuk #${index + 1}',
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Container(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF10365F)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (availableDates.length > 1) ...[
+                    const SizedBox(height: 8),
+                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Tanggal Laporan Dientri: ',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: Colors.blueGrey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: availableDates.map((d) {
+                                final isSelected = d.year == _selectedDate.year &&
+                                    d.month == _selectedDate.month &&
+                                    d.day == _selectedDate.day;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDate = d;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
-                                        vertical: 4,
+                                        vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: isPositive
-                                            ? Colors.red
-                                            : Colors.green,
-                                        borderRadius: BorderRadius.circular(20),
+                                        color: isSelected
+                                            ? const Color(0xFF10365F)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? const Color(0xFF10365F)
+                                              : Colors.grey[300]!,
+                                        ),
                                       ),
                                       child: Text(
-                                        isPositive
-                                            ? 'Positif Jentik'
-                                            : 'Negatif',
+                                        DateFormat('dd MMM yyyy', 'id_ID').format(d),
                                         style: GoogleFonts.outfit(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          color: isSelected ? Colors.white : const Color(0xFF10365F),
                                         ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Body: If report exists on selected date, show summary & list; else show empty state
+            Flexible(
+              child: report != null
+                  ? SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Summary Stats Box
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F8FF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue[100]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        'Rumah Diperiksa',
+                                        '${report.housesInspected}',
+                                        Colors.blue[700]!,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        'Positif Jentik',
+                                        '${report.housesPositive}',
+                                        report.housesPositive > 0
+                                            ? Colors.red[700]!
+                                            : Colors.green[700]!,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        'ABJ',
+                                        '${abjValue.toStringAsFixed(1)}%',
+                                        abjValue >= 95
+                                            ? Colors.green[700]!
+                                            : Colors.orange[700]!,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildStatItem(
+                                        'Status',
+                                        report.status == 'verified'
+                                            ? 'TERKIRIM'
+                                            : (report.status == 'need_intervention'
+                                                ? 'PERLU PERBAIKAN'
+                                                : 'SUBMITTED'),
+                                        report.status == 'verified'
+                                            ? Colors.green[700]!
+                                            : (report.status == 'need_intervention'
+                                                ? Colors.orange[800]!
+                                                : Colors.blueGrey),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                _buildDetailRow('KK', h['kk'] ?? '-'),
-                                _buildDetailRow(
-                                  'RT/RW',
-                                  '${h['rt'] ?? '-'}/${h['rw'] ?? '-'}',
-                                ),
-                                _buildDetailRow('Tempat', h['tempat'] ?? '-'),
                               ],
                             ),
-                          );
-                        },
+                          ),
+
+                          if (report.status == 'need_intervention') ...[
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final interventionsAsync = ref.watch(
+                                  interventionsByReportProvider(report.id),
+                                );
+                                return interventionsAsync.when(
+                                  data: (items) {
+                                    if (items.isEmpty) return const SizedBox.shrink();
+                                    final latest = items.first;
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 14),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.orange.shade200),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Colors.orange.shade800,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'CATATAN PERBAIKAN DARI ADMIN:',
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 11,
+                                                  color: Colors.orange.shade900,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            latest['description'] ?? '-',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 13,
+                                              color: Colors.orange.shade900,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  loading: () => const LinearProgressIndicator(),
+                                  error: (e, _) => const SizedBox.shrink(),
+                                );
+                              },
+                            ),
+                          ],
+
+                          Text(
+                            'Daftar Rumah yang Diperiksa (${houses.length} KK):',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF10365F),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          if (houses.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Data detail KK tidak tersedia untuk laporan ini.',
+                                style: GoogleFonts.outfit(color: Colors.grey[600]),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: houses.length,
+                              itemBuilder: (context, index) {
+                                final h = houses[index];
+                                final isPos = h['hasil'] == 'Ada Jentik' ||
+                                    h['hasil'] == 'Positif' ||
+                                    (h['hasil'] ?? '').toLowerCase().contains('positif') ||
+                                    (h['hasil'] ?? '').toLowerCase().contains('ada jentik');
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isPos ? Colors.red.shade50 : Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isPos ? Colors.red.shade200 : Colors.green.shade200,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Rumah #${index + 1}',
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: const Color(0xFF10365F),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isPos ? Colors.red[600] : Colors.green[600],
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              isPos ? 'Positif Jentik' : 'Nihil',
+                                              style: GoogleFonts.outfit(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      if (h['nik'] != null && h['nik']!.isNotEmpty)
+                                        _buildInfoRow('NIK', h['nik']!),
+                                      _buildInfoRow('Nama KK', h['kk'] ?? '-'),
+                                      _buildInfoRow('RT/RW', h['rtrw'] ?? '${h['rt'] ?? "-"}/${h['rw'] ?? "-"}'),
+                                      if (isPos) ...[
+                                        _buildInfoRow('Tempat Jentik', h['tempat'] ?? '-'),
+                                        if (h['jumlah'] != null && h['jumlah']!.isNotEmpty && h['jumlah'] != '0')
+                                          _buildInfoRow('Jumlah Tempat Positif', h['jumlah']!),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
                       ),
-              ),
-              const SizedBox(height: 16),
-              if (isAdmin) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(
-                      Icons.assignment_late,
-                      color: Colors.white,
-                      size: 18,
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.event_busy_rounded,
+                            size: 56,
+                            color: Colors.blueGrey[300],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Tidak Ada Laporan pada Tanggal Ini',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF10365F),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Kader belum mengentri data laporan pada tanggal ${DateFormat("dd MMMM yyyy", "id_ID").format(_selectedDate)}.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: Colors.blueGrey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (availableDates.isNotEmpty) ...[
+                            Text(
+                              'Silakan pilih tanggal laporan yang telah dientri kader:',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF10365F),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.center,
+                              children: availableDates.map((d) {
+                                return ElevatedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedDate = d;
+                                    });
+                                  },
+                                  icon: const Icon(Icons.check_circle_outline, size: 14, color: Colors.white),
+                                  label: Text(
+                                    DateFormat('dd MMMM yyyy', 'id_ID').format(d),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF27AE60),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    label: Text(
-                      'MINTA PERBAIKAN LAPORAN',
+            ),
+
+            const SizedBox(height: 16),
+
+            // Footer buttons
+            Row(
+              children: [
+                if (widget.isAdmin && report != null) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.assignment_late, color: Colors.white, size: 16),
+                      label: Text(
+                        'MINTA PERBAIKAN',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade800,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showInterventionNoteDialog(context, widget.ref, report);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10365F),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text(
+                      'TUTUP',
                       style: GoogleFonts.outfit(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade800,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context); // Tutup popup summary
-                      _showInterventionNoteDialog(context, ref, report);
-                    },
                   ),
                 ),
-                const SizedBox(height: 8),
               ],
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10365F),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    'TUTUP',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.outfit(
+            fontSize: 10,
+            color: Colors.blueGrey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                color: Colors.blueGrey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Text(': ', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF10365F),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2284,41 +2591,6 @@ class ReportHistoryScreen extends HookConsumerWidget {
               'KIRIM PERMINTAAN',
               style: GoogleFonts.outfit(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 60,
-            child: Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const Text(
-            ': ',
-            style: TextStyle(fontSize: 12, color: Colors.blueGrey),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),

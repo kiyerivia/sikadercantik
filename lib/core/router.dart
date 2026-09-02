@@ -50,7 +50,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/report',
-            builder: (context, state) => ReportFormScreen(initialReport: state.extra as Report?),
+            builder: (context, state) {
+              if (state.extra is Report) {
+                return ReportFormScreen(
+                  initialReport: state.extra as Report,
+                  isEditMode: true,
+                );
+              } else if (state.extra is Map<String, dynamic>) {
+                final map = state.extra as Map<String, dynamic>;
+                return ReportFormScreen(
+                  initialReport: map['report'] as Report?,
+                  copyFromReport: map['copyFrom'] as Report?,
+                  isEditMode: map['mode'] == 'edit' || (map['isEditMode'] == true),
+                );
+              }
+              return const ReportFormScreen();
+            },
           ),
           GoRoute(
             path: '/history',

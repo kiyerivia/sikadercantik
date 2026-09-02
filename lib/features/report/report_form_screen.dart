@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
@@ -13,6 +15,7 @@ import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
 
 class HouseReportEntry {
+  final TextEditingController nikController = TextEditingController();
   final TextEditingController kkNameController = TextEditingController();
   final TextEditingController rtController = TextEditingController();
   final TextEditingController rwController = TextEditingController();
@@ -45,6 +48,7 @@ class HouseReportEntry {
   }
 
   void dispose() {
+    nikController.dispose();
     kkNameController.dispose();
     rtController.dispose();
     rwController.dispose();
@@ -57,6 +61,8 @@ class _HouseInputCard extends StatefulWidget {
   final int index;
   final int totalCount;
   final HouseReportEntry entry;
+  final List<HouseReportEntry>? allEntries;
+  final VoidCallback? onNikChanged;
   final bool isDesktop;
   final List<Map<String, dynamic>> breedingPlaces;
   final VoidCallback? onRemove;
@@ -81,6 +87,8 @@ class _HouseInputCard extends StatefulWidget {
     required this.index,
     required this.totalCount,
     required this.entry,
+    this.allEntries,
+    this.onNikChanged,
     required this.isDesktop,
     required this.breedingPlaces,
     this.onRemove,
@@ -93,6 +101,20 @@ class _HouseInputCard extends StatefulWidget {
 }
 
 class _HouseInputCardState extends State<_HouseInputCard> {
+  String? _getDuplicateNikError() {
+    final currentNik = widget.entry.nikController.text.trim();
+    if (currentNik.isEmpty || widget.allEntries == null) return null;
+
+    for (int i = 0; i < widget.allEntries!.length; i++) {
+      if (i != widget.index) {
+        final otherNik = widget.allEntries![i].nikController.text.trim();
+        if (otherNik.isNotEmpty && otherNik == currentNik) {
+          return 'NIK sama dengan Rumah #${i + 1}';
+        }
+      }
+    }
+    return null;
+  }
   @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
@@ -172,11 +194,49 @@ class _HouseInputCardState extends State<_HouseInputCard> {
           const Divider(height: 1, color: Color(0xFFEDF2F7)),
           const SizedBox(height: 12),
 
-          // Row 1: NAMA KK, RT/RW, Hasil Pemeriksaan
+          // Row 1: NIK, NAMA KK, RT/RW, Hasil Pemeriksaan
           if (isDesktop)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Expanded(
+                  flex: 2,
+                  child: widget.buildInputGroup(
+                    label: 'NIK',
+                    icon: Icons.badge_outlined,
+                    child: Builder(
+                      builder: (context) {
+                        final duplicateError = _getDuplicateNikError();
+                        return TextFormField(
+                          controller: entry.nikController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 16,
+                          onChanged: (_) {
+                            setState(() {});
+                            widget.onNikChanged?.call();
+                          },
+                          decoration: InputDecoration(
+                            hintText: '16 digit NIK',
+                            counterText: '',
+                            errorText: duplicateError,
+                            errorStyle: const TextStyle(fontSize: 11, color: Colors.red),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: duplicateError != null ? Colors.red : Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: duplicateError != null ? Colors.red : Colors.grey[300]!),
+                            ),
+                            isDense: true,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 3,
                   child: widget.buildInputGroup(
@@ -200,7 +260,7 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 1,
                   child: widget.buildInputGroup(
@@ -224,7 +284,7 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: _buildHasilPemeriksaan(),
@@ -232,6 +292,41 @@ class _HouseInputCardState extends State<_HouseInputCard> {
               ],
             )
           else ...[
+            widget.buildInputGroup(
+              label: 'NIK',
+              icon: Icons.badge_outlined,
+              child: Builder(
+                builder: (context) {
+                  final duplicateError = _getDuplicateNikError();
+                  return TextFormField(
+                    controller: entry.nikController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 16,
+                    onChanged: (_) {
+                      setState(() {});
+                      widget.onNikChanged?.call();
+                    },
+                    decoration: InputDecoration(
+                      hintText: '16 digit NIK',
+                      counterText: '',
+                      errorText: duplicateError,
+                      errorStyle: const TextStyle(fontSize: 11, color: Colors.red),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: duplicateError != null ? Colors.red : Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: duplicateError != null ? Colors.red : Colors.grey[300]!),
+                      ),
+                      isDense: true,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
             widget.buildInputGroup(
               label: 'NAMA',
               icon: Icons.person,
@@ -600,7 +695,15 @@ class ResponsiveRow extends StatelessWidget {
 
 class ReportFormScreen extends HookConsumerWidget {
   final Report? initialReport;
-  const ReportFormScreen({super.key, this.initialReport});
+  final Report? copyFromReport;
+  final bool isEditMode;
+
+  const ReportFormScreen({
+    super.key,
+    this.initialReport,
+    this.copyFromReport,
+    this.isEditMode = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -612,10 +715,12 @@ class ReportFormScreen extends HookConsumerWidget {
     final inputHouseEntries = useState<List<HouseReportEntry>>([HouseReportEntry()]);
     final activeReportId = useState<String?>(initialReport?.id);
     final selectedVillageId = useState<String?>(null);
-    final selectedPosyanduId = useState<String?>(initialReport?.posyanduId);
+    final selectedPosyanduId = useState<String?>(initialReport?.posyanduId ?? copyFromReport?.posyanduId);
     final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
     final globalResult = useState<String?>('Ada Jentik (Positif)');
     final isLoading = useState(false);
+    final hasSavedDraft = useState(false);
+    final draftInfo = useState<Map<String, dynamic>?>(null);
     final tableScrollController = useScrollController();
 
     final myReportsAsync = ref.watch(myReportsProvider);
@@ -719,7 +824,7 @@ class ReportFormScreen extends HookConsumerWidget {
     final endIndex = (startIndex + pageSize < totalItems) ? startIndex + pageSize : totalItems;
     final pagedEntries = totalItems > 0 ? filteredEntries.sublist(startIndex, endIndex) : <HouseReportEntry>[];
 
-    // Initialize data when explicit initialReport is passed
+    // Initialize data when explicit initialReport or copyFromReport is passed
     useEffect(() {
       if (initialReport != null) {
         housesInspectedController.text = initialReport!.housesInspected
@@ -755,13 +860,17 @@ class ReportFormScreen extends HookConsumerWidget {
             final lines = block.split('\n');
             for (var line in lines) {
               final t = line.trim();
-              if (t.startsWith('Nama KK: ')) {
-                entry.kkNameController.text = t.substring(9);
+              if (t.startsWith('NIK: ')) {
+                entry.nikController.text = t.substring(5).trim();
+              } else if (t.startsWith('Nama KK: ')) {
+                entry.kkNameController.text = t.substring(9).trim();
               } else if (t.startsWith('RT/RW: ')) {
-                final parts = t.substring(7).split('/');
+                final rtrw = t.substring(7).trim();
+                entry.rtRwController.text = rtrw;
+                final parts = rtrw.split('/');
                 if (parts.length == 2) {
-                  entry.rtController.text = parts[0];
-                  entry.rwController.text = parts[1];
+                  entry.rtController.text = parts[0].trim();
+                  entry.rwController.text = parts[1].trim();
                 }
               } else if (t.startsWith('Hasil: ')) {
                 final res = t.substring(7);
@@ -771,9 +880,9 @@ class ReportFormScreen extends HookConsumerWidget {
                   entry.isPositive = false;
                 }
               } else if (t.startsWith('Jumlah: ')) {
-                entry.positivePlacesCountController.text = t.substring(8);
+                entry.positivePlacesCountController.text = t.substring(8).trim();
               } else if (t.startsWith('Tempat: ')) {
-                final placeName = t.substring(8);
+                final placeName = t.substring(8).trim();
                 if (placeName != '-') {
                   final names = placeName
                       .split(',')
@@ -807,15 +916,95 @@ class ReportFormScreen extends HookConsumerWidget {
             inputHouseEntries.value = parsed;
           }
         }
+      } else if (copyFromReport != null) {
+        // Copy Mode: copy houses from previous report, but reset inspection results for fresh new date entry
+        reportDate.value = DateTime.now();
+        selectedPosyanduId.value = copyFromReport!.posyanduId;
+
+        ref
+            .read(masterRepositoryProvider)
+            .getVillageIdByPosyandu(copyFromReport!.posyanduId)
+            .then((vId) {
+              if (vId != null) {
+                selectedVillageId.value = vId;
+              }
+            });
+
+        if (copyFromReport!.notes != null) {
+          final parsed = <HouseReportEntry>[];
+          final blocks = copyFromReport!.notes!.split('--- KK');
+          for (var block in blocks) {
+            if (block.trim().isEmpty) continue;
+            final entry = HouseReportEntry(
+              reportDate: DateTime.now(),
+              villageName: copyFromReport!.villageName,
+              posyanduName: copyFromReport!.posyanduName,
+            );
+            final lines = block.split('\n');
+            for (var line in lines) {
+              final t = line.trim();
+              if (t.startsWith('NIK: ')) {
+                entry.nikController.text = t.substring(5).trim();
+              } else if (t.startsWith('Nama KK: ')) {
+                entry.kkNameController.text = t.substring(9).trim();
+              } else if (t.startsWith('RT/RW: ')) {
+                final rtrw = t.substring(7).trim();
+                entry.rtRwController.text = rtrw;
+                final parts = rtrw.split('/');
+                if (parts.length == 2) {
+                  entry.rtController.text = parts[0].trim();
+                  entry.rwController.text = parts[1].trim();
+                }
+              }
+            }
+            // Fresh values for new date
+            entry.isPositive = null;
+            entry.selectedPlaceIds = [null];
+            entry.positivePlacesCountController.text = '';
+            parsed.add(entry);
+          }
+          if (parsed.isNotEmpty) {
+            houseEntries.value = parsed;
+            inputHouseEntries.value = parsed;
+            housesInspectedController.text = parsed.length.toString();
+          }
+        }
       }
 
       return null;
-    }, [initialReport, userProfileAsync.value]);
+    }, [initialReport, copyFromReport, userProfileAsync.value]);
+
+    // Check for saved draft on mount when creating new report
+    useEffect(() {
+      if (initialReport == null && copyFromReport == null) {
+        SharedPreferences.getInstance().then((prefs) {
+          final userId = userProfileAsync.value?.id ?? 'default';
+          final raw = prefs.getString('draft_report_$userId');
+          if (raw != null && raw.isNotEmpty) {
+            try {
+              final map = jsonDecode(raw) as Map<String, dynamic>;
+              final housesJson = map['houses'] as List<dynamic>?;
+              final savedAtStr = map['savedAt'] as String?;
+              final dateStr = savedAtStr != null
+                  ? DateFormat('dd MMM yyyy, HH:mm', 'id_ID')
+                      .format(DateTime.parse(savedAtStr))
+                  : '';
+              hasSavedDraft.value = true;
+              draftInfo.value = {
+                'count': housesJson?.length ?? 0,
+                'date': dateStr,
+              };
+            } catch (_) {}
+          }
+        });
+      }
+      return null;
+    }, [userProfileAsync.value]);
 
 
     // Auto-populate houseEntries by default with all submitted reports sorted by newest date first
     useEffect(() {
-      if (initialReport != null) return null;
+      if (initialReport != null || copyFromReport != null) return null;
       final myReports = myReportsAsync.value ?? <Report>[];
       final allReports = allReportsAsync.value ?? <Report>[];
       final combined = <Report>[...myReports, ...allReports];
@@ -829,11 +1018,11 @@ class ReportFormScreen extends HookConsumerWidget {
         houseEntries.value = _getDefaultInitialHouseEntries();
       }
       return null;
-    }, [myReportsAsync.value, allReportsAsync.value, breedingPlacesAsync.value, initialReport]);
+    }, [myReportsAsync.value, allReportsAsync.value, breedingPlacesAsync.value, initialReport, copyFromReport]);
 
     // Track active report ID when Posyandu is selected
     useEffect(() {
-      if (initialReport != null) return null;
+      if (initialReport != null || copyFromReport != null) return null;
       final pId = selectedPosyanduId.value;
       if (pId != null && pId.isNotEmpty) {
         ref.read(reportRepositoryProvider).getLatestReportByPosyandu(pId).then((latestReport) {
@@ -847,7 +1036,7 @@ class ReportFormScreen extends HookConsumerWidget {
         activeReportId.value = null;
       }
       return null;
-    }, [selectedPosyanduId.value, initialReport]);
+    }, [selectedPosyanduId.value, initialReport, copyFromReport]);
 
     Future<void> saveAndAddHouseEntry(HouseReportEntry newEntry) async {
       // 1. Update existing entry in houseEntries with latest inspection date/status or insert at top
@@ -1065,9 +1254,164 @@ class ReportFormScreen extends HookConsumerWidget {
       }
     }
 
+    Future<void> saveDraft({bool showToast = true}) async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final draftList = inputHouseEntries.value.map((h) => {
+          'nik': h.nikController.text.trim(),
+          'kkName': h.kkNameController.text.trim(),
+          'rt': h.rtController.text.trim(),
+          'rw': h.rwController.text.trim(),
+          'rtRw': h.rtRwController.text.trim(),
+          'isPositive': h.isPositive,
+          'selectedPlaceIds': h.selectedPlaceIds,
+          'positivePlacesCount': h.positivePlacesCountController.text.trim(),
+        }).toList();
+
+        final draftData = jsonEncode({
+          'villageId': selectedVillageId.value,
+          'posyanduId': selectedPosyanduId.value,
+          'reportDate': reportDate.value.toIso8601String(),
+          'housesInspected': housesInspectedController.text.trim(),
+          'houses': draftList,
+          'savedAt': DateTime.now().toIso8601String(),
+        });
+
+        final userId = userProfileAsync.value?.id ?? 'default';
+        await prefs.setString('draft_report_$userId', draftData);
+        hasSavedDraft.value = true;
+        draftInfo.value = {
+          'count': draftList.length,
+          'date': DateFormat('dd MMM yyyy, HH:mm', 'id_ID').format(DateTime.now()),
+        };
+
+        if (showToast && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Draf berhasil disimpan! Data aman saat Anda berpindah rumah.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Color(0xFF27AE60),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (showToast && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menyimpan draf: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+
+    Future<void> loadDraft() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = userProfileAsync.value?.id ?? 'default';
+        final raw = prefs.getString('draft_report_$userId');
+        if (raw == null || raw.isEmpty) return;
+
+        final map = jsonDecode(raw) as Map<String, dynamic>;
+        if (map['villageId'] != null) selectedVillageId.value = map['villageId'];
+        if (map['posyanduId'] != null) selectedPosyanduId.value = map['posyanduId'];
+        if (map['reportDate'] != null) {
+          try {
+            reportDate.value = DateTime.parse(map['reportDate']);
+          } catch (_) {}
+        }
+        if (map['housesInspected'] != null && (map['housesInspected'] as String).isNotEmpty) {
+          housesInspectedController.text = map['housesInspected'];
+        }
+
+        final housesJson = map['houses'] as List<dynamic>?;
+        if (housesJson != null && housesJson.isNotEmpty) {
+          final entries = <HouseReportEntry>[];
+          for (var item in housesJson) {
+            final entry = HouseReportEntry(
+              isPositive: item['isPositive'] as bool?,
+              reportDate: reportDate.value,
+            );
+            entry.nikController.text = item['nik'] ?? '';
+            entry.kkNameController.text = item['kkName'] ?? '';
+            entry.rtController.text = item['rt'] ?? '';
+            entry.rwController.text = item['rw'] ?? '';
+            entry.rtRwController.text = item['rtRw'] ?? '';
+            entry.positivePlacesCountController.text = item['positivePlacesCount'] ?? '';
+            final places = item['selectedPlaceIds'] as List<dynamic>?;
+            if (places != null && places.isNotEmpty) {
+              entry.selectedPlaceIds = places.map((e) => e as String?).toList();
+            }
+            entries.add(entry);
+          }
+          inputHouseEntries.value = entries;
+        }
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Draf laporan berhasil dimuat! Silakan lanjutkan pengisian.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Color(0xFF10365F),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal memuat draf: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+
+    Future<void> clearDraft() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = userProfileAsync.value?.id ?? 'default';
+        await prefs.remove('draft_report_$userId');
+        hasSavedDraft.value = false;
+        draftInfo.value = null;
+      } catch (_) {}
+    }
+
     Future<void> handleSubmitBatch() async {
+      final targetInspectedStr = housesInspectedController.text.trim();
+      final targetInspected = int.tryParse(targetInspectedStr);
+
+      if (targetInspected == null || targetInspected <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Harap masukkan Jumlah Rumah Yang Diperiksa terlebih dahulu!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       final validHouses = inputHouseEntries.value.where((h) {
-        return h.kkNameController.text.trim().isNotEmpty || h.isPositive != null;
+        return h.kkNameController.text.trim().isNotEmpty ||
+            h.nikController.text.trim().isNotEmpty ||
+            h.isPositive != null;
       }).toList();
 
       if (validHouses.isEmpty) {
@@ -1075,6 +1419,52 @@ class ReportFormScreen extends HookConsumerWidget {
           const SnackBar(
             content: Text('Silakan isi minimal 1 data rumah yang diperiksa!'),
             backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Validasi kesesuaian target jumlah rumah vs inputan data
+      if (validHouses.length != targetInspected) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Jumlah Data Belum Sesuai',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Jumlah data rumah yang diisi (${validHouses.length} rumah) belum sesuai dengan target Jumlah Rumah Yang Diperiksa ($targetInspected rumah).\n\n'
+              'Data tidak dapat dikirim sebelum jumlahnya sesuai. Anda dapat melengkapi datanya sekarang atau klik "Simpan Draf" untuk menyimpan sementara saat berpindah rumah.',
+              style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey[800], height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('LENGKAPI DATA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.bookmark_add_outlined, size: 16, color: Colors.white),
+                label: Text('SIMPAN DRAF', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE67E22),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  saveDraft();
+                },
+              ),
+            ],
           ),
         );
         return;
@@ -1099,6 +1489,54 @@ class ReportFormScreen extends HookConsumerWidget {
             ),
           );
           return;
+        }
+      }
+
+      // Validasi NIK tidak boleh sama di antara rumah yang diinput
+      final seenNiks = <String, int>{};
+      for (int i = 0; i < validHouses.length; i++) {
+        final h = validHouses[i];
+        final nik = h.nikController.text.trim();
+        if (nik.isNotEmpty) {
+          if (seenNiks.containsKey(nik)) {
+            final firstIdx = seenNiks[nik]! + 1;
+            final currentIdx = i + 1;
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: Colors.red, size: 28),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'NIK Tidak Boleh Sama',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'NIK "$nik" pada Rumah #$currentIdx sama dengan NIK pada Rumah #$firstIdx.\n\n'
+                  'Setiap rumah harus memiliki NIK yang berbeda (tidak boleh sama). Silakan periksa kembali NIK yang diinput.',
+                  style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey[800], height: 1.4),
+                ),
+                actions: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10365F),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('OK, SAYA PERBAIKI', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+          seenNiks[nik] = i;
         }
       }
 
@@ -1164,6 +1602,7 @@ class ReportFormScreen extends HookConsumerWidget {
           final blocks = existingReport.notes!.split('--- KK');
           for (var b in blocks) {
             if (b.trim().isEmpty) continue;
+            String nik = '';
             String name = '';
             String rtrw = '-/-';
             bool isPos = false;
@@ -1171,7 +1610,9 @@ class ReportFormScreen extends HookConsumerWidget {
             String jumlah = '0';
             for (var line in b.split('\n')) {
               final t = line.trim();
-              if (t.startsWith('Nama KK: ')) {
+              if (t.startsWith('NIK: ')) {
+                nik = t.substring(5).trim();
+              } else if (t.startsWith('Nama KK: ')) {
                 name = t.substring(9).trim();
               } else if (t.startsWith('RT/RW: ')) {
                 rtrw = t.substring(7).trim();
@@ -1183,8 +1624,9 @@ class ReportFormScreen extends HookConsumerWidget {
                 jumlah = t.substring(8).trim();
               }
             }
-            if (name.isNotEmpty) {
+            if (name.isNotEmpty || nik.isNotEmpty) {
               allKkData.add({
+                'nik': nik,
                 'name': name,
                 'rtrw': rtrw,
                 'isPos': isPos,
@@ -1196,6 +1638,7 @@ class ReportFormScreen extends HookConsumerWidget {
         }
 
         for (var h in validHouses) {
+          final hNik = h.nikController.text.trim();
           final hName = h.kkNameController.text.trim();
           final isPos = h.isPositive == true;
           final placeNames = <String>[];
@@ -1218,9 +1661,14 @@ class ReportFormScreen extends HookConsumerWidget {
               : '${h.rtController.text.trim().isEmpty ? "-" : h.rtController.text.trim()}/${h.rwController.text.trim().isEmpty ? "-" : h.rwController.text.trim()}';
 
           final existingIdx = allKkData.indexWhere(
-            (k) => (k['name'] as String).toLowerCase() == hName.toLowerCase(),
+            (k) =>
+                (hNik.isNotEmpty && (k['nik'] as String? ?? '') == hNik) ||
+                (hName.isNotEmpty &&
+                    (k['name'] as String).toLowerCase() ==
+                        hName.toLowerCase()),
           );
           final entryMap = {
+            'nik': hNik,
             'name': hName,
             'rtrw': rtrwStr,
             'isPos': isPos,
@@ -1237,7 +1685,10 @@ class ReportFormScreen extends HookConsumerWidget {
         }
 
         final finalNotes = StringBuffer();
-        int totalInspected = allKkData.length;
+        final customCount = int.tryParse(housesInspectedController.text.trim());
+        int totalInspected = (customCount != null && customCount > 0)
+            ? customCount
+            : allKkData.length;
         int totalPositive = 0;
         final Set<String> allBreedingPlaceIds = {};
 
@@ -1260,6 +1711,9 @@ class ReportFormScreen extends HookConsumerWidget {
           }
 
           finalNotes.writeln('--- KK ${i + 1} ---');
+          if (kk['nik'] != null && (kk['nik'] as String).isNotEmpty) {
+            finalNotes.writeln('NIK: ${kk['nik']}');
+          }
           finalNotes.writeln('Nama KK: ${kk['name']}');
           finalNotes.writeln('RT/RW: ${kk['rtrw']}');
           finalNotes.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
@@ -1285,7 +1739,16 @@ class ReportFormScreen extends HookConsumerWidget {
         }
         pId ??= '20000000-0000-0000-0007-000000000001';
 
-        if (existingReport != null) {
+        if (isEditMode && initialReport != null) {
+          await ref.read(reportRepositoryProvider).updateReport(
+            reportId: initialReport!.id,
+            housesInspected: totalInspected,
+            housesPositive: totalPositive,
+            breedingPlaceIds: allBreedingPlaceIds.toList(),
+            reportDate: targetDate,
+            notes: finalNotes.toString(),
+          );
+        } else if (existingReport != null) {
           await ref.read(reportRepositoryProvider).updateReport(
             reportId: existingReport.id,
             housesInspected: totalInspected,
@@ -1314,17 +1777,27 @@ class ReportFormScreen extends HookConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Berhasil menyimpan ${validHouses.length} data rumah yang diperiksa (${DateFormat("dd MMM yyyy", "id_ID").format(targetDate)})!',
+                isEditMode
+                    ? 'Berhasil memperbarui data laporan (${validHouses.length} rumah, tanggal ${DateFormat("dd MMM yyyy", "id_ID").format(targetDate)})!'
+                    : 'Berhasil menyimpan ${validHouses.length} data rumah yang diperiksa (${DateFormat("dd MMM yyyy", "id_ID").format(targetDate)})!',
               ),
               backgroundColor: const Color(0xFF27AE60),
               duration: const Duration(seconds: 3),
             ),
           );
 
-          for (var h in inputHouseEntries.value) {
-            h.dispose();
+          await clearDraft();
+
+          if (isEditMode) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (context.mounted) context.pop();
+            });
+          } else {
+            for (var h in inputHouseEntries.value) {
+              h.dispose();
+            }
+            inputHouseEntries.value = [HouseReportEntry()];
           }
-          inputHouseEntries.value = [HouseReportEntry()];
         }
       } catch (e) {
         if (context.mounted) {
@@ -1439,7 +1912,11 @@ class ReportFormScreen extends HookConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'ENTRI LAPORAN PSN',
+                                  isEditMode
+                                      ? 'EDIT LAPORAN PSN'
+                                      : (copyFromReport != null
+                                          ? 'ENTRI LAPORAN PSN (TANGGAL BARU)'
+                                          : 'ENTRI LAPORAN PSN'),
                                   style: GoogleFonts.outfit(
                                     color: const Color(0xFF10365F),
                                     fontSize: isDesktop ? 20 : 18,
@@ -1447,7 +1924,11 @@ class ReportFormScreen extends HookConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Catat hasil kegiatan Pemberantasan Sarang Nyamuk (PSN)',
+                                  isEditMode
+                                      ? 'Edit data laporan PSN tanggal ${DateFormat('dd MMMM yyyy', 'id_ID').format(reportDate.value)}'
+                                      : (copyFromReport != null
+                                          ? 'Data rumah disalin dari laporan sebelumnya (${DateFormat('dd MMM yyyy', 'id_ID').format(copyFromReport!.reportDate)}). Silakan pilih tanggal baru dan isi hasil pemeriksaan.'
+                                          : 'Catat hasil kegiatan Pemberantasan Sarang Nyamuk (PSN)'),
                                   style: GoogleFonts.outfit(
                                     color: Colors.grey[600],
                                     fontSize: isDesktop ? 14 : 12,
@@ -1459,6 +1940,63 @@ class ReportFormScreen extends HookConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
+
+                      if (hasSavedDraft.value && !isEditMode) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF8E1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFD54F)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.bookmark_added_rounded, color: Color(0xFFE67E22), size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Draf Laporan Tersimpan Ditemukan',
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: const Color(0xFFB78103),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Terdapat draf tersimpan (${draftInfo.value?['count'] ?? 0} data rumah) pada ${draftInfo.value?['date'] ?? ""}. Anda dapat melanjutkan pengisian sekarang.',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: const Color(0xFF795548),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: () => loadDraft(),
+                                icon: const Icon(Icons.download_rounded, size: 14, color: Colors.white),
+                                label: Text('Muat Draf', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE67E22),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () => clearDraft(),
+                                icon: const Icon(Icons.close, size: 18, color: Color(0xFF8D6E63)),
+                                tooltip: 'Hapus Draf',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Top Card Form
                       Container(
@@ -1604,9 +2142,41 @@ class ReportFormScreen extends HookConsumerWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                            const SizedBox(height: 16),
+                             const SizedBox(height: 14),
+                             ResponsiveRow(
+                               isDesktop: isDesktop,
+                               children: [
+                                 _buildInputGroup(
+                                   label: 'Jumlah Rumah Yang Diperiksa',
+                                   icon: Icons.home_work_outlined,
+                                   child: TextFormField(
+                                     controller: housesInspectedController,
+                                     keyboardType: TextInputType.number,
+                                     decoration: InputDecoration(
+                                       hintText: inputHouseEntries.value.length.toString(),
+                                       contentPadding: const EdgeInsets.symmetric(
+                                         horizontal: 16,
+                                         vertical: 12,
+                                       ),
+                                       border: OutlineInputBorder(
+                                         borderRadius: BorderRadius.circular(8),
+                                         borderSide: BorderSide(color: Colors.grey[300]!),
+                                       ),
+                                       enabledBorder: OutlineInputBorder(
+                                         borderRadius: BorderRadius.circular(8),
+                                         borderSide: BorderSide(color: Colors.grey[300]!),
+                                       ),
+                                       isDense: true,
+                                     ),
+                                   ),
+                                 ),
+                                 if (isDesktop) const SizedBox(),
+                                 if (isDesktop) const SizedBox(),
+                               ],
+                             ),
+                             const SizedBox(height: 16),
+                             const Divider(height: 1, color: Color(0xFFE0E0E0)),
+                             const SizedBox(height: 16),
 
                             // Dynamic list of House cards
                             ...inputHouseEntries.value.asMap().entries.map((item) {
@@ -1617,6 +2187,10 @@ class ReportFormScreen extends HookConsumerWidget {
                                 index: idx,
                                 totalCount: inputHouseEntries.value.length,
                                 entry: entry,
+                                allEntries: inputHouseEntries.value,
+                                onNikChanged: () {
+                                  inputHouseEntries.value = [...inputHouseEntries.value];
+                                },
                                 isDesktop: isDesktop,
                                 breedingPlaces: breedingPlacesAsync.value ?? [],
                                 onRemove: inputHouseEntries.value.length > 1
@@ -1633,89 +2207,131 @@ class ReportFormScreen extends HookConsumerWidget {
                             }),
                             const SizedBox(height: 8),
 
-                            // Bottom Action Buttons: "+ Tambah Data" & "Simpan Laporan"
+                            // Bottom Action Buttons: "+ Tambah Data", "Simpan Draf" & "Kirim Laporan"
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Small "Tambah Data" Button
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    inputHouseEntries.value = [
-                                      ...inputHouseEntries.value,
-                                      HouseReportEntry(),
-                                    ];
-                                  },
-                                  icon: const Icon(
-                                    Icons.add_circle_outline,
-                                    size: 16,
-                                    color: Color(0xFF27AE60),
-                                  ),
-                                  label: Text(
-                                    'Tambah Data',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFF27AE60),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
+                                if (!isEditMode)
+                                  // Small "Tambah Data" Button (only in Add/New mode)
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      inputHouseEntries.value = [
+                                        ...inputHouseEntries.value,
+                                        HouseReportEntry(),
+                                      ];
+                                    },
+                                    icon: const Icon(
+                                      Icons.add_circle_outline,
+                                      size: 16,
                                       color: Color(0xFF27AE60),
-                                      width: 1.5,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                    label: Text(
+                                      'Tambah Data',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF27AE60),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFF27AE60),
+                                        width: 1.5,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
                                     ),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
+                                  )
+                                else
+                                  const SizedBox.shrink(),
 
-                                // Submit Button
-                                ElevatedButton.icon(
-                                  onPressed: isLoading.value
-                                      ? null
-                                      : () => handleSubmitBatch(),
-                                  icon: isLoading.value
-                                      ? const SizedBox(
-                                          width: 14,
-                                          height: 14,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.send,
-                                          color: Colors.white,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!isEditMode) ...[
+                                      OutlinedButton.icon(
+                                        onPressed: isLoading.value ? null : () => saveDraft(),
+                                        icon: const Icon(
+                                          Icons.bookmark_add_outlined,
                                           size: 16,
+                                          color: Color(0xFFE67E22),
                                         ),
-                                  label: Text(
-                                    inputHouseEntries.value.length > 1
-                                        ? 'Simpan (${inputHouseEntries.value.length} Rumah)'
-                                        : 'Simpan Laporan',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                        label: Text(
+                                          'Simpan Draf',
+                                          style: GoogleFonts.outfit(
+                                            color: const Color(0xFFE67E22),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(
+                                            color: Color(0xFFE67E22),
+                                            width: 1.5,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                    ],
+
+                                    // Submit Button
+                                    ElevatedButton.icon(
+                                      onPressed: isLoading.value
+                                          ? null
+                                          : () => handleSubmitBatch(),
+                                      icon: isLoading.value
+                                          ? const SizedBox(
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.send,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                      label: Text(
+                                        isEditMode
+                                            ? 'Simpan Perubahan'
+                                            : 'Kirim Laporan',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF27AE60),
+                                        foregroundColor: Colors.white,
+                                        elevation: 1,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 18,
+                                          vertical: 10,
+                                        ),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
                                     ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF27AE60),
-                                    foregroundColor: Colors.white,
-                                    elevation: 1,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 10,
-                                    ),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -4593,6 +5209,7 @@ List<HouseReportEntry> _extractAllEntriesForKk({
     for (var block in blocks) {
       if (block.trim().isEmpty) continue;
       final lines = block.split('\n');
+      String blockNik = '';
       String blockKkName = '';
       String blockRt = '';
       String blockRw = '';
@@ -4602,7 +5219,9 @@ List<HouseReportEntry> _extractAllEntriesForKk({
 
       for (var line in lines) {
         final t = line.trim();
-        if (t.startsWith('Nama KK: ')) {
+        if (t.startsWith('NIK: ')) {
+          blockNik = t.substring(5).trim();
+        } else if (t.startsWith('Nama KK: ')) {
           blockKkName = t.substring(9).trim();
         } else if (t.startsWith('RT/RW: ')) {
           final parts = t.substring(7).split('/');
@@ -4648,6 +5267,7 @@ List<HouseReportEntry> _extractAllEntriesForKk({
               ? rep.posyanduName
               : (defaultPosyandu ?? 'Posyandu Bina Laju Sejahtera 4'),
         );
+        entry.nikController.text = blockNik;
         entry.kkNameController.text =
             blockKkName.isNotEmpty ? blockKkName : kkName;
         entry.rtController.text = blockRt;
@@ -4714,7 +5334,9 @@ List<HouseReportEntry> _parseHouseEntriesFromReports(
       final lines = block.split('\n');
       for (var line in lines) {
         final t = line.trim();
-        if (t.startsWith('Nama KK: ')) {
+        if (t.startsWith('NIK: ')) {
+          entry.nikController.text = t.substring(5).trim();
+        } else if (t.startsWith('Nama KK: ')) {
           entry.kkNameController.text = t.substring(9).trim();
         } else if (t.startsWith('RT/RW: ')) {
           final parts = t.substring(7).split('/');
