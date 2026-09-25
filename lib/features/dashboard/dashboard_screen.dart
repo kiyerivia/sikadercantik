@@ -217,24 +217,24 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
-          'Semangat selalu untuk kegiatan Posyandu\ndan PSN di lingkungan kita!',
+          'Semangat kegiatan Posyandu\n& PSN di lingkungan kita!',
           style: GoogleFonts.outfit(
             color: const Color(0xFF4A5568),
             fontSize: isDesktop ? 11.5 : 9.5,
             height: 1.25,
           ),
-          maxLines: 3,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         Row(
           children: [
             Icon(
               Icons.location_on,
               color: const Color(0xFF10365F),
-              size: isDesktop ? 15 : 13,
+              size: isDesktop ? 15 : 12,
             ),
             const SizedBox(width: 4),
             Expanded(
@@ -243,24 +243,24 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   loc,
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF10365F),
-                    fontSize: isDesktop ? 11 : 10,
+                    fontSize: isDesktop ? 11 : 9.5,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 loading: () => Text(
-                  'Mencari lokasi akurat...',
+                  'Mencari lokasi...',
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF718096),
-                    fontSize: isDesktop ? 11 : 10,
+                    fontSize: isDesktop ? 11 : 9.5,
                   ),
                 ),
                 error: (_, _) => Text(
                   LocationService.defaultLocation,
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF10365F),
-                    fontSize: isDesktop ? 11 : 10,
+                    fontSize: isDesktop ? 11 : 9.5,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -283,7 +283,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
   }) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () {
           showDialog(
@@ -291,14 +291,15 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
             builder: (ctx) => const PsnRecapDialog(),
           );
         },
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 14 : 4,
-            vertical: isDesktop ? 12 : 6,
+            horizontal: isDesktop ? 14 : 6,
+            vertical: isDesktop ? 12 : 8,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: EdgeInsets.all(isDesktop ? 6 : 4),
@@ -315,8 +316,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   fit: BoxFit.contain,
                 ),
               ),
-              SizedBox(width: isDesktop ? 10 : 5),
-              Flexible(
+              SizedBox(width: isDesktop ? 10 : 6),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -326,10 +327,11 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                       'Jentik Nyamuk',
                       style: GoogleFonts.outfit(
                         color: const Color(0xFF10365F),
-                        fontSize: isDesktop ? 14.5 : 12,
+                        fontSize: isDesktop ? 14.5 : 12.5,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -340,10 +342,11 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                             statusLabel,
                             style: GoogleFonts.outfit(
                               color: statusColor,
-                              fontSize: isDesktop ? 13 : 11,
+                              fontSize: isDesktop ? 13 : 11.5,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 3),
@@ -357,7 +360,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   ],
                 ),
               ),
-              SizedBox(width: isDesktop ? 4 : 2),
+              const SizedBox(width: 2),
               Icon(
                 Icons.chevron_right,
                 color: const Color(0xFF0288D1),
@@ -380,8 +383,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     IconData statusIcon,
   ) {
     if (screenWidth < 768) {
-      // ── HP / MOBILE MODE (Proportionally fitted, zero overflow) ──
-      const double baseWidth = 620.0;
+      // ── HP / MOBILE MODE (Symmetrical, proportionally fitted) ──
+      const double baseWidth = 640.0;
       const double heroHeight = 280.0;
       final scale = screenWidth / baseWidth;
 
@@ -417,26 +420,28 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 ),
                 Positioned(
                   bottom: 0,
-                  left: 6,
-                  right: 6,
-                  height: 128,
+                  left: 8,
+                  right: 8,
+                  height: 126,
                   child: Image.asset(
                     'assets/images/shape_white.png',
                     fit: BoxFit.fill,
                   ),
                 ),
+                // Symmetrical Left Greeting (Width 195, Margin 22)
                 Positioned(
-                  left: 20,
-                  bottom: 12,
-                  width: 200,
-                  height: 104,
+                  left: 22,
+                  bottom: 15,
+                  width: 195,
+                  height: 96,
                   child: _buildGreetingContent(locationAsync, isDesktop: false),
                 ),
+                // Symmetrical Right Jentik Button (Width 195, Margin 22)
                 Positioned(
-                  right: 12,
-                  bottom: 12,
-                  width: 220,
-                  height: 100,
+                  right: 22,
+                  bottom: 15,
+                  width: 195,
+                  height: 96,
                   child: _buildJentikButtonContent(
                     context,
                     statusLabel,
@@ -445,16 +450,17 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                     isDesktop: false,
                   ),
                 ),
+                // Symmetrical Center Emblem Logo (Width 170, Centered)
                 Positioned(
-                  top: 76,
-                  bottom: 2,
+                  top: 74,
+                  bottom: 4,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Image.asset(
                       'assets/images/logo_sikadercantik_new.png',
-                      width: 180,
-                      height: 180,
+                      width: 170,
+                      height: 170,
                       fit: BoxFit.contain,
                     ),
                   ),
