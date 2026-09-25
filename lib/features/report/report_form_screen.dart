@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,119 @@ import '../../shared/providers/auth_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
+
+/// Normalizes RT/RW string into standard 2-digit format (e.g. 02/03)
+String _normalizeRtRw(String val) {
+  final clean = val.trim();
+  if (clean.isEmpty || clean == '- / -' || clean == '-/-' || clean == '/') return '';
+  final parts = clean.split('/');
+  if (parts.length == 1) {
+    final d = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.isNotEmpty) {
+      return '${d.padLeft(2, '0')}/00';
+    }
+    return '';
+  } else if (parts.length >= 2) {
+    final rtDigits = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+    final rwDigits = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+    if (rtDigits.isEmpty && rwDigits.isEmpty) return '';
+    final rt = rtDigits.isNotEmpty ? rtDigits.padLeft(2, '0') : '00';
+    final rw = rwDigits.isNotEmpty ? rwDigits.padLeft(2, '0') : '00';
+    return '$rt/$rw';
+  }
+  return clean;
+}
+
+/// Custom formatter for RT/RW (strictly digits, automatically inserts slash after 2 digits, e.g. 02/03)
+class _RtRwInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final oldText = oldValue.text;
+    String newText = newValue.text;
+
+    // Handle backspace when cursor is right after '/'
+    // e.g. old was "02/" and user hit backspace -> newText is "02"
+    if (oldText.endsWith('/') && newText == oldText.substring(0, oldText.length - 1)) {
+      if (newText.isNotEmpty) {
+        newText = newText.substring(0, newText.length - 1);
+      }
+    }
+
+    // If user manually typed '/' after 1 digit (e.g. "2/")
+    if (newText.endsWith('/') && !oldText.endsWith('/') && newText.length >= oldText.length) {
+      final beforeSlash = newText.substring(0, newText.length - 1).replaceAll(RegExp(r'[^0-9]'), '');
+      if (beforeSlash.length == 1) {
+        newText = '0$beforeSlash/';
+      }
+    }
+
+    // Check if pasted with slash (e.g. "2/3" or "02/03")
+    if (newText.contains('/') && newText.length - oldText.length > 2) {
+      final parts = newText.split('/');
+      if (parts.length >= 2) {
+        final rPart = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
+        final wPart = parts[1].replaceAll(RegExp(r'[^0-9]'), '');
+        final rDigits = rPart.length > 2 ? rPart.substring(0, 2) : rPart;
+        final wDigits = wPart.length > 2 ? wPart.substring(0, 2) : wPart;
+        final rPadded = rDigits.isNotEmpty ? rDigits.padLeft(2, '0') : '00';
+        final wPadded = wDigits.isNotEmpty ? wDigits.padLeft(2, '0') : '00';
+        final res = '$rPadded/$wPadded';
+        return TextEditingValue(
+          text: res,
+          selection: TextSelection.collapsed(offset: res.length),
+        );
+      }
+    }
+
+    // Extract only digits, max 4 digits (2 for RT, 2 for RW)
+    String digits = newText.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 4) {
+      digits = digits.substring(0, 4);
+    }
+
+    String formatted = '';
+    if (digits.length <= 2) {
+      if (digits.length == 2 && newText.length >= oldText.length) {
+        formatted = '$digits/';
+      } else {
+        formatted = digits;
+      }
+    } else {
+      formatted = '${digits.substring(0, 2)}/${digits.substring(2)}';
+    }
+
+    int cursorOffset;
+    if (newValue.selection.end >= newText.length) {
+      cursorOffset = formatted.length;
+    } else {
+      final digitsBeforeCursor = newText
+          .substring(0, newValue.selection.end.clamp(0, newText.length))
+          .replaceAll(RegExp(r'[^0-9]'), '')
+          .length;
+      if (digitsBeforeCursor <= 2) {
+        cursorOffset = digitsBeforeCursor;
+        if (formatted.length > 2 && digitsBeforeCursor == 2) {
+          cursorOffset = 3;
+        }
+      } else {
+        cursorOffset = digitsBeforeCursor + 1;
+      }
+      cursorOffset = cursorOffset.clamp(0, formatted.length);
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: cursorOffset),
+    );
+  }
+}
 
 class HouseReportEntry {
   final TextEditingController nikController = TextEditingController();
@@ -101,6 +215,60 @@ class _HouseInputCard extends StatefulWidget {
 }
 
 class _HouseInputCardState extends State<_HouseInputCard> {
+  late final FocusNode _rtRwFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _rtRwFocusNode = FocusNode();
+    _syncRtRw();
+    _rtRwFocusNode.addListener(_onRtRwFocusChange);
+  }
+
+  void _syncRtRw() {
+    if (widget.entry.rtRwController.text.isEmpty) {
+      final rt = widget.entry.rtController.text.trim();
+      final rw = widget.entry.rwController.text.trim();
+      if (rt.isNotEmpty || rw.isNotEmpty) {
+        final rtPadded = rt.isNotEmpty ? rt.padLeft(2, '0') : '00';
+        final rwPadded = rw.isNotEmpty ? rw.padLeft(2, '0') : '00';
+        widget.entry.rtRwController.text = '$rtPadded/$rwPadded';
+      }
+    } else {
+      final norm = _normalizeRtRw(widget.entry.rtRwController.text);
+      if (norm.isNotEmpty && norm != widget.entry.rtRwController.text) {
+        widget.entry.rtRwController.text = norm;
+      }
+    }
+  }
+
+  void _onRtRwFocusChange() {
+    if (!_rtRwFocusNode.hasFocus) {
+      final norm = _normalizeRtRw(widget.entry.rtRwController.text);
+      if (norm.isNotEmpty && norm != widget.entry.rtRwController.text) {
+        widget.entry.rtRwController.text = norm;
+        final parts = norm.split('/');
+        if (parts.isNotEmpty) widget.entry.rtController.text = parts[0].trim();
+        if (parts.length >= 2) widget.entry.rwController.text = parts[1].trim();
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HouseInputCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.entry != widget.entry) {
+      _syncRtRw();
+    }
+  }
+
+  @override
+  void dispose() {
+    _rtRwFocusNode.removeListener(_onRtRwFocusChange);
+    _rtRwFocusNode.dispose();
+    super.dispose();
+  }
+
   String? _getDuplicateNikError() {
     final currentNik = widget.entry.nikController.text.trim();
     if (currentNik.isEmpty || widget.allEntries == null) return null;
@@ -268,8 +436,28 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                     icon: Icons.home,
                     child: TextFormField(
                       controller: entry.rtRwController,
+                      focusNode: _rtRwFocusNode,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [_RtRwInputFormatter()],
+                      maxLength: 5,
+                      onChanged: (val) {
+                        final parts = val.split('/');
+                        if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                        if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                      },
+                      onEditingComplete: () {
+                        final norm = _normalizeRtRw(entry.rtRwController.text);
+                        if (norm.isNotEmpty) {
+                          entry.rtRwController.text = norm;
+                          final parts = norm.split('/');
+                          if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                          if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                        }
+                        FocusScope.of(context).unfocus();
+                      },
                       decoration: InputDecoration(
-                        hintText: '- / -',
+                        hintText: '02/03',
+                        counterText: '',
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -353,8 +541,28 @@ class _HouseInputCardState extends State<_HouseInputCard> {
               icon: Icons.home,
               child: TextFormField(
                 controller: entry.rtRwController,
+                focusNode: _rtRwFocusNode,
+                keyboardType: TextInputType.number,
+                inputFormatters: [_RtRwInputFormatter()],
+                maxLength: 5,
+                onChanged: (val) {
+                  final parts = val.split('/');
+                  if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                  if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                },
+                onEditingComplete: () {
+                  final norm = _normalizeRtRw(entry.rtRwController.text);
+                  if (norm.isNotEmpty) {
+                    entry.rtRwController.text = norm;
+                    final parts = norm.split('/');
+                    if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                    if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                  }
+                  FocusScope.of(context).unfocus();
+                },
                 decoration: InputDecoration(
-                  hintText: '- / -',
+                  hintText: '02/03',
+                  counterText: '',
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -866,8 +1074,9 @@ class ReportFormScreen extends HookConsumerWidget {
                 entry.kkNameController.text = t.substring(9).trim();
               } else if (t.startsWith('RT/RW: ')) {
                 final rtrw = t.substring(7).trim();
-                entry.rtRwController.text = rtrw;
-                final parts = rtrw.split('/');
+                final norm = _normalizeRtRw(rtrw);
+                entry.rtRwController.text = norm.isNotEmpty ? norm : rtrw;
+                final parts = entry.rtRwController.text.split('/');
                 if (parts.length == 2) {
                   entry.rtController.text = parts[0].trim();
                   entry.rwController.text = parts[1].trim();
@@ -949,8 +1158,9 @@ class ReportFormScreen extends HookConsumerWidget {
                 entry.kkNameController.text = t.substring(9).trim();
               } else if (t.startsWith('RT/RW: ')) {
                 final rtrw = t.substring(7).trim();
-                entry.rtRwController.text = rtrw;
-                final parts = rtrw.split('/');
+                final norm = _normalizeRtRw(rtrw);
+                entry.rtRwController.text = norm.isNotEmpty ? norm : rtrw;
+                final parts = entry.rtRwController.text.split('/');
                 if (parts.length == 2) {
                   entry.rtController.text = parts[0].trim();
                   entry.rwController.text = parts[1].trim();
@@ -1039,6 +1249,14 @@ class ReportFormScreen extends HookConsumerWidget {
     }, [selectedPosyanduId.value, initialReport, copyFromReport]);
 
     Future<void> saveAndAddHouseEntry(HouseReportEntry newEntry) async {
+      if (newEntry.rtRwController.text.trim().isNotEmpty && newEntry.rtRwController.text.trim() != '- / -') {
+        final norm = _normalizeRtRw(newEntry.rtRwController.text.trim());
+        newEntry.rtRwController.text = norm;
+        final parts = norm.split('/');
+        if (parts.isNotEmpty) newEntry.rtController.text = parts[0].trim();
+        if (parts.length >= 2) newEntry.rwController.text = parts[1].trim();
+      }
+
       // 1. Update existing entry in houseEntries with latest inspection date/status or insert at top
       final existingIndex = houseEntries.value.indexWhere(
         (e) =>
@@ -1051,6 +1269,7 @@ class ReportFormScreen extends HookConsumerWidget {
         old.reportDate = newEntry.reportDate;
         old.rtController.text = newEntry.rtController.text;
         old.rwController.text = newEntry.rwController.text;
+        old.rtRwController.text = newEntry.rtRwController.text;
         old.isPositive = newEntry.isPositive;
         old.selectedPlaceIds = List<String?>.from(newEntry.selectedPlaceIds);
         old.positivePlacesCountController.text =
@@ -1116,8 +1335,11 @@ class ReportFormScreen extends HookConsumerWidget {
                 block.toLowerCase().contains('nama kk: ${targetKk.toLowerCase()}')) {
               kkFound = true;
               final sb = StringBuffer();
+              final entryRtRw = newEntry.rtRwController.text.trim().isNotEmpty && newEntry.rtRwController.text.trim() != '- / -'
+                  ? _normalizeRtRw(newEntry.rtRwController.text.trim())
+                  : '${newEntry.rtController.text.trim().isEmpty ? "00" : newEntry.rtController.text.trim().padLeft(2, '0')}/${newEntry.rwController.text.trim().isEmpty ? "00" : newEntry.rwController.text.trim().padLeft(2, '0')}';
               sb.writeln('Nama KK: ${newEntry.kkNameController.text.trim()}');
-              sb.writeln('RT/RW: ${newEntry.rtController.text.trim()}/${newEntry.rwController.text.trim()}');
+              sb.writeln('RT/RW: $entryRtRw');
               sb.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
               sb.writeln('Tempat: ${isPos && placeNames.isNotEmpty ? placeNames.join(', ') : "-"}');
               sb.writeln('Jumlah: $countStr');
@@ -1129,8 +1351,11 @@ class ReportFormScreen extends HookConsumerWidget {
 
           if (!kkFound) {
             final sb = StringBuffer();
+            final entryRtRw = newEntry.rtRwController.text.trim().isNotEmpty && newEntry.rtRwController.text.trim() != '- / -'
+                ? _normalizeRtRw(newEntry.rtRwController.text.trim())
+                : '${newEntry.rtController.text.trim().isEmpty ? "00" : newEntry.rtController.text.trim().padLeft(2, '0')}/${newEntry.rwController.text.trim().isEmpty ? "00" : newEntry.rwController.text.trim().padLeft(2, '0')}';
             sb.writeln('Nama KK: ${newEntry.kkNameController.text.trim()}');
-            sb.writeln('RT/RW: ${newEntry.rtController.text.trim()}/${newEntry.rwController.text.trim()}');
+            sb.writeln('RT/RW: $entryRtRw');
             sb.writeln('Hasil: ${isPos ? "Ada Jentik" : "Nihil"}');
             sb.writeln('Tempat: ${isPos && placeNames.isNotEmpty ? placeNames.join(', ') : "-"}');
             sb.writeln('Jumlah: $countStr');
@@ -1197,10 +1422,13 @@ class ReportFormScreen extends HookConsumerWidget {
           pId ??= '20000000-0000-0000-0007-000000000001';
 
           final StringBuffer notesBuffer = StringBuffer();
+          final entryRtRw = newEntry.rtRwController.text.trim().isNotEmpty && newEntry.rtRwController.text.trim() != '- / -'
+              ? _normalizeRtRw(newEntry.rtRwController.text.trim())
+              : '${newEntry.rtController.text.trim().isEmpty ? "00" : newEntry.rtController.text.trim().padLeft(2, '0')}/${newEntry.rwController.text.trim().isEmpty ? "00" : newEntry.rwController.text.trim().padLeft(2, '0')}';
           notesBuffer.writeln('--- KK 1 ---');
           notesBuffer.writeln('Nama KK: ${newEntry.kkNameController.text.trim()}');
           notesBuffer.writeln(
-            'RT/RW: ${newEntry.rtController.text.trim()}/${newEntry.rwController.text.trim()}',
+            'RT/RW: $entryRtRw',
           );
           notesBuffer.writeln(
             'Hasil: ${isPos ? "Ada Jentik" : "Nihil"}',
@@ -1573,7 +1801,9 @@ class ReportFormScreen extends HookConsumerWidget {
           h.villageName = entryVillage;
           h.posyanduName = entryPosyandu;
           if (h.rtRwController.text.trim().isNotEmpty && h.rtRwController.text.trim() != '- / -') {
-            final parts = h.rtRwController.text.trim().split('/');
+            final norm = _normalizeRtRw(h.rtRwController.text.trim());
+            h.rtRwController.text = norm;
+            final parts = norm.split('/');
             if (parts.isNotEmpty) h.rtController.text = parts[0].trim();
             if (parts.length >= 2) h.rwController.text = parts[1].trim();
           }
@@ -1657,8 +1887,8 @@ class ReportFormScreen extends HookConsumerWidget {
                   : h.positivePlacesCountController.text.trim())
               : '0';
           final rtrwStr = h.rtRwController.text.trim().isNotEmpty && h.rtRwController.text.trim() != '- / -'
-              ? h.rtRwController.text.trim()
-              : '${h.rtController.text.trim().isEmpty ? "-" : h.rtController.text.trim()}/${h.rwController.text.trim().isEmpty ? "-" : h.rwController.text.trim()}';
+              ? _normalizeRtRw(h.rtRwController.text.trim())
+              : '${h.rtController.text.trim().isEmpty ? "00" : h.rtController.text.trim().padLeft(2, '0')}/${h.rwController.text.trim().isEmpty ? "00" : h.rwController.text.trim().padLeft(2, '0')}';
 
           final existingIdx = allKkData.indexWhere(
             (k) =>
@@ -2208,8 +2438,11 @@ class ReportFormScreen extends HookConsumerWidget {
                             const SizedBox(height: 8),
 
                             // Bottom Action Buttons: "+ Tambah Data", "Simpan Draf" & "Kirim Laporan"
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 10,
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 if (!isEditMode)
                                   // Small "Tambah Data" Button (only in Add/New mode)
@@ -2222,7 +2455,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                     },
                                     icon: const Icon(
                                       Icons.add_circle_outline,
-                                      size: 16,
+                                      size: 15,
                                       color: Color(0xFF27AE60),
                                     ),
                                     label: Text(
@@ -2230,7 +2463,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                       style: GoogleFonts.outfit(
                                         color: const Color(0xFF27AE60),
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        fontSize: 12.5,
                                       ),
                                     ),
                                     style: OutlinedButton.styleFrom(
@@ -2242,8 +2475,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 10,
+                                        horizontal: 10,
+                                        vertical: 8,
                                       ),
                                       visualDensity: VisualDensity.compact,
                                     ),
@@ -2251,15 +2484,17 @@ class ReportFormScreen extends HookConsumerWidget {
                                 else
                                   const SizedBox.shrink(),
 
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     if (!isEditMode) ...[
                                       OutlinedButton.icon(
                                         onPressed: isLoading.value ? null : () => saveDraft(),
                                         icon: const Icon(
                                           Icons.bookmark_add_outlined,
-                                          size: 16,
+                                          size: 15,
                                           color: Color(0xFFE67E22),
                                         ),
                                         label: Text(
@@ -2267,7 +2502,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                           style: GoogleFonts.outfit(
                                             color: const Color(0xFFE67E22),
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13,
+                                            fontSize: 12.5,
                                           ),
                                         ),
                                         style: OutlinedButton.styleFrom(
@@ -2279,13 +2514,12 @@ class ReportFormScreen extends HookConsumerWidget {
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10,
+                                            horizontal: 10,
+                                            vertical: 8,
                                           ),
                                           visualDensity: VisualDensity.compact,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
                                     ],
 
                                     // Submit Button
@@ -2305,7 +2539,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                           : const Icon(
                                               Icons.send,
                                               color: Colors.white,
-                                              size: 16,
+                                              size: 15,
                                             ),
                                       label: Text(
                                         isEditMode
@@ -2314,7 +2548,7 @@ class ReportFormScreen extends HookConsumerWidget {
                                         style: GoogleFonts.outfit(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 13,
+                                          fontSize: 12.5,
                                         ),
                                       ),
                                       style: ElevatedButton.styleFrom(
@@ -2325,8 +2559,8 @@ class ReportFormScreen extends HookConsumerWidget {
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 18,
-                                          vertical: 10,
+                                          horizontal: 14,
+                                          vertical: 8,
                                         ),
                                         visualDensity: VisualDensity.compact,
                                       ),
@@ -3963,8 +4197,13 @@ class _KkAddDialogWidgetState extends State<_KkAddDialogWidget> {
       isEditing: false,
     );
     newEntry.kkNameController.text = name;
-    newEntry.rtController.text = _rtController.text.trim();
-    newEntry.rwController.text = _rwController.text.trim();
+    final rtTrimmed = _rtController.text.trim();
+    final rwTrimmed = _rwController.text.trim();
+    newEntry.rtController.text = rtTrimmed.isNotEmpty ? rtTrimmed.padLeft(2, '0') : '';
+    newEntry.rwController.text = rwTrimmed.isNotEmpty ? rwTrimmed.padLeft(2, '0') : '';
+    newEntry.rtRwController.text = (newEntry.rtController.text.isNotEmpty || newEntry.rwController.text.isNotEmpty)
+        ? '${newEntry.rtController.text.isEmpty ? "00" : newEntry.rtController.text}/${newEntry.rwController.text.isEmpty ? "00" : newEntry.rwController.text}'
+        : '';
 
     if (_isPositive == true) {
       newEntry.selectedPlaceIds = _selectedPlaceIds
@@ -4154,8 +4393,14 @@ class _KkAddDialogWidgetState extends State<_KkAddDialogWidget> {
                               TextFormField(
                                 controller: _rtController,
                                 keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(2),
+                                ],
+                                maxLength: 2,
                                 decoration: InputDecoration(
                                   hintText: '00',
+                                  counterText: '',
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -4186,8 +4431,14 @@ class _KkAddDialogWidgetState extends State<_KkAddDialogWidget> {
                               TextFormField(
                                 controller: _rwController,
                                 keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(2),
+                                ],
+                                maxLength: 2,
                                 decoration: InputDecoration(
                                   hintText: '00',
+                                  counterText: '',
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -4612,8 +4863,13 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
   void _saveAsUpdate() {
     widget.entry.reportDate = _editReportDate;
     widget.entry.kkNameController.text = _nameController.text.trim();
-    widget.entry.rtController.text = _rtController.text.trim();
-    widget.entry.rwController.text = _rwController.text.trim();
+    final rtTrimmed = _rtController.text.trim();
+    final rwTrimmed = _rwController.text.trim();
+    widget.entry.rtController.text = rtTrimmed.isNotEmpty ? rtTrimmed.padLeft(2, '0') : '';
+    widget.entry.rwController.text = rwTrimmed.isNotEmpty ? rwTrimmed.padLeft(2, '0') : '';
+    widget.entry.rtRwController.text = (widget.entry.rtController.text.isNotEmpty || widget.entry.rwController.text.isNotEmpty)
+        ? '${widget.entry.rtController.text.isEmpty ? "00" : widget.entry.rtController.text}/${widget.entry.rwController.text.isEmpty ? "00" : widget.entry.rwController.text}'
+        : '';
     widget.entry.isPositive = _isPositive;
     if (_isPositive == true) {
       widget.entry.selectedPlaceIds = _selectedPlaceIds
@@ -4809,8 +5065,14 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
                               TextFormField(
                                 controller: _rtController,
                                 keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(2),
+                                ],
+                                maxLength: 2,
                                 decoration: InputDecoration(
                                   hintText: '00',
+                                  counterText: '',
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -4841,8 +5103,14 @@ class _KkEditDialogWidgetState extends State<_KkEditDialogWidget> {
                               TextFormField(
                                 controller: _rwController,
                                 keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(2),
+                                ],
+                                maxLength: 2,
                                 decoration: InputDecoration(
                                   hintText: '00',
+                                  counterText: '',
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
