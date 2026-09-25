@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -752,7 +753,9 @@ class _RealtimeLocationSectionState extends State<RealtimeLocationSection> {
           return widget.errorBuilder(context, 'Gagal mengambil GPS');
         } else {
           return FutureBuilder<Position?>(
-            future: Geolocator.getLastKnownPosition(),
+            future: kIsWeb
+                ? Future<Position?>.value(null)
+                : Geolocator.getLastKnownPosition().catchError((_) => null),
             builder: (context, futureSnapshot) {
               if (futureSnapshot.hasData && futureSnapshot.data != null) {
                 final pos = futureSnapshot.data!;

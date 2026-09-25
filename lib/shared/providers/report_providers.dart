@@ -31,19 +31,41 @@ final interventionsByReportProvider = FutureProvider.family<List<Map<String, dyn
   return await repo.getInterventionsByReport(reportId);
 });
 
-final allAdminNotesProvider = FutureProvider<Map<String, String>>((ref) async {
+final allInterventionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final client = ref.watch(supabaseClientProvider);
   final response = await client
       .from('interventions')
-      .select('report_id, description')
-      .eq('type', 'kunjungan_rumah')
-      .order('created_at', ascending: true);
-  
-  Map<String, String> map = {};
-  for (var row in (response as List)) {
-    map[row['report_id'] as String] = row['description'] as String;
+      .select('*')
+      .order('created_at', ascending: false);
+  return List<Map<String, dynamic>>.from(response as List);
+});
+
+final allAdminNotesProvider = FutureProvider<Map<String, String>>((ref) async {
+  try {
+    final interventions = await ref.watch(allInterventionsProvider.future);
+    Map<String, String> map = {};
+    for (var row in interventions) {
+      final rId = row['report_id']?.toString();
+      final desc = row['description']?.toString();
+      if (rId != null && desc != null && !map.containsKey(rId)) {
+        map[rId] = desc;
+      }
+    }
+    return map;
+  } catch (_) {
+    return {};
   }
-  return map;
+});
+
+final intervenedReportIdsProvider = Provider<Set<String>>((ref) {
+  final interventionsAsync = ref.watch(allInterventionsProvider);
+  return interventionsAsync.maybeWhen(
+    data: (list) => list
+        .map((i) => i['report_id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet(),
+    orElse: () => <String>{},
+  );
 });
 
 final interventionCountProvider = Provider<int>((ref) {

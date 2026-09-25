@@ -7,6 +7,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/user_profile_menu.dart';
+import '../../shared/services/location_service.dart';
 
 Widget _buildAppBarTitle() {
   return Row(
@@ -41,6 +42,7 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
         : (isTablet ? (screenWidth - 680) / 2 : 20.0);
     final heroHeight = isDesktop ? 340.0 : (isTablet ? 320.0 : 280.0);
     final reportsAsync = ref.watch(allReportsProvider);
+    final locationAsync = ref.watch(currentLocationNameProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -124,6 +126,41 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                                 fontSize: 13,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  color: AppTheme.primaryBlue,
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 3),
+                                locationAsync.when(
+                                  data: (loc) => Text(
+                                    loc,
+                                    style: GoogleFonts.outfit(
+                                      color: AppTheme.textDark.withValues(alpha: 0.7),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  loading: () => Text(
+                                    'Mencari lokasi...',
+                                    style: GoogleFonts.outfit(
+                                      color: AppTheme.textDark.withValues(alpha: 0.5),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  error: (_, _) => Text(
+                                    LocationService.defaultLocation,
+                                    style: GoogleFonts.outfit(
+                                      color: AppTheme.textDark.withValues(alpha: 0.7),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         Icon(
@@ -170,31 +207,31 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Kelola Pengguna',
-                            subtitle: 'Kelola admin dan\nsuperadmin',
-                            icon: Icons.people_alt,
-                            iconColor: AppTheme.secondaryBlue,
-                            onTap: () {},
+                            title: 'Monitoring Laporan',
+                            subtitle: 'Pantau laporan\nseluruh wilayah',
+                            icon: Icons.assignment,
+                            iconColor: const Color(0xFF81C784),
+                            onTap: () => context.push('/superadmin-reports'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Monitoring Laporan',
-                            subtitle: 'Monitoring laporan\nseluruh wilayah',
+                            title: 'Rekapitulasi Global',
+                            subtitle: 'Grafik ABJ &\nanalisis data',
                             icon: Icons.bar_chart,
-                            iconColor: AppTheme.primaryBlue,
+                            iconColor: AppTheme.primaryGreen,
                             onTap: () => context.push('/analytics'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Pengaturan Sistem',
-                            subtitle: 'Pengaturan aplikasi\ndan sistem',
-                            icon: Icons.settings,
-                            iconColor: AppTheme.primaryBlue,
-                            onTap: () {},
+                            title: 'Peta Sebaran',
+                            subtitle: 'Peta digital jentik\nse-Kabupaten',
+                            icon: Icons.map_rounded,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () => context.push('/map'),
                           ),
                         ),
                       ],
@@ -214,11 +251,11 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Kelola Pengguna',
-                            subtitle: 'Kelola admin dan\nsuperadmin',
-                            icon: Icons.people_alt,
-                            iconColor: AppTheme.secondaryBlue,
-                            onTap: () {},
+                            title: 'Monitoring Laporan',
+                            subtitle: 'Pantau laporan\nseluruh wilayah',
+                            icon: Icons.assignment,
+                            iconColor: const Color(0xFF81C784),
+                            onTap: () => context.push('/superadmin-reports'),
                           ),
                         ),
                       ],
@@ -228,21 +265,21 @@ class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardS
                       children: [
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Monitoring Laporan',
-                            subtitle: 'Monitoring laporan\nseluruh wilayah',
+                            title: 'Rekapitulasi Global',
+                            subtitle: 'Grafik ABJ &\nanalisis data',
                             icon: Icons.bar_chart,
-                            iconColor: AppTheme.primaryBlue,
+                            iconColor: AppTheme.primaryGreen,
                             onTap: () => context.push('/analytics'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuGridItem(
-                            title: 'Pengaturan Sistem',
-                            subtitle: 'Pengaturan aplikasi\ndan sistem',
-                            icon: Icons.settings,
-                            iconColor: AppTheme.primaryBlue,
-                            onTap: () {},
+                            title: 'Peta Sebaran',
+                            subtitle: 'Peta digital jentik\nse-Kabupaten',
+                            icon: Icons.map_rounded,
+                            iconColor: AppTheme.secondaryBlue,
+                            onTap: () => context.push('/map'),
                           ),
                         ),
                       ],

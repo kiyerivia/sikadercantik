@@ -27,6 +27,7 @@ class LoginScreen extends HookConsumerWidget {
         if (!loginIdentifier.contains('@')) {
           loginIdentifier = '$loginIdentifier@sikatik.id';
         }
+        loginIdentifier = loginIdentifier.toLowerCase();
 
         await ref.read(authRepositoryProvider).signIn(
               email: loginIdentifier,
@@ -34,8 +35,18 @@ class LoginScreen extends HookConsumerWidget {
             );
       } catch (e) {
         if (context.mounted) {
+          String errorMessage = e.toString();
+          if (errorMessage.toLowerCase().contains('invalid login credentials') ||
+              errorMessage.toLowerCase().contains('invalid_grant')) {
+            errorMessage = 'Username atau Password salah.';
+          } else {
+            errorMessage = 'Login Gagal: $errorMessage';
+          }
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login Gagal: ${e.toString()}')),
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red.shade700,
+            ),
           );
         }
       } finally {

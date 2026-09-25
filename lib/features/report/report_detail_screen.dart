@@ -158,14 +158,61 @@ class ReportDetailScreen extends ConsumerWidget {
 
                   const SizedBox(height: 32),
 
-                  // Admin Actions (Always show Intervention button for Admin)
-                  _buildSectionTitle('TINDAKAN ADMIN'),
+                  // Admin Actions
+                  _buildSectionTitle('TINDAKAN ADMIN & SUPERADMIN'),
                   const SizedBox(height: 16),
+                  if (report.status != 'verified') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+                        label: Text(
+                          'SETUJUI & VERIFIKASI LAPORAN',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D32),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 2,
+                        ),
+                        onPressed: () async {
+                          try {
+                            await ref.read(reportRepositoryProvider).updateReportStatus(report.id, 'verified');
+                            ref.invalidate(allReportsProvider);
+                            ref.invalidate(myReportsProvider);
+                            ref.invalidate(pendingVerificationCountProvider);
+                            ref.invalidate(interventionCountProvider);
+                            ref.invalidate(adminStatsProvider);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Laporan berhasil diverifikasi!'),
+                                  backgroundColor: Color(0xFF2E7D32),
+                                ),
+                              );
+                              context.pop();
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Gagal verifikasi: $e'), backgroundColor: Colors.red),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.assignment_late),
-                      label: Text('MINTA PERBAIKAN DATA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                      label: Text(
+                        report.status == 'verified' ? 'MINTA REVISI / PERBAIKAN ULANG' : 'MINTA PERBAIKAN DATA',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.orange[800],
                         side: BorderSide(color: Colors.orange[800]!),

@@ -51,6 +51,7 @@ dependencies:
   latlong2: ^0.9.0
   geolocator: ^14.0.2
   shared_preferences: ^2.5.5
+  http: ^1.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -66,7 +67,6 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
-  http: any
 flutter:
 
   # The following line ensures that the Material Icons font is

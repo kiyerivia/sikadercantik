@@ -132,12 +132,12 @@ class MainShell extends ConsumerWidget {
     int currentIndex = 0;
     if (location == '/') {
       currentIndex = 0;
+    } else if (location.startsWith('/map')) {
+      currentIndex = 1;
     } else if (location.startsWith('/history') || location.startsWith('/report-detail')) {
       currentIndex = 2;
     } else if (location.startsWith('/analytics')) {
       currentIndex = 3;
-    } else if (location.startsWith('/map')) {
-      currentIndex = 3; // map maps to Rekap/analytics or we can add it to sub-navigation
     }
 
     return Scaffold(
@@ -147,6 +147,8 @@ class MainShell extends ConsumerWidget {
         onTap: (index) {
           if (index == 0) {
             context.go('/');
+          } else if (index == 1) {
+            context.go('/map');
           } else if (index == 2) {
             context.go('/history');
           } else if (index == 3) {
@@ -168,7 +170,7 @@ class MainShell extends ConsumerWidget {
         unselectedLabelStyle: GoogleFonts.outfit(fontSize: 10),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Kader'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
           BottomNavigationBarItem(
             icon: Icon(Icons.fact_check),
             label: 'Verifikasi',
@@ -192,8 +194,12 @@ class MainShell extends ConsumerWidget {
       currentIndex = 0;
     } else if (location.startsWith('/locations')) {
       currentIndex = 1;
-    } else if (location.startsWith('/analytics') || location.startsWith('/superadmin-reports')) {
+    } else if (location.startsWith('/map')) {
+      currentIndex = 2;
+    } else if (location.startsWith('/superadmin-reports')) {
       currentIndex = 3;
+    } else if (location.startsWith('/analytics')) {
+      currentIndex = 4;
     }
 
     return Scaffold(
@@ -205,7 +211,11 @@ class MainShell extends ConsumerWidget {
             context.go('/');
           } else if (index == 1) {
             context.go('/locations');
+          } else if (index == 2) {
+            context.go('/map');
           } else if (index == 3) {
+            context.go('/superadmin-reports');
+          } else if (index == 4) {
             context.go('/analytics');
           } else if (index == 5) {
             _showProfileDialog(context, ref, profile);
@@ -223,9 +233,9 @@ class MainShell extends ConsumerWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'Wilayah'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Pengguna'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Monitoring'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Pengaturan'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Laporan'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Rekap'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
