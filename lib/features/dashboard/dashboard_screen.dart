@@ -161,7 +161,6 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar: const _CurvedHeaderBar(),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -380,6 +379,51 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     );
   }
 
+  Widget _buildHeaderContent({bool isDesktop = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 28 : 24,
+        vertical: isDesktop ? 14 : 12,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/logo_dinas_banyumas.png',
+                height: isDesktop ? 36 : 38,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+              SizedBox(width: isDesktop ? 12 : 10),
+              Text(
+                'SiKader Cantik',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: isDesktop ? 18 : 21,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const NotificationBadge(),
+              SizedBox(width: isDesktop ? 14 : 12),
+              const UserProfileMenu(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeroSection(
     BuildContext context,
     double screenWidth,
@@ -392,7 +436,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     if (screenWidth < 768) {
       // ── HP / MOBILE MODE (Symmetrical, proportionally fitted) ──
       const double baseWidth = 640.0;
-      const double heroHeight = 280.0;
+      const double heroHeight = 350.0;
       final scale = screenWidth / baseWidth;
 
       return SizedBox(
@@ -408,15 +452,16 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               clipBehavior: Clip.none,
               alignment: Alignment.topCenter,
               children: [
+                // Layer 1: Background spans full width at the top (aspect 809x378)
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: 215,
+                  height: 300,
                   child: ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
                     ),
                     child: Image.asset(
                       'assets/images/background_dashboard.png',
@@ -425,30 +470,56 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                     ),
                   ),
                 ),
+
+                // Layer 2: Curved Header Bar (Floating centered over background)
+                Positioned(
+                  top: 0,
+                  left: 58,
+                  right: 58,
+                  height: 115,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/images/header.png',
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: _buildHeaderContent(isDesktop: false),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Layer 3: Shape White Card
                 Positioned(
                   bottom: 0,
-                  left: 8,
-                  right: 8,
-                  height: 126,
+                  left: 24,
+                  right: 24,
+                  height: 136,
                   child: Image.asset(
                     'assets/images/shape_white.png',
                     fit: BoxFit.fill,
                   ),
                 ),
-                // Symmetrical Left Greeting (Width 195, Margin 22)
+
+                // Layer 4: Symmetrical Left Greeting (Width 200, Margin 42)
                 Positioned(
-                  left: 22,
-                  bottom: 15,
-                  width: 195,
-                  height: 96,
+                  left: 42,
+                  bottom: 16,
+                  width: 200,
+                  height: 104,
                   child: _buildGreetingContent(locationAsync, isDesktop: false),
                 ),
-                // Symmetrical Right Jentik Button (Width 195, Margin 22)
+
+                // Layer 5: Symmetrical Right Jentik Button (Width 200, Margin 42)
                 Positioned(
-                  right: 22,
-                  bottom: 15,
-                  width: 195,
-                  height: 96,
+                  right: 42,
+                  bottom: 16,
+                  width: 200,
+                  height: 104,
                   child: _buildJentikButtonContent(
                     context,
                     statusLabel,
@@ -457,17 +528,17 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                     isDesktop: false,
                   ),
                 ),
-                // Symmetrical Center Emblem Logo (Width 170, Centered)
+
+                // Layer 6: Symmetrical Center Emblem Logo (Width 185, Centered)
                 Positioned(
-                  top: 74,
-                  bottom: 4,
+                  bottom: 8,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Image.asset(
                       'assets/images/logo_sikadercantik_new.png',
-                      width: 170,
-                      height: 170,
+                      width: 185,
+                      height: 185,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -480,7 +551,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     }
 
     // ── WINDOWS / DESKTOP MODE (Full width adaptation) ──
-    const double heroHeight = 310.0;
+    const double heroHeight = 400.0;
 
     return SizedBox(
       width: double.infinity,
@@ -494,7 +565,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
             top: 0,
             left: 0,
             right: 0,
-            height: 240,
+            height: 330,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(24),
@@ -503,12 +574,39 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               child: Image.asset(
                 'assets/images/background_dashboard.png',
                 fit: BoxFit.cover,
-                alignment: Alignment.center,
+                alignment: Alignment.topCenter,
               ),
             ),
           ),
 
-          // Layer 2: Shape White spans horizontally full width with horizontalPadding
+          // Layer 2: Header at the top
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SizedBox(
+                width: 720,
+                height: 90,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/header.png',
+                        fit: BoxFit.fill,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: _buildHeaderContent(isDesktop: true),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Layer 3: Shape White spans horizontally full width with horizontalPadding
           Positioned(
             bottom: 0,
             left: horizontalPadding,
@@ -568,9 +666,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
             ),
           ),
 
-          // Layer 3: Center Emblem Logo
+          // Layer 4: Center Emblem Logo
           Positioned(
-            top: 65,
             bottom: 6,
             left: 0,
             right: 0,
