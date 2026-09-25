@@ -179,12 +179,12 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               statusIcon,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // 7: Aksi Cepat Section
             _buildQuickActionsSection(context, horizontalPadding),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             // Informasi Card
             Padding(
@@ -195,7 +195,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             // Diagram Angka Bebas Jentik dari Semua Laporan
             Padding(
@@ -203,7 +203,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               child: _AbjTrendChartCard(allReportsAsync: allReportsAsync),
             ),
 
-            const SizedBox(height: 36),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -1540,70 +1540,74 @@ class _AbjTrendChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header: Icon + Title + Target Badge
+          // Header: Icon + Title + Target Badge (Wrapped to prevent overflow)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE1F5FE),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.show_chart_rounded,
-                      color: Color(0xFF0288D1),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tren Capaian ABJ',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF10365F),
-                        ),
-                      ),
-                      Text(
-                        'Dari akumulasi semua laporan',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11.5,
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE1F5FE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.show_chart_rounded,
+                  color: Color(0xFF0288D1),
+                  size: 17,
+                ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Tren Capaian ABJ',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF10365F),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Akumulasi semua laporan',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        color: const Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFA5D6A7)),
                 ),
                 child: Row(
@@ -1611,14 +1615,14 @@ class _AbjTrendChartCard extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.check_circle_outline_rounded,
-                      size: 13,
+                      size: 11,
                       color: Color(0xFF2E7D32),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Text(
                       'Target ≥95%',
                       style: GoogleFonts.outfit(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2E7D32),
                       ),
@@ -1629,11 +1633,11 @@ class _AbjTrendChartCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
 
-          // Chart Body
+          // Chart Body (Compact height: 125px)
           SizedBox(
-            height: 200,
+            height: 125,
             child: allReportsAsync.when(
               data: (reports) {
                 final points = _computeAbjPoints(reports);
@@ -1643,7 +1647,7 @@ class _AbjTrendChartCard extends StatelessWidget {
                       'Belum ada data laporan untuk grafik',
                       style: GoogleFonts.outfit(
                         color: const Color(0xFF94A3B8),
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   );
@@ -1662,19 +1666,19 @@ class _AbjTrendChartCard extends StatelessWidget {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      horizontalInterval: 25,
+                      horizontalInterval: 50,
                       getDrawingHorizontalLine: (value) => FlLine(
                         color: const Color(0xFFF1F5F9),
-                        strokeWidth: 1.2,
-                        dashArray: [5, 5],
+                        strokeWidth: 1.0,
+                        dashArray: [4, 4],
                       ),
                     ),
                     borderData: FlBorderData(
                       show: true,
                       border: const Border(
                         bottom:
-                            BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                        left: BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                            BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                        left: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
                         top: BorderSide.none,
                         right: BorderSide.none,
                       ),
@@ -1685,14 +1689,14 @@ class _AbjTrendChartCard extends StatelessWidget {
                           y: 95,
                           color:
                               const Color(0xFF2E7D32).withValues(alpha: 0.6),
-                          strokeWidth: 1.5,
-                          dashArray: [6, 4],
+                          strokeWidth: 1.2,
+                          dashArray: [5, 4],
                           label: HorizontalLineLabel(
                             show: true,
                             alignment: Alignment.topRight,
-                            padding: const EdgeInsets.only(right: 4, bottom: 2),
+                            padding: const EdgeInsets.only(right: 4, bottom: 1),
                             style: GoogleFonts.outfit(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF2E7D32),
                             ),
@@ -1711,14 +1715,14 @@ class _AbjTrendChartCard extends StatelessWidget {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 40,
-                          interval: 25,
+                          reservedSize: 32,
+                          interval: 50,
                           getTitlesWidget: (value, meta) {
                             if (value > 100) return const SizedBox.shrink();
                             return Text(
                               '${value.toInt()}%',
                               style: GoogleFonts.outfit(
-                                fontSize: 10.5,
+                                fontSize: 9.5,
                                 color: const Color(0xFF94A3B8),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1729,7 +1733,7 @@ class _AbjTrendChartCard extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 30,
+                          reservedSize: 22,
                           interval: 1,
                           getTitlesWidget: (value, meta) {
                             final idx = value.round();
@@ -1737,11 +1741,11 @@ class _AbjTrendChartCard extends StatelessWidget {
                                 idx < points.length &&
                                 (value - idx).abs() < 0.15) {
                               return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
+                                padding: const EdgeInsets.only(top: 4.0),
                                 child: Text(
                                   points[idx].label,
                                   style: GoogleFonts.outfit(
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF64748B),
                                   ),
@@ -1758,10 +1762,10 @@ class _AbjTrendChartCard extends StatelessWidget {
                       handleBuiltInTouches: true,
                       touchTooltipData: LineTouchTooltipData(
                         getTooltipColor: (spot) => const Color(0xFF10365F),
-                        tooltipBorderRadius: BorderRadius.circular(10),
+                        tooltipBorderRadius: BorderRadius.circular(8),
                         tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          horizontal: 10,
+                          vertical: 6,
                         ),
                         getTooltipItems: (touchedSpots) {
                           return touchedSpots.map((spot) {
@@ -1774,7 +1778,7 @@ class _AbjTrendChartCard extends StatelessWidget {
                               '$label\n',
                               GoogleFonts.outfit(
                                 color: Colors.white70,
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w500,
                               ),
                               children: [
@@ -1782,7 +1786,7 @@ class _AbjTrendChartCard extends StatelessWidget {
                                   text: 'ABJ: ${spot.y.toStringAsFixed(1)}%',
                                   style: GoogleFonts.outfit(
                                     color: Colors.white,
-                                    fontSize: 12.5,
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1802,16 +1806,16 @@ class _AbjTrendChartCard extends StatelessWidget {
                         curveSmoothness: 0.25,
                         preventCurveOverShooting: true,
                         color: const Color(0xFF0288D1),
-                        barWidth: 3.2,
+                        barWidth: 2.6,
                         isStrokeCapRound: true,
                         dotData: FlDotData(
                           show: true,
                           getDotPainter: (spot, percent, barData, index) {
                             final isTargetMet = spot.y >= 95;
                             return FlDotCirclePainter(
-                              radius: 4.5,
+                              radius: 3.5,
                               color: Colors.white,
-                              strokeWidth: 2.5,
+                              strokeWidth: 2.0,
                               strokeColor: isTargetMet
                                   ? const Color(0xFF2E7D32)
                                   : const Color(0xFF0288D1),
@@ -1824,7 +1828,7 @@ class _AbjTrendChartCard extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xFF0288D1).withValues(alpha: 0.22),
+                              const Color(0xFF0288D1).withValues(alpha: 0.20),
                               const Color(0xFF0288D1).withValues(alpha: 0.01),
                             ],
                           ),
@@ -1836,8 +1840,8 @@ class _AbjTrendChartCard extends StatelessWidget {
               },
               loading: () => const Center(
                 child: SizedBox(
-                  width: 24,
-                  height: 24,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
@@ -1846,58 +1850,44 @@ class _AbjTrendChartCard extends StatelessWidget {
                   'Gagal memuat data grafik',
                   style: GoogleFonts.outfit(
                     color: Colors.red.shade400,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Keterangan di bawah diagram (sesuai instruksi user)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFEDF2F7)),
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0288D1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Grafik Angka Bebas Jentik',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF10365F),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 10,
+                  height: 2.5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(width: 6),
                 Text(
-                  'Persentase rumah bebas jentik nyamuk dari akumulasi seluruh laporan posyandu.',
+                  'Grafik Angka Bebas Jentik',
                   style: GoogleFonts.outfit(
                     fontSize: 11,
-                    color: const Color(0xFF64748B),
-                    height: 1.3,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF10365F),
+                    letterSpacing: 0.2,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
