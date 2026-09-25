@@ -206,20 +206,22 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     bool isDesktop = false,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           'Halo, Kader Cantik',
+          textAlign: TextAlign.center,
           style: GoogleFonts.outfit(
             color: const Color(0xFF10365F),
-            fontSize: isDesktop ? 17 : 15,
+            fontSize: isDesktop ? 17 : 14.5,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 3),
         Text(
           'Semangat kegiatan Posyandu\n& PSN di lingkungan kita!',
+          textAlign: TextAlign.center,
           style: GoogleFonts.outfit(
             color: const Color(0xFF4A5568),
             fontSize: isDesktop ? 11.5 : 9.5,
@@ -230,6 +232,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
         ),
         const SizedBox(height: 5),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.location_on,
@@ -237,10 +241,11 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
               size: isDesktop ? 15 : 12,
             ),
             const SizedBox(width: 4),
-            Expanded(
+            Flexible(
               child: locationAsync.when(
                 data: (loc) => Text(
                   loc,
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF10365F),
                     fontSize: isDesktop ? 11 : 9.5,
@@ -251,6 +256,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 ),
                 loading: () => Text(
                   'Mencari lokasi...',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF718096),
                     fontSize: isDesktop ? 11 : 9.5,
@@ -258,6 +264,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 ),
                 error: (_, _) => Text(
                   LocationService.defaultLocation,
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF10365F),
                     fontSize: isDesktop ? 11 : 9.5,
@@ -528,7 +535,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                         // Left Greeting Content
                         Expanded(
                           child: Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: Alignment.center,
                             child: _buildGreetingContent(
                               locationAsync,
                               isDesktop: true,
