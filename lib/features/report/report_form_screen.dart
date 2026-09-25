@@ -215,14 +215,10 @@ class _HouseInputCard extends StatefulWidget {
 }
 
 class _HouseInputCardState extends State<_HouseInputCard> {
-  late final FocusNode _rtRwFocusNode;
-
   @override
   void initState() {
     super.initState();
-    _rtRwFocusNode = FocusNode();
     _syncRtRw();
-    _rtRwFocusNode.addListener(_onRtRwFocusChange);
   }
 
   void _syncRtRw() {
@@ -242,31 +238,12 @@ class _HouseInputCardState extends State<_HouseInputCard> {
     }
   }
 
-  void _onRtRwFocusChange() {
-    if (!_rtRwFocusNode.hasFocus) {
-      final norm = _normalizeRtRw(widget.entry.rtRwController.text);
-      if (norm.isNotEmpty && norm != widget.entry.rtRwController.text) {
-        widget.entry.rtRwController.text = norm;
-        final parts = norm.split('/');
-        if (parts.isNotEmpty) widget.entry.rtController.text = parts[0].trim();
-        if (parts.length >= 2) widget.entry.rwController.text = parts[1].trim();
-      }
-    }
-  }
-
   @override
   void didUpdateWidget(covariant _HouseInputCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entry != widget.entry) {
       _syncRtRw();
     }
-  }
-
-  @override
-  void dispose() {
-    _rtRwFocusNode.removeListener(_onRtRwFocusChange);
-    _rtRwFocusNode.dispose();
-    super.dispose();
   }
 
   String? _getDuplicateNikError() {
@@ -434,40 +411,52 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                   child: widget.buildInputGroup(
                     label: 'RT/RW',
                     icon: Icons.home,
-                    child: TextFormField(
-                      controller: entry.rtRwController,
-                      focusNode: _rtRwFocusNode,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [_RtRwInputFormatter()],
-                      maxLength: 5,
-                      onChanged: (val) {
-                        final parts = val.split('/');
-                        if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
-                        if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                    child: Focus(
+                      onFocusChange: (hasFocus) {
+                        if (!hasFocus) {
+                          final norm = _normalizeRtRw(entry.rtRwController.text);
+                          if (norm.isNotEmpty && norm != entry.rtRwController.text) {
+                            entry.rtRwController.text = norm;
+                            final parts = norm.split('/');
+                            if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                            if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                          }
+                        }
                       },
-                      onEditingComplete: () {
-                        final norm = _normalizeRtRw(entry.rtRwController.text);
-                        if (norm.isNotEmpty) {
-                          entry.rtRwController.text = norm;
-                          final parts = norm.split('/');
+                      child: TextFormField(
+                        controller: entry.rtRwController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_RtRwInputFormatter()],
+                        maxLength: 5,
+                        onChanged: (val) {
+                          final parts = val.split('/');
                           if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
                           if (parts.length >= 2) entry.rwController.text = parts[1].trim();
-                        }
-                        FocusScope.of(context).unfocus();
-                      },
-                      decoration: InputDecoration(
-                        hintText: '02/03',
-                        counterText: '',
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        },
+                        onEditingComplete: () {
+                          final norm = _normalizeRtRw(entry.rtRwController.text);
+                          if (norm.isNotEmpty) {
+                            entry.rtRwController.text = norm;
+                            final parts = norm.split('/');
+                            if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                            if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                          }
+                          FocusScope.of(context).unfocus();
+                        },
+                        decoration: InputDecoration(
+                          hintText: '02/03',
+                          counterText: '',
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          isDense: true,
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        isDense: true,
                       ),
                     ),
                   ),
@@ -539,40 +528,52 @@ class _HouseInputCardState extends State<_HouseInputCard> {
             widget.buildInputGroup(
               label: 'RT/RW',
               icon: Icons.home,
-              child: TextFormField(
-                controller: entry.rtRwController,
-                focusNode: _rtRwFocusNode,
-                keyboardType: TextInputType.number,
-                inputFormatters: [_RtRwInputFormatter()],
-                maxLength: 5,
-                onChanged: (val) {
-                  final parts = val.split('/');
-                  if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
-                  if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+              child: Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    final norm = _normalizeRtRw(entry.rtRwController.text);
+                    if (norm.isNotEmpty && norm != entry.rtRwController.text) {
+                      entry.rtRwController.text = norm;
+                      final parts = norm.split('/');
+                      if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                      if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                    }
+                  }
                 },
-                onEditingComplete: () {
-                  final norm = _normalizeRtRw(entry.rtRwController.text);
-                  if (norm.isNotEmpty) {
-                    entry.rtRwController.text = norm;
-                    final parts = norm.split('/');
+                child: TextFormField(
+                  controller: entry.rtRwController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [_RtRwInputFormatter()],
+                  maxLength: 5,
+                  onChanged: (val) {
+                    final parts = val.split('/');
                     if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
                     if (parts.length >= 2) entry.rwController.text = parts[1].trim();
-                  }
-                  FocusScope.of(context).unfocus();
-                },
-                decoration: InputDecoration(
-                  hintText: '02/03',
-                  counterText: '',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  },
+                  onEditingComplete: () {
+                    final norm = _normalizeRtRw(entry.rtRwController.text);
+                    if (norm.isNotEmpty) {
+                      entry.rtRwController.text = norm;
+                      final parts = norm.split('/');
+                      if (parts.isNotEmpty) entry.rtController.text = parts[0].trim();
+                      if (parts.length >= 2) entry.rwController.text = parts[1].trim();
+                    }
+                    FocusScope.of(context).unfocus();
+                  },
+                  decoration: InputDecoration(
+                    hintText: '02/03',
+                    counterText: '',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    isDense: true,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  isDense: true,
                 ),
               ),
             ),
