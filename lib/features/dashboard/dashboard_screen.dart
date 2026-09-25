@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
@@ -145,6 +146,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
 
     final locationAsync = ref.watch(currentLocationNameProvider);
     final myReportsAsync = ref.watch(myReportsProvider);
+    final allReportsAsync = ref.watch(allReportsProvider);
 
     // Calculate jentik status from real data
     final reports = myReportsAsync.value ?? [];
@@ -191,6 +193,14 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 text:
                     'Pastikan data yang Anda inputkan sudah benar sebelum dikirim.',
               ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Diagram Angka Bebas Jentik dari Semua Laporan
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: _AbjTrendChartCard(allReportsAsync: allReportsAsync),
             ),
 
             const SizedBox(height: 36),
@@ -1397,6 +1407,503 @@ class _StatItem extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _AbjPoint {
+  final String label;
+  final String fullLabel;
+  final double abj;
+  final int inspected;
+  final int positive;
+
+  _AbjPoint({
+    required this.label,
+    required this.fullLabel,
+    required this.abj,
+    required this.inspected,
+    required this.positive,
+  });
+}
+
+List<_AbjPoint> _computeAbjPoints(List<Report> reports) {
+  if (reports.isEmpty) return [];
+
+  // Group reports by Year-Month (e.g. "2026-04")
+  final Map<String, List<Report>> grouped = {};
+  for (final r in reports) {
+    final key =
+        '${r.reportDate.year}-${r.reportDate.month.toString().padLeft(2, '0')}';
+    grouped.putIfAbsent(key, () => []).add(r);
+  }
+
+  const monthNames = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agt',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des'
+  ];
+  const fullMonthNames = [
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember'
+  ];
+
+  final sortedKeys = grouped.keys.toList()..sort();
+
+  // If reports span only 1 month, group by distinct days so the line has multiple data points
+  if (sortedKeys.length == 1) {
+    final Map<String, List<Report>> dayGrouped = {};
+    for (final r in reports) {
+      final dayKey =
+          '${r.reportDate.year}-${r.reportDate.month.toString().padLeft(2, '0')}-${r.reportDate.day.toString().padLeft(2, '0')}';
+      dayGrouped.putIfAbsent(dayKey, () => []).add(r);
+    }
+    final sortedDays = dayGrouped.keys.toList()..sort();
+    return sortedDays.map((dKey) {
+      final parts = dKey.split('-');
+      final day = int.parse(parts[2]);
+      final month = int.parse(parts[1]);
+      int inspected = 0;
+      int positive = 0;
+      for (final r in dayGrouped[dKey]!) {
+        inspected += r.housesInspected;
+        positive += r.housesPositive;
+      }
+      final free = (inspected - positive).clamp(0, inspected);
+      final abj = inspected > 0 ? (free / inspected * 100) : 100.0;
+      return _AbjPoint(
+        label: '$day ${monthNames[month]}',
+        fullLabel: '$day ${fullMonthNames[month]} ${parts[0]}',
+        abj: abj,
+        inspected: inspected,
+        positive: positive,
+      );
+    }).toList();
+  }
+
+  // Otherwise, group by month (take at most latest 8 months)
+  final recentKeys = sortedKeys.length > 8
+      ? sortedKeys.sublist(sortedKeys.length - 8)
+      : sortedKeys;
+
+  return recentKeys.map((key) {
+    final parts = key.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    int inspected = 0;
+    int positive = 0;
+    for (final r in grouped[key]!) {
+      inspected += r.housesInspected;
+      positive += r.housesPositive;
+    }
+    final free = (inspected - positive).clamp(0, inspected);
+    final abj = inspected > 0 ? (free / inspected * 100) : 100.0;
+
+    return _AbjPoint(
+      label: monthNames[month],
+      fullLabel: '${fullMonthNames[month]} $year',
+      abj: abj,
+      inspected: inspected,
+      positive: positive,
+    );
+  }).toList();
+}
+
+class _AbjTrendChartCard extends StatelessWidget {
+  final AsyncValue<List<Report>> allReportsAsync;
+
+  const _AbjTrendChartCard({required this.allReportsAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Icon + Title + Target Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE1F5FE),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.show_chart_rounded,
+                      color: Color(0xFF0288D1),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tren Capaian ABJ',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF10365F),
+                        ),
+                      ),
+                      Text(
+                        'Dari akumulasi semua laporan',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11.5,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFA5D6A7)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 13,
+                      color: Color(0xFF2E7D32),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Target ≥95%',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Chart Body
+          SizedBox(
+            height: 200,
+            child: allReportsAsync.when(
+              data: (reports) {
+                final points = _computeAbjPoints(reports);
+                if (points.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Belum ada data laporan untuk grafik',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 13,
+                      ),
+                    ),
+                  );
+                }
+
+                final minX = 0.0;
+                final maxX =
+                    (points.length - 1).toDouble().clamp(1.0, 100.0);
+
+                return LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: 105,
+                    minX: minX,
+                    maxX: maxX,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: 25,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color: const Color(0xFFF1F5F9),
+                        strokeWidth: 1.2,
+                        dashArray: [5, 5],
+                      ),
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: const Border(
+                        bottom:
+                            BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                        left: BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                        top: BorderSide.none,
+                        right: BorderSide.none,
+                      ),
+                    ),
+                    extraLinesData: ExtraLinesData(
+                      horizontalLines: [
+                        HorizontalLine(
+                          y: 95,
+                          color:
+                              const Color(0xFF2E7D32).withValues(alpha: 0.6),
+                          strokeWidth: 1.5,
+                          dashArray: [6, 4],
+                          label: HorizontalLineLabel(
+                            show: true,
+                            alignment: Alignment.topRight,
+                            padding: const EdgeInsets.only(right: 4, bottom: 2),
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2E7D32),
+                            ),
+                            labelResolver: (line) => 'Target 95%',
+                          ),
+                        ),
+                      ],
+                    ),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          interval: 25,
+                          getTitlesWidget: (value, meta) {
+                            if (value > 100) return const SizedBox.shrink();
+                            return Text(
+                              '${value.toInt()}%',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                color: const Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            final idx = value.round();
+                            if (idx >= 0 &&
+                                idx < points.length &&
+                                (value - idx).abs() < 0.15) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  points[idx].label,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    ),
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      handleBuiltInTouches: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (spot) => const Color(0xFF10365F),
+                        tooltipBorderRadius: BorderRadius.circular(10),
+                        tooltipPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            final idx = spot.x.round();
+                            final p = idx >= 0 && idx < points.length
+                                ? points[idx]
+                                : null;
+                            final label = p?.fullLabel ?? '';
+                            return LineTooltipItem(
+                              '$label\n',
+                              GoogleFonts.outfit(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'ABJ: ${spot.y.toStringAsFixed(1)}%',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: List.generate(
+                          points.length,
+                          (i) => FlSpot(i.toDouble(), points[i].abj),
+                        ),
+                        isCurved: true,
+                        curveSmoothness: 0.25,
+                        preventCurveOverShooting: true,
+                        color: const Color(0xFF0288D1),
+                        barWidth: 3.2,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            final isTargetMet = spot.y >= 95;
+                            return FlDotCirclePainter(
+                              radius: 4.5,
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                              strokeColor: isTargetMet
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFF0288D1),
+                            );
+                          },
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFF0288D1).withValues(alpha: 0.22),
+                              const Color(0xFF0288D1).withValues(alpha: 0.01),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (_, _) => Center(
+                child: Text(
+                  'Gagal memuat data grafik',
+                  style: GoogleFonts.outfit(
+                    color: Colors.red.shade400,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Keterangan di bawah diagram (sesuai instruksi user)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEDF2F7)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0288D1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Grafik Angka Bebas Jentik',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF10365F),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Persentase rumah bebas jentik nyamuk dari akumulasi seluruh laporan posyandu.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: const Color(0xFF64748B),
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
