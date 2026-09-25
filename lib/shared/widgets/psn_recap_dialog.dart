@@ -10,8 +10,14 @@ class PsnRecapDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(allReportsProvider);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 500;
 
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 14 : 40,
+        vertical: 24,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 16,
       backgroundColor: Colors.transparent,
@@ -61,8 +67,13 @@ class PsnRecapDialog extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 500;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 24,
+        vertical: isMobile ? 16 : 20,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF10365F), Color(0xFF0D6E6E)],
@@ -77,18 +88,18 @@ class PsnRecapDialog extends ConsumerWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isMobile ? 10 : 12),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.health_and_safety,
               color: Colors.white,
-              size: 28,
+              size: isMobile ? 24 : 28,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isMobile ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,16 +108,16 @@ class PsnRecapDialog extends ConsumerWidget {
                   'Rekap Keseluruhan Data PSN',
                   style: GoogleFonts.outfit(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: isMobile ? 17 : 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   'Pemberantasan Sarang Nyamuk - Puskesmas Gumelar',
                   style: GoogleFonts.outfit(
                     color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 13,
+                    fontSize: isMobile ? 11.5 : 13,
                   ),
                 ),
               ],
@@ -147,15 +158,17 @@ class PsnRecapDialog extends ConsumerWidget {
     final sortedVillages = villageInspected.keys.toList()
       ..sort((a, b) => a.compareTo(b));
 
+    final isMobile = MediaQuery.of(context).size.width < 500;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Hero ABJ Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isMobile ? 16 : 20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isTargetMet
@@ -174,72 +187,83 @@ class PsnRecapDialog extends ConsumerWidget {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Angka Bebas Jentik (ABJ) Nasional',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${overallAbj.toStringAsFixed(1)}%',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isTargetMet ? Icons.check_circle : Icons.warning_amber_rounded,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Angka Bebas Jentik (ABJ)',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: isMobile ? 13.5 : 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${overallAbj.toStringAsFixed(1)}%',
+                            style: GoogleFonts.outfit(
                               color: Colors.white,
-                              size: 16,
+                              fontSize: isMobile ? 32 : 38,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              isTargetMet
-                                  ? 'Target Kemenkes Terpenuhi (≥ 95%)'
-                                  : 'Di Bawah Target Kemenkes (< 95%)',
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(isMobile ? 10 : 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isTargetMet ? Icons.verified : Icons.analytics_outlined,
+                        color: Colors.white,
+                        size: isMobile ? 36 : 44,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isTargetMet ? Icons.check_circle : Icons.warning_amber_rounded,
+                        color: Colors.white,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          isTargetMet
+                              ? 'Target Kemenkes Terpenuhi (≥ 95%)'
+                              : 'Di Bawah Target Kemenkes (< 95%)',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: isMobile ? 11 : 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isTargetMet ? Icons.verified : Icons.analytics_outlined,
-                    color: Colors.white,
-                    size: 48,
                   ),
                 ),
               ],
@@ -441,7 +465,7 @@ class PsnRecapDialog extends ConsumerWidget {
   }) {
     return Container(
       width: width,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -454,53 +478,55 @@ class PsnRecapDialog extends ConsumerWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.outfit(
-                    color: Colors.blueGrey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      value,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF10365F),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      unit,
-                      style: GoogleFonts.outfit(
-                        color: Colors.blueGrey[400],
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: Colors.blueGrey[700],
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF10365F),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: GoogleFonts.outfit(
+                  color: Colors.blueGrey[400],
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
         ],
       ),
