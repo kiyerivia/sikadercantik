@@ -222,10 +222,10 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
           'Semangat selalu untuk kegiatan Posyandu\ndan PSN di lingkungan kita!',
           style: GoogleFonts.outfit(
             color: const Color(0xFF4A5568),
-            fontSize: isDesktop ? 11.5 : 10.5,
-            height: 1.3,
+            fontSize: isDesktop ? 11.5 : 9.5,
+            height: 1.25,
           ),
-          maxLines: 2,
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 6),
@@ -294,14 +294,14 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
         borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 14 : 12,
-            vertical: isDesktop ? 12 : 10,
+            horizontal: isDesktop ? 14 : 4,
+            vertical: isDesktop ? 12 : 6,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: EdgeInsets.all(isDesktop ? 6 : 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -310,12 +310,12 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 ),
                 child: Image.asset(
                   'assets/images/icon_mosquito_blue.png',
-                  width: isDesktop ? 34 : 32,
-                  height: isDesktop ? 34 : 32,
+                  width: isDesktop ? 34 : 26,
+                  height: isDesktop ? 34 : 26,
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: isDesktop ? 10 : 5),
               Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,11 +326,12 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                       'Jentik Nyamuk',
                       style: GoogleFonts.outfit(
                         color: const Color(0xFF10365F),
-                        fontSize: isDesktop ? 14.5 : 13.5,
+                        fontSize: isDesktop ? 14.5 : 12,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -339,29 +340,28 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                             statusLabel,
                             style: GoogleFonts.outfit(
                               color: statusColor,
-                              fontSize: isDesktop ? 13 : 12.5,
+                              fontSize: isDesktop ? 13 : 11,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Icon(
                           statusIcon,
                           color: statusColor,
-                          size: isDesktop ? 17 : 16,
+                          size: isDesktop ? 17 : 13,
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: isDesktop ? 4 : 2),
               Icon(
                 Icons.chevron_right,
                 color: const Color(0xFF0288D1),
-                size: isDesktop ? 22 : 20,
+                size: isDesktop ? 22 : 16,
               ),
             ],
           ),
@@ -381,7 +381,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
   ) {
     if (screenWidth < 768) {
       // ── HP / MOBILE MODE (Proportionally fitted, zero overflow) ──
-      const double baseWidth = 600.0;
+      const double baseWidth = 620.0;
       const double heroHeight = 280.0;
       final scale = screenWidth / baseWidth;
 
@@ -426,17 +426,17 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   ),
                 ),
                 Positioned(
-                  left: 26,
-                  bottom: 14,
-                  width: 195,
-                  height: 100,
+                  left: 20,
+                  bottom: 12,
+                  width: 200,
+                  height: 104,
                   child: _buildGreetingContent(locationAsync, isDesktop: false),
                 ),
                 Positioned(
-                  right: 18,
-                  bottom: 14,
-                  width: 195,
-                  height: 96,
+                  right: 12,
+                  bottom: 12,
+                  width: 220,
+                  height: 100,
                   child: _buildJentikButtonContent(
                     context,
                     statusLabel,
@@ -446,15 +446,15 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   ),
                 ),
                 Positioned(
-                  top: 78,
+                  top: 76,
                   bottom: 2,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Image.asset(
                       'assets/images/logo_sikadercantik_new.png',
-                      width: 195,
-                      height: 195,
+                      width: 180,
+                      height: 180,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -595,7 +595,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
           ),
           const SizedBox(height: 14),
 
-          // Two Action Cards with new icons
+          // Two Action Cards with new icons (Icon on top, text below)
           Row(
             children: [
               // Card 1: Input Laporan Jentik
@@ -604,8 +604,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   iconAsset: 'assets/images/icon_tulis_laporan.png',
                   title: 'Input Laporan',
                   subtitle: 'Jentik',
-                  iconWidth: 48,
-                  iconHeight: 48,
+                  iconWidth: 40,
+                  iconHeight: 40,
                   onTap: () => context.push('/report'),
                 ),
               ),
@@ -616,8 +616,8 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                   iconAsset: 'assets/images/icon_lihat_laporan.png',
                   title: 'Lihat Hasil',
                   subtitle: 'Laporan',
-                  iconWidth: 62,
-                  iconHeight: 52,
+                  iconWidth: 48,
+                  iconHeight: 38,
                   onTap: () => context.push('/history'),
                 ),
               ),
@@ -642,8 +642,8 @@ class _QuickActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.iconWidth = 48,
-    this.iconHeight = 48,
+    this.iconWidth = 40,
+    this.iconHeight = 40,
   });
 
   @override
@@ -655,7 +655,7 @@ class _QuickActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFBCE0FD), width: 1.5),
@@ -667,42 +667,44 @@ class _QuickActionCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Image.asset(
-                iconAsset,
-                width: iconWidth,
-                height: iconHeight,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF10365F),
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFFE65100),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              SizedBox(
+                height: 44,
+                child: Center(
+                  child: Image.asset(
+                    iconAsset,
+                    width: iconWidth,
+                    height: iconHeight,
+                    fit: BoxFit.contain,
+                  ),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF10365F),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFFE65100),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
