@@ -8,6 +8,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../../shared/widgets/user_profile_menu.dart';
 import '../../shared/domain/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -47,6 +48,7 @@ class ReportHistoryScreen extends HookConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF10365F),
         elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
@@ -66,77 +68,53 @@ class ReportHistoryScreen extends HookConsumerWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: 'SI KADER ',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'PSN',
+                          style: TextStyle(color: Color(0xFF68B744)),
+                        ),
+                      ],
                     ),
-                    children: const [
-                      TextSpan(
-                        text: 'SI KADER ',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      TextSpan(
-                        text: 'PSN',
-                        style: TextStyle(color: Color(0xFF68B744)),
-                      ),
-                    ],
                   ),
-                ),
-                Text(
-                  'RIWAYAT LAPORAN',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1,
+                  Text(
+                    'RIWAYAT LAPORAN',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
-        actions: [
-          const NotificationBadge(),
-          const SizedBox(width: 12),
-          PopupMenuButton<String>(
-            onSelected: (val) async {
-              if (val == 'logout') {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) context.go('/login');
-              }
-            },
-            offset: const Offset(0, 50),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.red, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Logout',
-                      style: GoogleFonts.outfit(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
+        actions: const [
+          NotificationBadge(),
+          SizedBox(width: 8),
+          UserProfileMenu(),
+          SizedBox(width: 12),
         ],
       ),
       body: Column(

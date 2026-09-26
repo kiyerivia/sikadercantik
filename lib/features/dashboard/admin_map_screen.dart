@@ -306,9 +306,12 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 _isEditMode
                     ? 'Klik Peta untuk Presisi Titik Lokasi'
                     : 'Peta Sebaran Jentik (OpenLayers/OSM)',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  fontSize: 16,
                 ),
               ),
         leading: IconButton(

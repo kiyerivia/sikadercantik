@@ -16,10 +16,7 @@ import '../../features/dashboard/map_providers.dart';
 // ─────────────────────────────────────────────────────────
 
 String _getDefaultAvatarAsset(String role) {
-  final r = role.toLowerCase();
-  if (r.startsWith('superadmin')) return 'assets/images/superadmin_dashboard_illustration.png';
-  if (r.startsWith('admin')) return 'assets/images/admin_dashboard_illustration.png';
-  return 'assets/images/kader/kader_dashboard.jpg';
+  return 'assets/images/avatar_kader.png';
 }
 
 String _getRoleLabel(String role) {

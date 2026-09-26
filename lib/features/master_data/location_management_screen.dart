@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../shared/providers/auth_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../../shared/widgets/user_profile_menu.dart';
 
 class LocationManagementScreen extends HookConsumerWidget {
   const LocationManagementScreen({super.key});
@@ -22,6 +21,7 @@ class LocationManagementScreen extends HookConsumerWidget {
         leading: const BackButton(color: Colors.white),
         backgroundColor: const Color(0xFF10365F),
         elevation: 0,
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(
@@ -32,56 +32,43 @@ class LocationManagementScreen extends HookConsumerWidget {
               child: Image.asset('assets/images/psn_logo_new.jpg', fit: BoxFit.cover),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
-                    children: const [
-                      TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
-                      TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF68B744))),
-                    ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                      children: const [
+                        TextSpan(text: 'SI KADER ', style: TextStyle(color: Colors.white)),
+                        TextSpan(text: 'PSN', style: TextStyle(color: Color(0xFF68B744))),
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  'MANAJEMEN PUSKESMAS & LOKASI',
-                  style: GoogleFonts.outfit(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 1),
-                ),
-              ],
+                  Text(
+                    'MANAJEMEN WILAYAH',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        actions: [
-          const NotificationBadge(),
-          const SizedBox(width: 8),
-          PopupMenuButton<String>(
-            onSelected: (val) async {
-              if (val == 'logout') {
-                await ref.read(authRepositoryProvider).signOut();
-                if (context.mounted) context.go('/login');
-              }
-            },
-            offset: const Offset(0, 50),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.red, size: 20),
-                    const SizedBox(width: 12),
-                    Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              ),
-            ],
-            child: const CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF10365F), size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
+        actions: const [
+          NotificationBadge(),
+          SizedBox(width: 8),
+          UserProfileMenu(),
+          SizedBox(width: 12),
         ],
       ),
       body: Column(
@@ -129,7 +116,7 @@ class LocationManagementScreen extends HookConsumerWidget {
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -139,28 +126,26 @@ class LocationManagementScreen extends HookConsumerWidget {
                     child: TextField(
                       onChanged: (val) => searchQuery.value = val,
                       decoration: InputDecoration(
-                        hintText: 'Cari nama desa atau wilayah...',
-                        hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 14),
-                        prefixIcon: const Icon(Icons.search, color: Colors.blueGrey, size: 20),
+                        isDense: true,
+                        hintText: 'Cari desa...',
+                        hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: Colors.blueGrey, size: 18),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showAddVillageDialog(context, ref),
-                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                    label: Text('Tambah Desa', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10365F),
-                      minimumSize: const Size(120, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
-                    ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddVillageDialog(context, ref),
+                  icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                  label: Text('Tambah Desa', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10365F),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
                   ),
                 ),
               ],
@@ -340,36 +325,101 @@ class _VillageExpandable extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('DAFTAR RW', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    Wrap(
-                      spacing: 8,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 420;
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DAFTAR RW',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _confirmDeleteVillage(context, ref, village),
+                                  icon: const Icon(Icons.delete_outline, size: 15, color: Colors.red),
+                                  label: Text(
+                                    'Hapus Desa',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    side: const BorderSide(color: Colors.red),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _showAddRwDialog(context, ref, village),
+                                  icon: const Icon(Icons.add, size: 15, color: Color(0xFF10365F)),
+                                  label: Text(
+                                    'Tambah RW',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF10365F)),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    side: const BorderSide(color: Color(0xFF10365F)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: () => _confirmDeleteVillage(context, ref, village),
-                          icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                          label: Text('Hapus Desa', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
+                        Text(
+                          'DAFTAR RW',
+                          style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 0.5),
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () => _showAddRwDialog(context, ref, village),
-                          icon: const Icon(Icons.add, size: 16, color: Color(0xFF10365F)),
-                          label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            side: const BorderSide(color: Color(0xFF10365F)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => _confirmDeleteVillage(context, ref, village),
+                              icon: const Icon(Icons.delete_outline, size: 15, color: Colors.red),
+                              label: Text('Hapus Desa', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                side: const BorderSide(color: Colors.red),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              onPressed: () => _showAddRwDialog(context, ref, village),
+                              icon: const Icon(Icons.add, size: 15, color: Color(0xFF10365F)),
+                              label: Text('Tambah RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                side: const BorderSide(color: Color(0xFF10365F)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 _RWList(villageId: village.id),
@@ -545,26 +595,81 @@ class _RWExpandable extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('POSYANDU DI RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    Wrap(
-                      spacing: 8,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 400;
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'POSYANDU DI RW ${rw.rwNumber}',
+                            style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: () => _confirmDeleteRw(context, ref, rw),
+                                  icon: const Icon(Icons.delete_outline, size: 15, color: Colors.red),
+                                  label: Text(
+                                    'Hapus RW',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: () => _showAddPosyanduDialog(context, ref, rw),
+                                  icon: const Icon(Icons.add_circle_outline, size: 15, color: Color(0xFF2E86C1)),
+                                  label: Text(
+                                    'Tambah Posyandu',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF2E86C1)),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextButton.icon(
-                          onPressed: () => _confirmDeleteRw(context, ref, rw),
-                          icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                          label: Text('Hapus RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => _showAddPosyanduDialog(context, ref, rw),
-                          icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFF2E86C1)),
-                          label: Text('Tambah Posyandu', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF2E86C1))),
+                        Text('POSYANDU DI RW ${rw.rwNumber}', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => _confirmDeleteRw(context, ref, rw),
+                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                              label: Text('Hapus RW', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: () => _showAddPosyanduDialog(context, ref, rw),
+                              icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFF2E86C1)),
+                              label: Text('Tambah Posyandu', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF2E86C1))),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 const Divider(),
                 _PosyanduList(rwId: rw.id),
@@ -747,9 +852,19 @@ class _PosyanduList extends ConsumerWidget {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[200]!)),
             child: ListTile(
               dense: true,
-              title: Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F), fontSize: 14)),
+              title: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F), fontSize: 14),
+              ),
               subtitle: p.namaKetua != null && p.namaKetua!.isNotEmpty
-                  ? Text('Ketua: ${p.namaKetua} ${p.nomorHp != null ? '(${p.nomorHp})' : ''}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey))
+                  ? Text(
+                      'Ketua: ${p.namaKetua} ${p.nomorHp != null ? '(${p.nomorHp})' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey),
+                    )
                   : null,
               leading: Container(
                 padding: const EdgeInsets.all(6),
