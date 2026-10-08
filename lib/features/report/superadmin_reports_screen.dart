@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
+import '../../shared/providers/admin_providers.dart';
 import '../../shared/providers/master_providers.dart';
 import '../../shared/providers/report_providers.dart';
+import '../../shared/services/excel_export_service.dart';
 import '../../shared/domain/models.dart';
 
 class SuperAdminReportsScreen extends ConsumerStatefulWidget {
@@ -530,6 +532,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                               totalInspected: totalInspectedHouses,
                               totalPositive: totalPositiveHouses,
                               abj: calculatedAbj,
+                              filteredReports: filteredReports,
                             ),
                           ))
                     else
@@ -539,6 +542,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                         totalInspected: totalInspectedHouses,
                         totalPositive: totalPositiveHouses,
                         abj: calculatedAbj,
+                        filteredReports: filteredReports,
                       ),
                   ],
                 );
@@ -698,6 +702,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
     required int totalInspected,
     required int totalPositive,
     required double abj,
+    required List<Report> filteredReports,
   }) {
     final bulanStr = selectedBulan ?? 'Semua Bulan';
     final tahunStr = selectedTahun ?? 'Semua Tahun';
@@ -833,27 +838,74 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
             child: Text('Batal', style: GoogleFonts.outfit(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: Color(0xFF10365F),
+                  duration: Duration(seconds: 2),
                   content: Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'File "$nama.xlsx" ($totalLaporan baris data) berhasil disiapkan untuk diunduh.',
-                          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500),
-                        ),
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       ),
+                      SizedBox(width: 12),
+                      Text('Menyiapkan file Excel resmi Puskesmas Gumelar...'),
                     ],
                   ),
                 ),
               );
+
+              final villageDetails = ref.read(villageAbjDetailsProvider).value ?? [];
+              const monthsList = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+              ];
+              final monthIdx = selectedBulan == null ? 0 : (monthsList.indexOf(selectedBulan!) + 1);
+              final yr = int.tryParse(selectedTahun ?? '') ?? 0;
+
+              final success = await ExcelExportService.exportMonthlyReport(
+                month: monthIdx,
+                year: yr,
+                villageDetails: villageDetails,
+                reports: filteredReports,
+                selectedVillage: selectedDesa,
+              );
+
+              if (context.mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: const Color(0xFF2E7D32),
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'File "$nama.xlsx" (${filteredReports.length} baris data) berhasil diunduh.',
+                              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.red,
+                      content: Text('Gagal mengunduh file Excel atau proses dibatalkan.'),
+                    ),
+                  );
+                }
+              }
             },
             icon: const Icon(Icons.download, size: 16, color: Colors.white),
             label: Text('Unduh Sekarang', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -1041,6 +1093,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
     required int totalInspected,
     required int totalPositive,
     required double abj,
+    required List<Report> filteredReports,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1172,6 +1225,7 @@ class _SuperAdminReportsScreenState extends ConsumerState<SuperAdminReportsScree
                               totalInspected: totalInspected,
                               totalPositive: totalPositive,
                               abj: abj,
+                              filteredReports: filteredReports,
                             ),
                             icon: const Icon(Icons.download, color: Colors.white, size: 14),
                             label: Text('Unduh', style: GoogleFonts.outfit(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),

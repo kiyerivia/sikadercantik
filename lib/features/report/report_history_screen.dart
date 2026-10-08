@@ -888,42 +888,104 @@ class ReportHistoryScreen extends HookConsumerWidget {
                                         color: const Color(0xFF10365F),
                                       ),
                                       columns: [
-                                        const DataColumn(label: Text('No')),
                                         const DataColumn(
-                                          label: Text('Tanggal PSN'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 35,
+                                              child: Text('No'),
+                                            ),
+                                          ),
                                         ),
                                         const DataColumn(
-                                          label: Text('Nama Desa'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 120,
+                                              child: Text('Tanggal PSN'),
+                                            ),
+                                          ),
                                         ),
                                         const DataColumn(
-                                          label: Text('Posyandu'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 100,
+                                              child: Text('Nama Desa'),
+                                            ),
+                                          ),
                                         ),
                                         const DataColumn(
-                                          label: Text('Rumah Diperiksa'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 130,
+                                              child: Text('Posyandu'),
+                                            ),
+                                          ),
+                                        ),
+                                        const DataColumn(
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 120,
+                                              child: Text(
+                                                'Rumah Diperiksa',
+                                                textAlign: TextAlign.right,
+                                              ),
+                                            ),
+                                          ),
                                           numeric: true,
                                         ),
                                         const DataColumn(
-                                          label: Text('Positif Jentik'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 100,
+                                              child: Text(
+                                                'Positif Jentik',
+                                                textAlign: TextAlign.right,
+                                              ),
+                                            ),
+                                          ),
                                           numeric: true,
                                         ),
-                                        const DataColumn(label: Text('ABJ')),
                                         const DataColumn(
-                                          label: SizedBox(
-                                            width: 250,
-                                            child: Text('Aksi'),
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 60,
+                                              child: Text('ABJ'),
+                                            ),
+                                          ),
+                                        ),
+                                        const DataColumn(
+                                          label: Flexible(
+                                            child: SizedBox(
+                                              width: 250,
+                                              child: Text('Aksi'),
+                                            ),
                                           ),
                                         ),
                                         if (isAdmin)
                                           const DataColumn(
-                                            label: Text('Intervensi'),
+                                            label: Flexible(
+                                              child: SizedBox(
+                                                width: 90,
+                                                child: Text('Intervensi'),
+                                              ),
+                                            ),
                                           ),
                                         if (isAdmin)
                                           const DataColumn(
-                                            label: Text('Keterangan'),
+                                            label: Flexible(
+                                              child: SizedBox(
+                                                width: 150,
+                                                child: Text('Keterangan'),
+                                              ),
+                                            ),
                                           ),
                                         if (isAdmin)
                                           const DataColumn(
-                                            label: Text('Hapus'),
+                                            label: Flexible(
+                                              child: SizedBox(
+                                                width: 50,
+                                                child: Text('Hapus'),
+                                              ),
+                                            ),
                                           ),
                                       ],
                                       rows: filtered.asMap().entries.map<DataRow>((

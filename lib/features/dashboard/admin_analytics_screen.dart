@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/providers/admin_providers.dart';
+import '../../shared/providers/report_providers.dart';
+import '../../shared/services/excel_export_service.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
 
@@ -18,6 +20,112 @@ class AdminAnalyticsScreen extends ConsumerStatefulWidget {
 class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
   // 0: Bar Chart, 1: Trend Line, 2: Detailed Table
   int _activeViewMode = 0;
+  bool _isDownloadingExcel = false;
+
+  Future<void> _handleDownloadExcel(int selectedMonth, int selectedYear) async {
+    if (_isDownloadingExcel) return;
+    setState(() => _isDownloadingExcel = true);
+
+    try {
+      final villageDetails = ref.read(villageAbjDetailsProvider).value ?? [];
+      final allReports = ref.read(allReportsProvider).value ?? [];
+
+      if (villageDetails.isEmpty && allReports.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data laporan masih dimuat atau belum tersedia untuk diekspor.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final filteredReports = allReports.where((r) {
+        final matchMonth = selectedMonth == 0 || r.reportDate.month == selectedMonth;
+        final matchYear = selectedYear == 0 || r.reportDate.year == selectedYear;
+        return matchMonth && matchYear;
+      }).toList();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Color(0xFF10365F),
+            duration: Duration(seconds: 2),
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Expanded(child: Text('Menyiapkan file Excel laporan bulanan...')),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final success = await ExcelExportService.exportMonthlyReport(
+        month: selectedMonth,
+        year: selectedYear,
+        villageDetails: villageDetails,
+        reports: filteredReports,
+      );
+
+      if (mounted) {
+        if (success) {
+          final monthName = selectedMonth == 0
+              ? 'Semua Bulan'
+              : ExcelExportService.monthNames[selectedMonth - 1];
+          final yearStr = selectedYear == 0 ? 'Semua Tahun' : '$selectedYear';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF15803D),
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Laporan Excel ($monthName $yearStr) berhasil diunduh!',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Pengunduhan Excel dibatalkan atau gagal disimpan.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Gagal mengekspor Excel: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingExcel = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,12 +207,11 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Page Header Title + Action Button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
+            // Page Header Title + Action Buttons
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 700;
+                final titleColumn = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -124,22 +231,79 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                       ),
                     ),
                   ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => context.push('/map'),
-                  icon: const Icon(Icons.map_rounded, size: 18),
-                  label: Text('Peta Digital', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0288D1),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                );
+
+                final actionButtons = Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _isDownloadingExcel
+                          ? null
+                          : () => _handleDownloadExcel(selectedMonth, selectedYear),
+                      icon: _isDownloadingExcel
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.table_view_rounded, size: 18),
+                      label: Text(
+                        _isDownloadingExcel ? 'Mengunduh...' : 'Unduh Excel (.xlsx)',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF107C41),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                    ElevatedButton.icon(
+                      onPressed: () => context.push('/map'),
+                      icon: const Icon(Icons.map_rounded, size: 18),
+                      label: Text('Peta Digital', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0288D1),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      titleColumn,
+                      const SizedBox(height: 14),
+                      actionButtons,
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: titleColumn),
+                    const SizedBox(width: 16),
+                    actionButtons,
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 20),
@@ -1008,9 +1172,58 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
           return const Center(child: Text('Tidak ada data laporan'));
         }
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Tabel Rekapitulasi (${villages.length} Desa)',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: const Color(0xFF10365F),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _isDownloadingExcel
+                      ? null
+                      : () => _handleDownloadExcel(
+                            ref.read(selectedMonthProvider),
+                            ref.read(selectedYearProvider),
+                          ),
+                  icon: const Icon(
+                    Icons.table_chart_rounded,
+                    size: 15,
+                    color: Color(0xFF107C41),
+                  ),
+                  label: Text(
+                    'Unduh Format Excel',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF107C41),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF107C41)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
             headingRowColor:
                 WidgetStateProperty.all(const Color(0xFFF1F5F9)),
             columnSpacing: 20,
@@ -1161,8 +1374,10 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
               );
             }).toList(),
           ),
-        );
-      },
+        ),
+      ],
+    );
+  },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
     );

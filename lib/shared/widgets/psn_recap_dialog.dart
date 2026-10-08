@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../providers/admin_providers.dart';
 import '../providers/report_providers.dart';
+import '../services/excel_export_service.dart';
 import '../domain/models.dart';
 
 class PsnRecapDialog extends ConsumerWidget {
@@ -59,7 +61,7 @@ class PsnRecapDialog extends ConsumerWidget {
                 ),
               ),
             ),
-            _buildFooter(context),
+            _buildFooter(context, ref, reportsAsync.value ?? []),
           ],
         ),
       ),
@@ -533,9 +535,14 @@ class PsnRecapDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
+  Widget _buildFooter(BuildContext context, WidgetRef ref, List<Report> reports) {
+    final isMobile = MediaQuery.of(context).size.width < 500;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 24,
+        vertical: 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
@@ -547,8 +554,96 @@ class PsnRecapDialog extends ConsumerWidget {
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          if (reports.isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Color(0xFF10365F),
+                    duration: Duration(seconds: 2),
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Menyiapkan rekap Excel...'),
+                      ],
+                    ),
+                  ),
+                );
+
+                final villageDetails =
+                    ref.read(villageAbjDetailsProvider).value ?? [];
+                final now = DateTime.now();
+                final success = await ExcelExportService.exportMonthlyReport(
+                  month: now.month,
+                  year: now.year,
+                  villageDetails: villageDetails,
+                  reports: reports,
+                );
+
+                if (context.mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: const Color(0xFF2E7D32),
+                        content: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'File Rekap Bulanan PSN (${reports.length} laporan) berhasil diunduh.',
+                                style: GoogleFonts.outfit(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(
+                Icons.table_view_rounded,
+                size: 18,
+                color: Color(0xFF107C41),
+              ),
+              label: Text(
+                isMobile ? 'Excel' : 'Unduh Excel (.xlsx)',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF107C41),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF107C41), width: 1.5),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 12 : 18,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            )
+          else
+            const SizedBox.shrink(),
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.check, color: Colors.white, size: 18),
@@ -562,7 +657,10 @@ class PsnRecapDialog extends ConsumerWidget {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10365F),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 16 : 24,
+                vertical: 12,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
