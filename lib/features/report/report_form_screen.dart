@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -6,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/master_providers.dart';
@@ -171,15 +169,186 @@ class HouseReportEntry {
   }
 }
 
+class CitizenSuggestion {
+  final String name;
+  final String nik;
+  final String rtRw;
+  final String rt;
+  final String rw;
+  final String? village;
+  final String? posyandu;
+
+  const CitizenSuggestion({
+    required this.name,
+    this.nik = '',
+    this.rtRw = '',
+    this.rt = '',
+    this.rw = '',
+    this.village,
+    this.posyandu,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CitizenSuggestion &&
+          runtimeType == other.runtimeType &&
+          name.toLowerCase() == other.name.toLowerCase();
+
+  @override
+  int get hashCode => name.toLowerCase().hashCode;
+}
+
+List<CitizenSuggestion> extractCitizenSuggestions({
+  required List<Report> reports,
+  required List<HouseReportEntry> houseEntries,
+  List<HouseReportEntry>? currentInputEntries,
+  int? currentCardIndex,
+}) {
+  final Map<String, CitizenSuggestion> map = {};
+
+  void addOrUpdate(
+    String name,
+    String nik,
+    String rtRw, {
+    String? rt,
+    String? rw,
+    String? village,
+    String? posyandu,
+  }) {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return;
+    final key = cleanName.toLowerCase();
+
+    String cleanRtRw = rtRw.trim();
+    String cleanRt = rt?.trim() ?? '';
+    String cleanRw = rw?.trim() ?? '';
+
+    if (cleanRtRw.isNotEmpty && cleanRtRw != '-/-' && cleanRtRw != '- / -') {
+      cleanRtRw = _normalizeRtRw(cleanRtRw);
+      final parts = cleanRtRw.split('/');
+      if (parts.isNotEmpty && cleanRt.isEmpty) cleanRt = parts[0].trim();
+      if (parts.length >= 2 && cleanRw.isEmpty) cleanRw = parts[1].trim();
+    } else if (cleanRt.isNotEmpty || cleanRw.isNotEmpty) {
+      cleanRtRw = '${cleanRt.padLeft(2, '0')}/${cleanRw.padLeft(2, '0')}';
+    }
+
+    final existing = map[key];
+    if (existing == null) {
+      map[key] = CitizenSuggestion(
+        name: cleanName,
+        nik: nik.trim(),
+        rtRw: cleanRtRw,
+        rt: cleanRt,
+        rw: cleanRw,
+        village: village,
+        posyandu: posyandu,
+      );
+    } else {
+      final bestNik = nik.trim().isNotEmpty ? nik.trim() : existing.nik;
+      final bestRtRw = cleanRtRw.isNotEmpty ? cleanRtRw : existing.rtRw;
+      final bestRt = cleanRt.isNotEmpty ? cleanRt : existing.rt;
+      final bestRw = cleanRw.isNotEmpty ? cleanRw : existing.rw;
+      map[key] = CitizenSuggestion(
+        name: existing.name.isNotEmpty ? existing.name : cleanName,
+        nik: bestNik,
+        rtRw: bestRtRw,
+        rt: bestRt,
+        rw: bestRw,
+        village: village ?? existing.village,
+        posyandu: posyandu ?? existing.posyandu,
+      );
+    }
+  }
+
+  // 1. Initial starter defaults
+  for (var d in _getDefaultInitialHouseEntries()) {
+    addOrUpdate(
+      d.kkNameController.text,
+      d.nikController.text,
+      d.rtRwController.text,
+      rt: d.rtController.text,
+      rw: d.rwController.text,
+      village: d.villageName,
+      posyandu: d.posyanduName,
+    );
+  }
+
+  // 2. Parsed table house entries
+  for (var h in houseEntries) {
+    addOrUpdate(
+      h.kkNameController.text,
+      h.nikController.text,
+      h.rtRwController.text,
+      rt: h.rtController.text,
+      rw: h.rwController.text,
+      village: h.villageName,
+      posyandu: h.posyanduName,
+    );
+  }
+
+  // 3. Historical reports
+  for (var r in reports) {
+    if (r.notes == null || r.notes!.trim().isEmpty) continue;
+    final blocks = r.notes!.split('--- KK');
+    for (var b in blocks) {
+      if (b.trim().isEmpty) continue;
+      String nik = '';
+      String name = '';
+      String rtrw = '';
+      for (var line in b.split('\n')) {
+        final t = line.trim();
+        if (t.startsWith('NIK: ')) {
+          nik = t.substring(5).trim();
+        } else if (t.startsWith('Nama KK: ')) {
+          name = t.substring(9).trim();
+        } else if (t.startsWith('RT/RW: ')) {
+          rtrw = t.substring(7).trim();
+        }
+      }
+      if (name.isNotEmpty) {
+        addOrUpdate(
+          name,
+          nik,
+          rtrw,
+          village: r.villageName,
+          posyandu: r.posyanduName,
+        );
+      }
+    }
+  }
+
+  // 4. Current form cards
+  if (currentInputEntries != null) {
+    for (int i = 0; i < currentInputEntries.length; i++) {
+      if (currentCardIndex != null && i == currentCardIndex) continue;
+      final c = currentInputEntries[i];
+      addOrUpdate(
+        c.kkNameController.text,
+        c.nikController.text,
+        c.rtRwController.text,
+        rt: c.rtController.text,
+        rw: c.rwController.text,
+        village: c.villageName,
+        posyandu: c.posyanduName,
+      );
+    }
+  }
+
+  return map.values.toList();
+}
+
 class _HouseInputCard extends StatefulWidget {
   final int index;
   final int totalCount;
   final HouseReportEntry entry;
   final List<HouseReportEntry>? allEntries;
+  final List<CitizenSuggestion> suggestions;
   final VoidCallback? onNikChanged;
   final bool isDesktop;
   final List<Map<String, dynamic>> breedingPlaces;
   final VoidCallback? onRemove;
+  final VoidCallback? onAdd;
   final Widget Function({
     required String label,
     required IconData icon,
@@ -202,10 +371,12 @@ class _HouseInputCard extends StatefulWidget {
     required this.totalCount,
     required this.entry,
     this.allEntries,
+    this.suggestions = const [],
     this.onNikChanged,
     required this.isDesktop,
     required this.breedingPlaces,
     this.onRemove,
+    this.onAdd,
     required this.buildInputGroup,
     required this.buildDropdown,
   });
@@ -215,10 +386,335 @@ class _HouseInputCard extends StatefulWidget {
 }
 
 class _HouseInputCardState extends State<_HouseInputCard> {
+  late final FocusNode _nameFocusNode = FocusNode();
+  double _nameFieldWidth = 0.0;
+
   @override
   void initState() {
     super.initState();
     _syncRtRw();
+    _nameFocusNode.addListener(_handleNameFocusChange);
+  }
+
+  void _handleNameFocusChange() {
+    if (!_nameFocusNode.hasFocus) {
+      final curName = widget.entry.kkNameController.text.trim();
+      if (curName.isNotEmpty && widget.entry.nikController.text.trim().isEmpty) {
+        final match = widget.suggestions.firstWhere(
+          (s) => s.name.trim().toLowerCase() == curName.toLowerCase(),
+          orElse: () => const CitizenSuggestion(name: ''),
+        );
+        if (match.name.isNotEmpty) {
+          _applySuggestion(match);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameFocusNode.removeListener(_handleNameFocusChange);
+    _nameFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _applySuggestion(CitizenSuggestion selection) {
+    widget.entry.kkNameController.value = TextEditingValue(
+      text: selection.name,
+      selection: TextSelection.collapsed(offset: selection.name.length),
+    );
+    if (selection.nik.isNotEmpty) {
+      widget.entry.nikController.value = TextEditingValue(
+        text: selection.nik,
+        selection: TextSelection.collapsed(offset: selection.nik.length),
+      );
+    }
+    if (selection.rtRw.isNotEmpty) {
+      final norm = _normalizeRtRw(selection.rtRw);
+      final finalRtRw = norm.isNotEmpty ? norm : selection.rtRw;
+      widget.entry.rtRwController.value = TextEditingValue(
+        text: finalRtRw,
+        selection: TextSelection.collapsed(offset: finalRtRw.length),
+      );
+      final parts = finalRtRw.split('/');
+      if (parts.isNotEmpty) widget.entry.rtController.text = parts[0].trim();
+      if (parts.length >= 2) widget.entry.rwController.text = parts[1].trim();
+    } else if (selection.rt.isNotEmpty || selection.rw.isNotEmpty) {
+      final rt = selection.rt.padLeft(2, '0');
+      final rw = selection.rw.padLeft(2, '0');
+      widget.entry.rtController.text = rt;
+      widget.entry.rwController.text = rw;
+      widget.entry.rtRwController.text = '$rt/$rw';
+    }
+    widget.onNikChanged?.call();
+    setState(() {});
+  }
+
+  Widget _buildNamaField() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _nameFieldWidth = constraints.maxWidth;
+        return RawAutocomplete<CitizenSuggestion>(
+          textEditingController: widget.entry.kkNameController,
+          focusNode: _nameFocusNode,
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            final query = textEditingValue.text.trim().toLowerCase();
+            if (query.isEmpty) {
+              return const Iterable<CitizenSuggestion>.empty();
+            }
+
+            final startsWith = <CitizenSuggestion>[];
+            final wordStartsWith = <CitizenSuggestion>[];
+            final contains = <CitizenSuggestion>[];
+
+            for (final s in widget.suggestions) {
+              final sLower = s.name.trim().toLowerCase();
+              if (sLower.startsWith(query)) {
+                startsWith.add(s);
+              } else if (sLower.split(' ').any((w) => w.startsWith(query))) {
+                wordStartsWith.add(s);
+              } else if (sLower.contains(query)) {
+                contains.add(s);
+              }
+            }
+
+            return [...startsWith, ...wordStartsWith, ...contains].take(6);
+          },
+          displayStringForOption: (CitizenSuggestion option) => option.name,
+          onSelected: (CitizenSuggestion selection) {
+            _applySuggestion(selection);
+          },
+          fieldViewBuilder: (
+            BuildContext context,
+            TextEditingController textEditingController,
+            FocusNode focusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            return TextFormField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              onFieldSubmitted: (_) => onFieldSubmitted(),
+              decoration: InputDecoration(
+                hintText: 'Masukkan Nama KK',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                isDense: true,
+              ),
+            );
+          },
+          optionsViewBuilder: (
+            BuildContext context,
+            AutocompleteOnSelected<CitizenSuggestion> onSelected,
+            Iterable<CitizenSuggestion> options,
+          ) {
+            final optionsList = options.toList();
+            final width = _nameFieldWidth > 0 ? _nameFieldWidth : 350.0;
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 8,
+                shadowColor: Colors.black26,
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+                child: Container(
+                  width: width,
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(9),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.history_rounded,
+                              size: 13,
+                              color: Color(0xFF27AE60),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Saran Data Sebelumnya (${optionsList.length})',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF334155),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Otomatis isi NIK & RT/RW',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: ListView.separated(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: optionsList.length,
+                          separatorBuilder: (context, index) => const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF1F5F9),
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = optionsList[index];
+                            return InkWell(
+                              onTap: () => onSelected(item),
+                              hoverColor: const Color(0xFFF0FDF4),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 9,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE8F5E9),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.person_rounded,
+                                        color: Color(0xFF27AE60),
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            item.name,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF1E293B),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Row(
+                                            children: [
+                                              if (item.nik.isNotEmpty) ...[
+                                                Icon(
+                                                  Icons.badge_outlined,
+                                                  size: 11,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  item.nik,
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 11,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                              if (item.nik.isNotEmpty &&
+                                                  item.rtRw.isNotEmpty) ...[
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '•',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[400],
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                              ],
+                                              if (item.rtRw.isNotEmpty) ...[
+                                                Icon(
+                                                  Icons.home_outlined,
+                                                  size: 11,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  'RT/RW: ${item.rtRw}',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 11,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE8F5E9),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Pilih',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF27AE60),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _syncRtRw() {
@@ -356,7 +852,17 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                           controller: entry.nikController,
                           keyboardType: TextInputType.number,
                           maxLength: 16,
-                          onChanged: (_) {
+                          onChanged: (val) {
+                            if (val.trim().length == 16 &&
+                                entry.kkNameController.text.trim().isEmpty) {
+                              final match = widget.suggestions.firstWhere(
+                                (s) => s.nik.trim() == val.trim(),
+                                orElse: () => const CitizenSuggestion(name: ''),
+                              );
+                              if (match.name.isNotEmpty) {
+                                _applySuggestion(match);
+                              }
+                            }
                             setState(() {});
                             widget.onNikChanged?.call();
                           },
@@ -387,22 +893,7 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                   child: widget.buildInputGroup(
                     label: 'NAMA',
                     icon: Icons.person,
-                    child: TextFormField(
-                      controller: entry.kkNameController,
-                      decoration: InputDecoration(
-                        hintText: 'Masukkan Nama KK',
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        isDense: true,
-                      ),
-                    ),
+                    child: _buildNamaField(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -479,7 +970,17 @@ class _HouseInputCardState extends State<_HouseInputCard> {
                     controller: entry.nikController,
                     keyboardType: TextInputType.number,
                     maxLength: 16,
-                    onChanged: (_) {
+                    onChanged: (val) {
+                      if (val.trim().length == 16 &&
+                          entry.kkNameController.text.trim().isEmpty) {
+                        final match = widget.suggestions.firstWhere(
+                          (s) => s.nik.trim() == val.trim(),
+                          orElse: () => const CitizenSuggestion(name: ''),
+                        );
+                        if (match.name.isNotEmpty) {
+                          _applySuggestion(match);
+                        }
+                      }
                       setState(() {});
                       widget.onNikChanged?.call();
                     },
@@ -507,22 +1008,7 @@ class _HouseInputCardState extends State<_HouseInputCard> {
             widget.buildInputGroup(
               label: 'NAMA',
               icon: Icons.person,
-              child: TextFormField(
-                controller: entry.kkNameController,
-                decoration: InputDecoration(
-                  hintText: 'Masukkan Nama KK',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  isDense: true,
-                ),
-              ),
+              child: _buildNamaField(),
             ),
             const SizedBox(height: 12),
             widget.buildInputGroup(
@@ -859,6 +1345,39 @@ class _HouseInputCardState extends State<_HouseInputCard> {
             ),
             child: Text('-', style: GoogleFonts.outfit(color: Colors.grey[500])),
           ),
+        if (widget.index == widget.totalCount - 1 && widget.onAdd != null) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: widget.onAdd,
+            icon: const Icon(
+              Icons.add_circle_outline,
+              size: 15,
+              color: Color(0xFF27AE60),
+            ),
+            label: Text(
+              'Tambah Data',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF27AE60),
+                fontWeight: FontWeight.bold,
+                fontSize: 12.5,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(
+                color: Color(0xFF27AE60),
+                width: 1.5,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 9,
+              ),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -928,8 +1447,7 @@ class ReportFormScreen extends HookConsumerWidget {
     final reportDate = useState(initialReport?.reportDate ?? DateTime.now());
     final globalResult = useState<String?>('Ada Jentik (Positif)');
     final isLoading = useState(false);
-    final hasSavedDraft = useState(false);
-    final draftInfo = useState<Map<String, dynamic>?>(null);
+    final isLoadDataLoading = useState(false);
     final tableScrollController = useScrollController();
 
     final myReportsAsync = ref.watch(myReportsProvider);
@@ -943,6 +1461,23 @@ class ReportFormScreen extends HookConsumerWidget {
       currentPage.value = 1;
       return null;
     }, [searchQuery.value]);
+
+    final citizenSuggestions = useMemoized(() {
+      final combinedReports = <Report>[
+        ...(myReportsAsync.value ?? <Report>[]),
+        ...(allReportsAsync.value ?? <Report>[]),
+      ];
+      return extractCitizenSuggestions(
+        reports: combinedReports,
+        houseEntries: houseEntries.value,
+        currentInputEntries: inputHouseEntries.value,
+      );
+    }, [
+      myReportsAsync.value,
+      allReportsAsync.value,
+      houseEntries.value,
+      inputHouseEntries.value,
+    ]);
 
     // Watch Master Data & Profile
     final userProfileAsync = ref.watch(userProfileProvider);
@@ -1185,33 +1720,6 @@ class ReportFormScreen extends HookConsumerWidget {
       return null;
     }, [initialReport, copyFromReport, userProfileAsync.value]);
 
-    // Check for saved draft on mount when creating new report
-    useEffect(() {
-      if (initialReport == null && copyFromReport == null) {
-        SharedPreferences.getInstance().then((prefs) {
-          final userId = userProfileAsync.value?.id ?? 'default';
-          final raw = prefs.getString('draft_report_$userId');
-          if (raw != null && raw.isNotEmpty) {
-            try {
-              final map = jsonDecode(raw) as Map<String, dynamic>;
-              final housesJson = map['houses'] as List<dynamic>?;
-              final savedAtStr = map['savedAt'] as String?;
-              final dateStr = savedAtStr != null
-                  ? DateFormat('dd MMM yyyy, HH:mm', 'id_ID')
-                      .format(DateTime.parse(savedAtStr))
-                  : '';
-              hasSavedDraft.value = true;
-              draftInfo.value = {
-                'count': housesJson?.length ?? 0,
-                'date': dateStr,
-              };
-            } catch (_) {}
-          }
-        });
-      }
-      return null;
-    }, [userProfileAsync.value]);
-
 
     // Auto-populate houseEntries by default with all submitted reports sorted by newest date first
     useEffect(() {
@@ -1248,6 +1756,503 @@ class ReportFormScreen extends HookConsumerWidget {
       }
       return null;
     }, [selectedPosyanduId.value, initialReport, copyFromReport]);
+
+    List<HouseReportEntry> parseHousesFromReportNotes(Report report) {
+      if (report.notes == null || report.notes!.trim().isEmpty) return [];
+      final parsed = <HouseReportEntry>[];
+      final blocks = report.notes!.split('--- KK');
+      for (var block in blocks) {
+        if (block.trim().isEmpty) continue;
+        final entry = HouseReportEntry(
+          reportDate: reportDate.value,
+          villageName: selectedVillageName,
+          posyanduName: selectedPosyanduName,
+        );
+        final lines = block.split('\n');
+        for (var line in lines) {
+          final t = line.trim();
+          if (t.startsWith('NIK: ')) {
+            entry.nikController.text = t.substring(5).trim();
+          } else if (t.startsWith('Nama KK: ')) {
+            entry.kkNameController.text = t.substring(9).trim();
+          } else if (t.startsWith('RT/RW: ')) {
+            final rtrw = t.substring(7).trim();
+            final norm = _normalizeRtRw(rtrw);
+            entry.rtRwController.text = norm.isNotEmpty ? norm : rtrw;
+            final parts = entry.rtRwController.text.split('/');
+            if (parts.length == 2) {
+              entry.rtController.text = parts[0].trim();
+              entry.rwController.text = parts[1].trim();
+            }
+          }
+        }
+        // Auto-fill NIK from suggestions if NIK was empty in old report
+        if (entry.nikController.text.trim().isEmpty && entry.kkNameController.text.trim().isNotEmpty) {
+          final sMatch = citizenSuggestions.firstWhere(
+            (s) => s.name.trim().toLowerCase() == entry.kkNameController.text.trim().toLowerCase(),
+            orElse: () => const CitizenSuggestion(name: ''),
+          );
+          if (sMatch.name.isNotEmpty && sMatch.nik.isNotEmpty) {
+            entry.nikController.text = sMatch.nik;
+          }
+        }
+
+        // Reset check status so cadre only needs to check positive / nihil
+        entry.isPositive = null;
+        entry.selectedPlaceIds = [null];
+        entry.positivePlacesCountController.text = '';
+
+        if (entry.kkNameController.text.trim().isNotEmpty || entry.nikController.text.trim().isNotEmpty) {
+          parsed.add(entry);
+        }
+      }
+      return parsed;
+    }
+
+    Future<List<Report>> fetchPosyanduReports() async {
+      final pId = selectedPosyanduId.value;
+      if (pId == null) return [];
+
+      final allReports = <Report>[
+        ...(myReportsAsync.value ?? []),
+        ...(allReportsAsync.value ?? []),
+      ];
+
+      final cleanSelectedPosyandu = selectedPosyanduName
+          .toLowerCase()
+          .replaceAll('posyandu', '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+
+      // Find local reports matching this posyandu
+      final matched = allReports.where((r) {
+        if (r.posyanduId == pId) return true;
+        if (r.posyanduName != null && r.posyanduName!.isNotEmpty) {
+          final rName = r.posyanduName!
+              .toLowerCase()
+              .replaceAll('posyandu', '')
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim();
+          if (rName == cleanSelectedPosyandu) return true;
+          if (cleanSelectedPosyandu.isNotEmpty && rName.contains(cleanSelectedPosyandu)) return true;
+        }
+        return false;
+      }).toList();
+
+      // Query Supabase directly
+      try {
+        final remoteLatest = await ref.read(reportRepositoryProvider).getLatestReportByPosyandu(pId);
+        if (remoteLatest != null && !matched.any((m) => m.id == remoteLatest.id)) {
+          matched.add(remoteLatest);
+        }
+      } catch (_) {}
+
+      // If still empty, search Supabase posyandus with matching name to find other ID rows
+      if (matched.isEmpty) {
+        try {
+          final client = ref.read(supabaseClientProvider);
+          final altPosyandus = await client
+              .from('posyandus')
+              .select('id')
+              .ilike('name', '%$cleanSelectedPosyandu%')
+              .limit(5);
+          for (var alt in (altPosyandus as List)) {
+            final altId = alt['id'] as String;
+            final altRep = await ref.read(reportRepositoryProvider).getLatestReportByPosyandu(altId);
+            if (altRep != null && !matched.any((m) => m.id == altRep.id)) {
+              matched.add(altRep);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Deduplicate by report id
+      final Map<String, Report> unique = {};
+      for (var r in matched) {
+        unique[r.id] = r;
+      }
+
+      final list = unique.values
+          .where((r) => r.notes != null && r.notes!.contains('--- KK'))
+          .toList();
+      list.sort((a, b) => b.reportDate.compareTo(a.reportDate));
+      return list;
+    }
+
+    late void Function(List<Report> reports) showHistoricalReportsDialog;
+
+    void applyLoadedReport(Report targetReport, {int totalReports = 1, List<Report>? allAvailable}) {
+      final parsed = parseHousesFromReportNotes(targetReport);
+      if (parsed.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Catatan data rumah pada laporan tanggal ${DateFormat('dd MMM yyyy', 'id_ID').format(targetReport.reportDate)} kosong.'),
+            backgroundColor: Colors.orange[800],
+          ),
+        );
+        return;
+      }
+
+      inputHouseEntries.value = parsed;
+      housesInspectedController.text = parsed.length.toString();
+
+      final formattedDate = DateFormat('dd MMM yyyy', 'id_ID').format(targetReport.reportDate);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Berhasil memuat ${parsed.length} data rumah dari laporan sebelumnya ($formattedDate)!'),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF27AE60),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 4),
+          action: (totalReports > 1 && allAvailable != null)
+              ? SnackBarAction(
+                  label: 'PILIH LAIN',
+                  textColor: Colors.white,
+                  onPressed: () => showHistoricalReportsDialog(allAvailable),
+                )
+              : null,
+        ),
+      );
+    }
+
+    void applyAllUniqueHouses(List<Report> reports) {
+      final Map<String, HouseReportEntry> uniqueKks = {};
+      for (var r in reports) {
+        final parsed = parseHousesFromReportNotes(r);
+        for (var h in parsed) {
+          final nik = h.nikController.text.trim();
+          final name = h.kkNameController.text.trim().toLowerCase();
+          final key = nik.isNotEmpty ? nik : name;
+          if (key.isNotEmpty && !uniqueKks.containsKey(key)) {
+            uniqueKks[key] = h;
+          }
+        }
+      }
+
+      final combined = uniqueKks.values.toList();
+      if (combined.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Tidak ada data rumah unik yang ditemukan.'),
+            backgroundColor: Colors.orange[800],
+          ),
+        );
+        return;
+      }
+
+      inputHouseEntries.value = combined;
+      housesInspectedController.text = combined.length.toString();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Berhasil memuat ${combined.length} data rumah unik dari seluruh riwayat laporan!'),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF27AE60),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+
+    showHistoricalReportsDialog = (List<Report> reports) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.history_edu_rounded, color: Color(0xFF10365F), size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pilih Riwayat Laporan',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      selectedPosyanduName,
+                      style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Pilih tanggal laporan yang ingin disalin datanya ke formulir. Kader cukup memeriksa centang positif/nihil tanpa perlu mengetik ulang nama dan NIK.',
+                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey[700], height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  ...reports.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final rep = entry.value;
+                    final dateStr = DateFormat('dd MMMM yyyy', 'id_ID').format(rep.reportDate);
+                    final isLatest = idx == 0;
+                    final housesCount = rep.notes != null
+                        ? rep.notes!.split('--- KK').where((b) => b.trim().isNotEmpty).length
+                        : rep.housesInspected;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isLatest ? const Color(0xFFF0FDF4) : Colors.grey[50],
+                        border: Border.all(
+                          color: isLatest ? const Color(0xFF86EFAC) : Colors.grey[200]!,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          backgroundColor: isLatest ? const Color(0xFF27AE60) : const Color(0xFF10365F),
+                          radius: 16,
+                          child: Icon(
+                            isLatest ? Icons.star_rounded : Icons.calendar_today_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Text(
+                              dateStr,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: const Color(0xFF10365F),
+                              ),
+                            ),
+                            if (isLatest) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF27AE60),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Terbaru',
+                                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        subtitle: Text(
+                          '$housesCount rumah diperiksa (${rep.housesPositive} positif)',
+                          style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[600]),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF10365F)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          applyLoadedReport(rep, totalReports: reports.length, allAvailable: reports);
+                        },
+                      ),
+                    );
+                  }),
+                  if (reports.length > 1) ...[
+                    const SizedBox(height: 4),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF10365F),
+                        side: const BorderSide(color: Color(0xFF10365F)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: const Size(double.infinity, 40),
+                      ),
+                      icon: const Icon(Icons.dynamic_feed_rounded, size: 16),
+                      label: Text(
+                        'Gabungkan Semua Rumah Unik',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        applyAllUniqueHouses(reports);
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('TUTUP', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+    };
+
+    Future<void> handleLoadPosyanduData() async {
+      if (selectedVillageId.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('Pilih Desa terlebih dahulu!'),
+              ],
+            ),
+            backgroundColor: Colors.orange[800],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+
+      if (selectedPosyanduId.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('Pilih Posyandu terlebih dahulu untuk memuat data!'),
+              ],
+            ),
+            backgroundColor: Colors.orange[800],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+
+      final hasUserInput = inputHouseEntries.value.any((h) =>
+          h.kkNameController.text.trim().isNotEmpty ||
+          h.nikController.text.trim().isNotEmpty ||
+          h.isPositive != null);
+
+      if (hasUserInput) {
+        final shouldOverwrite = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.help_outline_rounded, color: Color(0xFF10365F), size: 24),
+                const SizedBox(width: 8),
+                Text('Muat Data Sebelumnya?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            content: Text(
+              'Memuat data riwayat Posyandu akan menggantikan data rumah yang saat ini sedang diisi di formulir.\n\nApakah Anda yakin ingin melanjutkan?',
+              style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey[800], height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('BATAL', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10365F),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text('YA, MUAT DATA', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        if (shouldOverwrite != true) return;
+      }
+
+      isLoadDataLoading.value = true;
+      try {
+        final reports = await fetchPosyanduReports();
+        if (!context.mounted) return;
+        if (reports.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Belum ada riwayat data pemeriksaan untuk $selectedPosyanduName di Desa $selectedVillageName.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange[800],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+          return;
+        }
+
+        applyLoadedReport(reports.first, totalReports: reports.length, allAvailable: reports);
+      } finally {
+        isLoadDataLoading.value = false;
+      }
+    }
+
+    Future<void> handlePickHistoricalReport() async {
+      if (selectedVillageId.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pilih Desa terlebih dahulu!'),
+            backgroundColor: Colors.orange[800],
+          ),
+        );
+        return;
+      }
+      if (selectedPosyanduId.value == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Pilih Posyandu terlebih dahulu!'),
+            backgroundColor: Colors.orange[800],
+          ),
+        );
+        return;
+      }
+
+      isLoadDataLoading.value = true;
+      try {
+        final reports = await fetchPosyanduReports();
+        if (!context.mounted) return;
+        if (reports.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Belum ada riwayat laporan untuk $selectedPosyanduName.'),
+              backgroundColor: Colors.orange[800],
+            ),
+          );
+          return;
+        }
+        showHistoricalReportsDialog(reports);
+      } finally {
+        isLoadDataLoading.value = false;
+      }
+    }
 
     Future<void> saveAndAddHouseEntry(HouseReportEntry newEntry) async {
       if (newEntry.rtRwController.text.trim().isNotEmpty && newEntry.rtRwController.text.trim() != '- / -') {
@@ -1483,146 +2488,6 @@ class ReportFormScreen extends HookConsumerWidget {
       }
     }
 
-    Future<void> saveDraft({bool showToast = true}) async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final draftList = inputHouseEntries.value.map((h) => {
-          'nik': h.nikController.text.trim(),
-          'kkName': h.kkNameController.text.trim(),
-          'rt': h.rtController.text.trim(),
-          'rw': h.rwController.text.trim(),
-          'rtRw': h.rtRwController.text.trim(),
-          'isPositive': h.isPositive,
-          'selectedPlaceIds': h.selectedPlaceIds,
-          'positivePlacesCount': h.positivePlacesCountController.text.trim(),
-        }).toList();
-
-        final draftData = jsonEncode({
-          'villageId': selectedVillageId.value,
-          'posyanduId': selectedPosyanduId.value,
-          'reportDate': reportDate.value.toIso8601String(),
-          'housesInspected': housesInspectedController.text.trim(),
-          'houses': draftList,
-          'savedAt': DateTime.now().toIso8601String(),
-        });
-
-        final userId = userProfileAsync.value?.id ?? 'default';
-        await prefs.setString('draft_report_$userId', draftData);
-        hasSavedDraft.value = true;
-        draftInfo.value = {
-          'count': draftList.length,
-          'date': DateFormat('dd MMM yyyy, HH:mm', 'id_ID').format(DateTime.now()),
-        };
-
-        if (showToast && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Draf berhasil disimpan! Data aman saat Anda berpindah rumah.'),
-                  ),
-                ],
-              ),
-              backgroundColor: Color(0xFF27AE60),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      } catch (e) {
-        if (showToast && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal menyimpan draf: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-
-    Future<void> loadDraft() async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final userId = userProfileAsync.value?.id ?? 'default';
-        final raw = prefs.getString('draft_report_$userId');
-        if (raw == null || raw.isEmpty) return;
-
-        final map = jsonDecode(raw) as Map<String, dynamic>;
-        if (map['villageId'] != null) selectedVillageId.value = map['villageId'];
-        if (map['posyanduId'] != null) selectedPosyanduId.value = map['posyanduId'];
-        if (map['reportDate'] != null) {
-          try {
-            reportDate.value = DateTime.parse(map['reportDate']);
-          } catch (_) {}
-        }
-        if (map['housesInspected'] != null && (map['housesInspected'] as String).isNotEmpty) {
-          housesInspectedController.text = map['housesInspected'];
-        }
-
-        final housesJson = map['houses'] as List<dynamic>?;
-        if (housesJson != null && housesJson.isNotEmpty) {
-          final entries = <HouseReportEntry>[];
-          for (var item in housesJson) {
-            final entry = HouseReportEntry(
-              isPositive: item['isPositive'] as bool?,
-              reportDate: reportDate.value,
-            );
-            entry.nikController.text = item['nik'] ?? '';
-            entry.kkNameController.text = item['kkName'] ?? '';
-            entry.rtController.text = item['rt'] ?? '';
-            entry.rwController.text = item['rw'] ?? '';
-            entry.rtRwController.text = item['rtRw'] ?? '';
-            entry.positivePlacesCountController.text = item['positivePlacesCount'] ?? '';
-            final places = item['selectedPlaceIds'] as List<dynamic>?;
-            if (places != null && places.isNotEmpty) {
-              entry.selectedPlaceIds = places.map((e) => e as String?).toList();
-            }
-            entries.add(entry);
-          }
-          inputHouseEntries.value = entries;
-        }
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.inventory_2_outlined, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Draf laporan berhasil dimuat! Silakan lanjutkan pengisian.'),
-                  ),
-                ],
-              ),
-              backgroundColor: Color(0xFF10365F),
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal memuat draf: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-
-    Future<void> clearDraft() async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final userId = userProfileAsync.value?.id ?? 'default';
-        await prefs.remove('draft_report_$userId');
-        hasSavedDraft.value = false;
-        draftInfo.value = null;
-      } catch (_) {}
-    }
-
     Future<void> handleSubmitBatch() async {
       final targetInspectedStr = housesInspectedController.text.trim();
       final targetInspected = int.tryParse(targetInspectedStr);
@@ -1673,25 +2538,13 @@ class ReportFormScreen extends HookConsumerWidget {
             ),
             content: Text(
               'Jumlah data rumah yang diisi (${validHouses.length} rumah) belum sesuai dengan target Jumlah Rumah Yang Diperiksa ($targetInspected rumah).\n\n'
-              'Data tidak dapat dikirim sebelum jumlahnya sesuai. Anda dapat melengkapi datanya sekarang atau klik "Simpan Draf" untuk menyimpan sementara saat berpindah rumah.',
+              'Silakan lengkapi data rumah yang diperiksa agar sesuai dengan target sebelum mengirim laporan.',
               style: GoogleFonts.outfit(fontSize: 13, color: Colors.blueGrey[800], height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text('LENGKAPI DATA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF10365F))),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.bookmark_add_outlined, size: 16, color: Colors.white),
-                label: Text('SIMPAN DRAF', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE67E22),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  saveDraft();
-                },
               ),
             ],
           ),
@@ -2017,8 +2870,6 @@ class ReportFormScreen extends HookConsumerWidget {
             ),
           );
 
-          await clearDraft();
-
           if (isEditMode) {
             Future.delayed(const Duration(milliseconds: 300), () {
               if (context.mounted) context.pop();
@@ -2171,63 +3022,6 @@ class ReportFormScreen extends HookConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
-
-                      if (hasSavedDraft.value && !isEditMode) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8E1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFD54F)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.bookmark_added_rounded, color: Color(0xFFE67E22), size: 24),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Draf Laporan Tersimpan Ditemukan',
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        color: const Color(0xFFB78103),
-                                      ),
-                                    ),
-                                    Text(
-                                      'Terdapat draf tersimpan (${draftInfo.value?['count'] ?? 0} data rumah) pada ${draftInfo.value?['date'] ?? ""}. Anda dapat melanjutkan pengisian sekarang.',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 12,
-                                        color: const Color(0xFF795548),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton.icon(
-                                onPressed: () => loadDraft(),
-                                icon: const Icon(Icons.download_rounded, size: 14, color: Colors.white),
-                                label: Text('Muat Draf', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE67E22),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                onPressed: () => clearDraft(),
-                                icon: const Icon(Icons.close, size: 18, color: Color(0xFF8D6E63)),
-                                tooltip: 'Hapus Draf',
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
 
                       // Top Card Form
                       Container(
@@ -2401,7 +3195,74 @@ class ReportFormScreen extends HookConsumerWidget {
                                      ),
                                    ),
                                  ),
-                                 if (isDesktop) const SizedBox(),
+                                 _buildInputGroup(
+                                   label: 'Muat Data Riwayat',
+                                   icon: Icons.history_rounded,
+                                   iconColor: const Color(0xFF10365F),
+                                   child: SizedBox(
+                                     height: 48,
+                                     child: Row(
+                                       children: [
+                                         ElevatedButton.icon(
+                                           onPressed: isLoadDataLoading.value ? null : () => handleLoadPosyanduData(),
+                                           icon: isLoadDataLoading.value
+                                               ? const SizedBox(
+                                                   width: 16,
+                                                   height: 16,
+                                                   child: CircularProgressIndicator(
+                                                     strokeWidth: 2,
+                                                     color: Colors.white,
+                                                   ),
+                                                 )
+                                               : const Icon(
+                                                   Icons.cloud_download_outlined,
+                                                   size: 18,
+                                                   color: Colors.white,
+                                                 ),
+                                           label: Text(
+                                             isLoadDataLoading.value ? 'Memuat Data...' : 'Load Data',
+                                             style: GoogleFonts.outfit(
+                                               fontSize: 13,
+                                               fontWeight: FontWeight.bold,
+                                               color: Colors.white,
+                                             ),
+                                           ),
+                                           style: ElevatedButton.styleFrom(
+                                             backgroundColor: const Color(0xFF10365F),
+                                             disabledBackgroundColor: const Color(0xFF10365F).withValues(alpha: 0.6),
+                                             shape: RoundedRectangleBorder(
+                                               borderRadius: BorderRadius.circular(8),
+                                             ),
+                                             elevation: 1,
+                                             padding: const EdgeInsets.symmetric(horizontal: 14),
+                                           ),
+                                         ),
+                                         const SizedBox(width: 8),
+                                         Tooltip(
+                                           message: 'Pilih dari Riwayat Laporan',
+                                           child: InkWell(
+                                             borderRadius: BorderRadius.circular(8),
+                                             onTap: isLoadDataLoading.value ? null : () => handlePickHistoricalReport(),
+                                             child: Container(
+                                               height: 48,
+                                               width: 48,
+                                               decoration: BoxDecoration(
+                                                 border: Border.all(color: Colors.grey[300]!),
+                                                 borderRadius: BorderRadius.circular(8),
+                                                 color: Colors.white,
+                                               ),
+                                               child: const Icon(
+                                                 Icons.history_rounded,
+                                                 color: Color(0xFF10365F),
+                                                 size: 20,
+                                               ),
+                                             ),
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ),
+                                 ),
                                  if (isDesktop) const SizedBox(),
                                ],
                              ),
@@ -2419,11 +3280,20 @@ class ReportFormScreen extends HookConsumerWidget {
                                 totalCount: inputHouseEntries.value.length,
                                 entry: entry,
                                 allEntries: inputHouseEntries.value,
+                                suggestions: citizenSuggestions,
                                 onNikChanged: () {
                                   inputHouseEntries.value = [...inputHouseEntries.value];
                                 },
                                 isDesktop: isDesktop,
                                 breedingPlaces: breedingPlacesAsync.value ?? [],
+                                onAdd: !isEditMode
+                                    ? () {
+                                        inputHouseEntries.value = [
+                                          ...inputHouseEntries.value,
+                                          HouseReportEntry(),
+                                        ];
+                                      }
+                                    : null,
                                 onRemove: inputHouseEntries.value.length > 1
                                     ? () {
                                         final updated = List<HouseReportEntry>.from(inputHouseEntries.value);
@@ -2438,137 +3308,53 @@ class ReportFormScreen extends HookConsumerWidget {
                             }),
                             const SizedBox(height: 8),
 
-                            // Bottom Action Buttons: "+ Tambah Data", "Simpan Draf" & "Kirim Laporan"
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 10,
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (!isEditMode)
-                                  // Small "Tambah Data" Button (only in Add/New mode)
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      inputHouseEntries.value = [
-                                        ...inputHouseEntries.value,
-                                        HouseReportEntry(),
-                                      ];
-                                    },
-                                    icon: const Icon(
-                                      Icons.add_circle_outline,
-                                      size: 15,
-                                      color: Color(0xFF27AE60),
-                                    ),
-                                    label: Text(
-                                      'Tambah Data',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFF27AE60),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFF27AE60),
-                                        width: 1.5,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 8,
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  )
-                                else
-                                  const SizedBox.shrink(),
+                            const SizedBox(height: 12),
 
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    if (!isEditMode) ...[
-                                      OutlinedButton.icon(
-                                        onPressed: isLoading.value ? null : () => saveDraft(),
-                                        icon: const Icon(
-                                          Icons.bookmark_add_outlined,
-                                          size: 15,
-                                          color: Color(0xFFE67E22),
-                                        ),
-                                        label: Text(
-                                          'Simpan Draf',
-                                          style: GoogleFonts.outfit(
-                                            color: const Color(0xFFE67E22),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12.5,
-                                          ),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          side: const BorderSide(
-                                            color: Color(0xFFE67E22),
-                                            width: 1.5,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 8,
-                                          ),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                      ),
-                                    ],
-
-                                    // Submit Button
-                                    ElevatedButton.icon(
-                                      onPressed: isLoading.value
-                                          ? null
-                                          : () => handleSubmitBatch(),
-                                      icon: isLoading.value
-                                          ? const SizedBox(
-                                              width: 14,
-                                              height: 14,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Icon(
-                                              Icons.send,
-                                              color: Colors.white,
-                                              size: 15,
-                                            ),
-                                      label: Text(
-                                        isEditMode
-                                            ? 'Simpan Perubahan'
-                                            : 'Kirim Laporan',
-                                        style: GoogleFonts.outfit(
+                            // Bottom Action: "Kirim Laporan" / "Simpan Perubahan" di pojok kanan bawah
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: isLoading.value
+                                    ? null
+                                    : () => handleSubmitBatch(),
+                                icon: isLoading.value
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
                                           color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12.5,
                                         ),
+                                      )
+                                    : const Icon(
+                                        Icons.send,
+                                        color: Colors.white,
+                                        size: 15,
                                       ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF27AE60),
-                                        foregroundColor: Colors.white,
-                                        elevation: 1,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 8,
-                                        ),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                    ),
-                                  ],
+                                label: Text(
+                                  isEditMode
+                                      ? 'Simpan Perubahan'
+                                      : 'Kirim Laporan',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
-                              ],
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF27AE60),
+                                  foregroundColor: Colors.white,
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -5608,7 +6394,9 @@ List<HouseReportEntry> _parseHouseEntriesFromReports(
         } else if (t.startsWith('Nama KK: ')) {
           entry.kkNameController.text = t.substring(9).trim();
         } else if (t.startsWith('RT/RW: ')) {
-          final parts = t.substring(7).split('/');
+          final rtrwRaw = t.substring(7).trim();
+          entry.rtRwController.text = _normalizeRtRw(rtrwRaw);
+          final parts = rtrwRaw.split('/');
           if (parts.length == 2) {
             entry.rtController.text = parts[0].trim();
             entry.rwController.text = parts[1].trim();
@@ -5683,9 +6471,11 @@ List<HouseReportEntry> _getDefaultInitialHouseEntries({
     villageName: vName,
     posyanduName: pName,
   );
+  e1.nikController.text = '3302011205850001';
   e1.kkNameController.text = 'Eko Setyo';
   e1.rtController.text = '09';
   e1.rwController.text = '03';
+  e1.rtRwController.text = '09/03';
 
   final e2 = HouseReportEntry(
     isPositive: true,
@@ -5693,9 +6483,11 @@ List<HouseReportEntry> _getDefaultInitialHouseEntries({
     villageName: vName,
     posyanduName: pName,
   );
+  e2.nikController.text = '3302012408800002';
   e2.kkNameController.text = 'Budi Santoso';
   e2.rtController.text = '02';
   e2.rwController.text = '01';
+  e2.rtRwController.text = '02/01';
   e2.positivePlacesCountController.text = '1';
 
   final e3 = HouseReportEntry(
@@ -5704,9 +6496,23 @@ List<HouseReportEntry> _getDefaultInitialHouseEntries({
     villageName: vName,
     posyanduName: pName,
   );
+  e3.nikController.text = '3302011503780003';
   e3.kkNameController.text = 'Ahmad Dahlan';
   e3.rtController.text = '05';
   e3.rwController.text = '02';
+  e3.rtRwController.text = '05/02';
 
-  return [e1, e2, e3];
+  final e4 = HouseReportEntry(
+    isPositive: false,
+    reportDate: now,
+    villageName: vName,
+    posyanduName: pName,
+  );
+  e4.nikController.text = '3302015809960004';
+  e4.kkNameController.text = 'Rindy Astuti';
+  e4.rtController.text = '02';
+  e4.rwController.text = '03';
+  e4.rtRwController.text = '02/03';
+
+  return [e1, e2, e3, e4];
 }

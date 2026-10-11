@@ -76,9 +76,6 @@ class UserProfileMenu extends ConsumerWidget {
                   ),
                 );
                 break;
-              case 'drafts':
-                context.push('/drafts');
-                break;
               case 'password':
                 _showChangePasswordDialog(context);
                 break;
@@ -155,15 +152,6 @@ class UserProfileMenu extends ConsumerWidget {
                 Text('Lihat Profil', style: GoogleFonts.outfit(fontSize: 14)),
               ]),
             ),
-            if (profile.role.toLowerCase().startsWith('kader'))
-              PopupMenuItem<String>(
-                value: 'drafts',
-                child: Row(children: [
-                  const Icon(Icons.drafts_outlined, size: 20, color: AppTheme.textDark),
-                  const SizedBox(width: 12),
-                  Text('Laporan Draft', style: GoogleFonts.outfit(fontSize: 14)),
-                ]),
-              ),
             PopupMenuItem<String>(
               value: 'password',
               child: Row(children: [
