@@ -8,6 +8,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/services/excel_export_service.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
+import 'dashboard_common_widgets.dart';
 
 class AdminAnalyticsScreen extends ConsumerStatefulWidget {
   const AdminAnalyticsScreen({super.key});
@@ -157,8 +158,6 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
       ...List.generate(5, (i) => (currentYear - 2 + i).toString())
     ];
 
-    final activeMonthText =
-        selectedMonth == 0 ? 'Semua Bulan' : monthNames[selectedMonth - 1];
     final activeYearText =
         selectedYear == 0 ? 'Semua Tahun' : selectedYear.toString();
 
@@ -214,13 +213,45 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                 final titleColumn = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Monitoring Angka Bebas Jentik (ABJ)',
-                      style: GoogleFonts.outfit(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF10365F),
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 6,
+                      children: [
+                        Text(
+                          'Monitoring Angka Bebas Jentik (ABJ)',
+                          style: GoogleFonts.outfit(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF10365F),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0F2FE),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFBAE6FD)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.local_hospital_rounded,
+                                  size: 14, color: Color(0xFF0288D1)),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Puskesmas Gumelar',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF0369A1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -304,118 +335,6 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                   ],
                 );
               },
-            ),
-
-            const SizedBox(height: 20),
-
-            // Filter Bar (Puskesmas, Bulan, Tahun)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Puskesmas badge
-                  Expanded(
-                    flex: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.local_hospital_rounded,
-                              size: 18, color: Color(0xFF0288D1)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Wilayah Kerja',
-                                    style: GoogleFonts.outfit(
-                                        fontSize: 10,
-                                        color: const Color(0xFF64748B))),
-                                Text(
-                                  'Puskesmas Gumelar',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF10365F),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Bulan Dropdown
-                  Expanded(
-                    flex: 3,
-                    child: _FilterDropdown(
-                      label: 'Bulan Laporan',
-                      value: selectedMonth == 0
-                          ? 'Semua'
-                          : monthNames[selectedMonth - 1],
-                      icon: Icons.calendar_today_rounded,
-                      items: monthOptions,
-                      onChanged: (val) {
-                        if (val != null) {
-                          if (val == 'Semua') {
-                            ref.read(selectedMonthProvider.notifier).set(0);
-                          } else {
-                            ref
-                                .read(selectedMonthProvider.notifier)
-                                .set(monthNames.indexOf(val) + 1);
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Tahun Dropdown
-                  Expanded(
-                    flex: 3,
-                    child: _FilterDropdown(
-                      label: 'Tahun Laporan',
-                      value: selectedYear == 0
-                          ? 'Semua'
-                          : selectedYear.toString(),
-                      icon: Icons.date_range_rounded,
-                      items: yearOptions,
-                      onChanged: (val) {
-                        if (val != null) {
-                          if (val == 'Semua') {
-                            ref.read(selectedYearProvider.notifier).set(0);
-                          } else {
-                            ref
-                                .read(selectedYearProvider.notifier)
-                                .set(int.parse(val));
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
             ),
 
             const SizedBox(height: 20),
@@ -577,11 +496,10 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Chart Header: Title & View Switcher Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Column(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 750;
+                      final headerTitleColumn = Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
@@ -615,19 +533,123 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Periode: $activeMonthText $activeYearText • Klik batang atau desa untuk rincian data',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B),
-                            ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              Text(
+                                'Periode:',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              // Dropdown Bulan
+                              Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: selectedMonth == 0
+                                        ? 'Semua'
+                                        : monthNames[selectedMonth - 1],
+                                    isDense: true,
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 18,
+                                      color: Color(0xFF0288D1),
+                                    ),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF10365F),
+                                    ),
+                                    items: monthOptions
+                                        .map((e) => DropdownMenuItem(
+                                            value: e, child: Text(e)))
+                                        .toList(),
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        if (val == 'Semua') {
+                                          ref
+                                              .read(selectedMonthProvider.notifier)
+                                              .set(0);
+                                        } else {
+                                          ref
+                                              .read(selectedMonthProvider.notifier)
+                                              .set(monthNames.indexOf(val) + 1);
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                              // Dropdown Tahun
+                              Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: selectedYear == 0
+                                        ? 'Semua'
+                                        : selectedYear.toString(),
+                                    isDense: true,
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 18,
+                                      color: Color(0xFF0288D1),
+                                    ),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF10365F),
+                                    ),
+                                    items: yearOptions
+                                        .map((e) => DropdownMenuItem(
+                                            value: e, child: Text(e)))
+                                        .toList(),
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        if (val == 'Semua') {
+                                          ref
+                                              .read(selectedYearProvider.notifier)
+                                              .set(0);
+                                        } else {
+                                          ref
+                                              .read(selectedYearProvider.notifier)
+                                              .set(int.parse(val));
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '• Klik batang atau desa untuk rincian data',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
+                      );
 
-                      // View Mode Switcher
-                      Container(
+                      final viewSwitcher = Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF1F5F9),
@@ -658,8 +680,29 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+
+                      if (isNarrow) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            headerTitleColumn,
+                            const SizedBox(height: 12),
+                            viewSwitcher,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(child: headerTitleColumn),
+                          const SizedBox(width: 16),
+                          viewSwitcher,
+                        ],
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 24),
@@ -711,6 +754,13 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                   ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Diagram Batang Detail Pemeriksaan Jentik (Semua Periode & Tahun)
+            DetailedBarChartCard(
+              allReportsAsync: ref.watch(allReportsProvider),
             ),
 
             const SizedBox(height: 20),
@@ -1612,63 +1662,6 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
 // ─────────────────────────────────────────────────────────
 //  Helper Widgets
 // ─────────────────────────────────────────────────────────
-
-class _FilterDropdown extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final List<String> items;
-  final Function(String?) onChanged;
-
-  const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 12, color: const Color(0xFF64748B)),
-              const SizedBox(width: 4),
-              Text(label,
-                  style: GoogleFonts.outfit(
-                      fontSize: 9.5, color: const Color(0xFF64748B))),
-            ],
-          ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              isDense: true,
-              style: GoogleFonts.outfit(
-                fontSize: 12.5,
-                color: const Color(0xFF10365F),
-                fontWeight: FontWeight.bold,
-              ),
-              items: items
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _MetricCard extends StatelessWidget {
   final String title;

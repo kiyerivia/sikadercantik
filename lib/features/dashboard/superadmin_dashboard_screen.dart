@@ -380,6 +380,14 @@ class _SuperAdminDashboardScreenState
               child: AbjTrendChartCard(allReportsAsync: reportsAsync),
             ),
 
+            const SizedBox(height: 14),
+
+            // Diagram Batang Rincian Pemeriksaan Jentik (Semua Tahun)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: DetailedBarChartCard(allReportsAsync: reportsAsync),
+            ),
+
             const SizedBox(height: 24),
           ],
         ),

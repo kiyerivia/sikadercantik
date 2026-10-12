@@ -1082,6 +1082,1500 @@ class AbjTrendChartCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────
+//  Kader Detailed Bar Chart Card (Diagram Batang Rincian Pemeriksaan)
+// ─────────────────────────────────────────────────────────
+
+class _BarChartDetailItem {
+  final String key;
+  final String label;
+  final String fullLabel;
+  final int inspected;
+  final int positive;
+  final int free;
+  final double abj;
+
+  _BarChartDetailItem({
+    required this.key,
+    required this.label,
+    required this.fullLabel,
+    required this.inspected,
+    required this.positive,
+    required this.free,
+    required this.abj,
+  });
+}
+
+List<_BarChartDetailItem> _computeBarMonthlyItems(List<Report> reports) {
+  if (reports.isEmpty) return [];
+
+  final Map<String, List<Report>> grouped = {};
+  for (final r in reports) {
+    final key =
+        '${r.reportDate.year}-${r.reportDate.month.toString().padLeft(2, '0')}';
+    grouped.putIfAbsent(key, () => []).add(r);
+  }
+
+  const monthNames = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agt',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des'
+  ];
+  const fullMonthNames = [
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember'
+  ];
+
+  final sortedKeys = grouped.keys.toList()..sort();
+
+  if (sortedKeys.length == 1) {
+    final Map<String, List<Report>> dayGrouped = {};
+    for (final r in reports) {
+      final dayKey =
+          '${r.reportDate.year}-${r.reportDate.month.toString().padLeft(2, '0')}-${r.reportDate.day.toString().padLeft(2, '0')}';
+      dayGrouped.putIfAbsent(dayKey, () => []).add(r);
+    }
+    final sortedDays = dayGrouped.keys.toList()..sort();
+    return sortedDays.map((dKey) {
+      final parts = dKey.split('-');
+      final day = int.parse(parts[2]);
+      final month = int.parse(parts[1]);
+      int inspected = 0;
+      int positive = 0;
+      for (final r in dayGrouped[dKey]!) {
+        inspected += r.housesInspected;
+        positive += r.housesPositive;
+      }
+      final free = (inspected - positive).clamp(0, inspected);
+      final abj = inspected > 0 ? (free / inspected * 100) : 100.0;
+      return _BarChartDetailItem(
+        key: dKey,
+        label: '$day ${monthNames[month]}',
+        fullLabel: '$day ${fullMonthNames[month]} ${parts[0]}',
+        inspected: inspected,
+        positive: positive,
+        free: free,
+        abj: abj,
+      );
+    }).toList();
+  }
+
+  final bool hasMultipleYears =
+      sortedKeys.map((k) => k.split('-')[0]).toSet().length > 1;
+
+  return sortedKeys.map((key) {
+    final parts = key.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+
+    int inspected = 0;
+    int positive = 0;
+    for (final r in grouped[key]!) {
+      inspected += r.housesInspected;
+      positive += r.housesPositive;
+    }
+    final free = (inspected - positive).clamp(0, inspected);
+    final abj = inspected > 0 ? (free / inspected * 100) : 100.0;
+
+    final shortYear =
+        year.toString().length >= 4 ? year.toString().substring(2) : '$year';
+    final label =
+        hasMultipleYears ? "${monthNames[month]} '$shortYear" : monthNames[month];
+
+    return _BarChartDetailItem(
+      key: key,
+      label: label,
+      fullLabel: '${fullMonthNames[month]} $year',
+      inspected: inspected,
+      positive: positive,
+      free: free,
+      abj: abj,
+    );
+  }).toList();
+}
+
+List<_BarChartDetailItem> _computeBarPosyanduItems(List<Report> reports) {
+  if (reports.isEmpty) return [];
+
+  final Map<String, List<Report>> grouped = {};
+  for (final r in reports) {
+    final pName = (r.posyanduName != null && r.posyanduName!.trim().isNotEmpty)
+        ? r.posyanduName!.trim()
+        : (r.villageName != null && r.villageName!.trim().isNotEmpty
+            ? r.villageName!.trim()
+            : 'Posyandu Lainnya');
+    grouped.putIfAbsent(pName, () => []).add(r);
+  }
+
+  final sortedNames = grouped.keys.toList()..sort();
+  return sortedNames.map((name) {
+    int inspected = 0;
+    int positive = 0;
+    for (final r in grouped[name]!) {
+      inspected += r.housesInspected;
+      positive += r.housesPositive;
+    }
+    final free = (inspected - positive).clamp(0, inspected);
+    final abj = inspected > 0 ? (free / inspected * 100) : 100.0;
+    return _BarChartDetailItem(
+      key: name,
+      label: name,
+      fullLabel: name,
+      inspected: inspected,
+      positive: positive,
+      free: free,
+      abj: abj,
+    );
+  }).toList();
+}
+
+typedef DetailedBarChartCard = KaderDetailedBarChartCard;
+
+class KaderDetailedBarChartCard extends StatefulWidget {
+  final AsyncValue<List<Report>> allReportsAsync;
+
+  const KaderDetailedBarChartCard({super.key, required this.allReportsAsync});
+
+  @override
+  State<KaderDetailedBarChartCard> createState() =>
+      _KaderDetailedBarChartCardState();
+}
+
+class _KaderDetailedBarChartCardState
+    extends State<KaderDetailedBarChartCard> {
+  bool _isAbjMode = false; // false = Jumlah Rumah, true = Nilai ABJ %
+  bool _groupByPosyandu = false; // false = Bulanan, true = Per Posyandu
+  int _selectedYear = 0; // 0 = Semua Tahun
+  bool _showTable = false; // Toggle view table
+  int? _touchedGroupIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: widget.allReportsAsync.when(
+        data: (reports) {
+          if (reports.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: Text(
+                  'Belum ada data laporan untuk diagram batang',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF94A3B8),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          final availableYears = reports
+              .map((r) => r.reportDate.year)
+              .toSet()
+              .toList()
+            ..sort((a, b) => b.compareTo(a));
+
+          final filteredReports = _selectedYear == 0
+              ? reports
+              : reports
+                  .where((r) => r.reportDate.year == _selectedYear)
+                  .toList();
+
+          final monthlyItems = _computeBarMonthlyItems(filteredReports);
+          final posyanduItems = _computeBarPosyanduItems(filteredReports);
+          final hasMultiplePosyandus = posyanduItems.length > 1;
+
+          final items = (_groupByPosyandu && hasMultiplePosyandus)
+              ? posyanduItems
+              : monthlyItems;
+
+          int totalInspected = 0;
+          int totalPositive = 0;
+          for (final item in items) {
+            totalInspected += item.inspected;
+            totalPositive += item.positive;
+          }
+          final int totalFree =
+              (totalInspected - totalPositive).clamp(0, totalInspected);
+          final double overallAbj = totalInspected > 0
+              ? (totalFree / totalInspected * 100)
+              : 100.0;
+          final double freePct = totalInspected > 0
+              ? (totalFree / totalInspected * 100)
+              : 100.0;
+          final double posPct = totalInspected > 0
+              ? (totalPositive / totalInspected * 100)
+              : 0.0;
+          final bool isOverallTargetMet = overallAbj >= 95.0;
+
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isDesktop = screenWidth >= 900;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Row
+              _buildHeader(hasMultiplePosyandus, availableYears),
+
+              const SizedBox(height: 14),
+
+              // KPI Summary Badges
+              _buildKpiSummary(
+                totalInspected: totalInspected,
+                totalFree: totalFree,
+                totalPositive: totalPositive,
+                freePct: freePct,
+                posPct: posPct,
+                overallAbj: overallAbj,
+                isOverallTargetMet: isOverallTargetMet,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Bar Chart Body (Scrollable horizontally if data spans many periods/years)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double barWidth = isDesktop ? 60.0 : 46.0;
+                  final double minRequiredWidth = items.length * barWidth;
+                  final bool needsScroll = minRequiredWidth > constraints.maxWidth;
+
+                  final chartWidget = SizedBox(
+                    width: needsScroll ? minRequiredWidth : constraints.maxWidth,
+                    height: isDesktop ? 220 : 190,
+                    child: _buildBarChart(items, isDesktop),
+                  );
+
+                  if (needsScroll) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: chartWidget,
+                    );
+                  }
+                  return chartWidget;
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Legend
+              _buildLegend(),
+
+              const SizedBox(height: 14),
+
+              // Table Toggle Button
+              _buildTableToggleButton(items),
+
+              // Expandable Detail Table
+              if (_showTable) ...[
+                const SizedBox(height: 12),
+                _buildDetailTable(items, totalInspected, totalFree,
+                    totalPositive, overallAbj, isOverallTargetMet),
+              ],
+            ],
+          );
+        },
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 36.0),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        error: (err, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24.0),
+            child: Text(
+              'Gagal memuat data diagram: $err',
+              style: GoogleFonts.outfit(
+                color: Colors.red.shade400,
+                fontSize: 11.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+      bool hasMultiplePosyandus, List<int> availableYears) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 620;
+
+        final titleRow = Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.bar_chart_rounded,
+                color: Color(0xFF0284C7),
+                size: 19,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Diagram Detail Pemeriksaan Jentik',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF10365F),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFBAE6FD)),
+                        ),
+                        child: Text(
+                          _selectedYear == 0
+                              ? 'Semua Tahun'
+                              : 'Tahun $_selectedYear',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0284C7),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _isAbjMode
+                        ? 'Capaian persentase ABJ • Akumulasi semua laporan'
+                        : 'Rumah bebas vs positif jentik • Akumulasi semua laporan',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10.5,
+                      color: const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final controlsRow = Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            // Year Selector
+            if (availableYears.isNotEmpty)
+              Container(
+                height: 30,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _selectedYear,
+                    isDense: true,
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: Color(0xFF0288D1),
+                    ),
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF10365F),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                          value: 0, child: Text('Semua Tahun')),
+                      ...availableYears.map(
+                        (y) => DropdownMenuItem(
+                            value: y, child: Text('$y')),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedYear = val);
+                    },
+                  ),
+                ),
+              ),
+
+            _buildModeToggle(),
+
+            if (hasMultiplePosyandus) ...[
+              ChoiceChip(
+                label: Text(
+                  'Per Periode',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10.5,
+                    fontWeight: !_groupByPosyandu
+                        ? FontWeight.bold
+                        : FontWeight.w500,
+                    color: !_groupByPosyandu
+                        ? const Color(0xFF0284C7)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+                selected: !_groupByPosyandu,
+                selectedColor: const Color(0xFFE0F2FE),
+                backgroundColor: const Color(0xFFF1F5F9),
+                side: BorderSide(
+                  color: !_groupByPosyandu
+                      ? const Color(0xFF7DD3FC)
+                      : Colors.transparent,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                visualDensity: VisualDensity.compact,
+                onSelected: (val) {
+                  if (val) setState(() => _groupByPosyandu = false);
+                },
+              ),
+              ChoiceChip(
+                label: Text(
+                  'Per Posyandu',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10.5,
+                    fontWeight: _groupByPosyandu
+                        ? FontWeight.bold
+                        : FontWeight.w500,
+                    color: _groupByPosyandu
+                        ? const Color(0xFF0284C7)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+                selected: _groupByPosyandu,
+                selectedColor: const Color(0xFFE0F2FE),
+                backgroundColor: const Color(0xFFF1F5F9),
+                side: BorderSide(
+                  color: _groupByPosyandu
+                      ? const Color(0xFF7DD3FC)
+                      : Colors.transparent,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                visualDensity: VisualDensity.compact,
+                onSelected: (val) {
+                  if (val) setState(() => _groupByPosyandu = true);
+                },
+              ),
+            ],
+          ],
+        );
+
+        if (isNarrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleRow,
+              const SizedBox(height: 10),
+              controlsRow,
+            ],
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: titleRow),
+            const SizedBox(width: 12),
+            controlsRow,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _isAbjMode = false),
+            borderRadius: BorderRadius.circular(7),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: !_isAbjMode ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: !_isAbjMode
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.home_outlined,
+                    size: 13,
+                    color: !_isAbjMode
+                        ? const Color(0xFF10365F)
+                        : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Rumah',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight:
+                          !_isAbjMode ? FontWeight.bold : FontWeight.w500,
+                      color: !_isAbjMode
+                          ? const Color(0xFF10365F)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: () => setState(() => _isAbjMode = true),
+            borderRadius: BorderRadius.circular(7),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: _isAbjMode ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: _isAbjMode
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.percent_rounded,
+                    size: 13,
+                    color: _isAbjMode
+                        ? const Color(0xFF10365F)
+                        : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'ABJ %',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight:
+                          _isAbjMode ? FontWeight.bold : FontWeight.w500,
+                      color: _isAbjMode
+                          ? const Color(0xFF10365F)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiSummary({
+    required int totalInspected,
+    required int totalFree,
+    required int totalPositive,
+    required double freePct,
+    required double posPct,
+    required double overallAbj,
+    required bool isOverallTargetMet,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 560;
+        final cardWidth = isSmall
+            ? (constraints.maxWidth - 8) / 2
+            : (constraints.maxWidth - 24) / 4;
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildKpiCard(
+              title: 'Diperiksa',
+              value: '$totalInspected',
+              subtitle: 'Total Rumah',
+              icon: Icons.home_work_outlined,
+              accentColor: const Color(0xFF0284C7),
+              bgColor: const Color(0xFFF0F9FF),
+              borderColor: const Color(0xFFBAE6FD),
+              width: cardWidth,
+            ),
+            _buildKpiCard(
+              title: 'Bebas Jentik',
+              value: '$totalFree',
+              subtitle: '${freePct.toStringAsFixed(1)}% Aman',
+              icon: Icons.check_circle_outline_rounded,
+              accentColor: const Color(0xFF16A34A),
+              bgColor: const Color(0xFFF0FDF4),
+              borderColor: const Color(0xFFBBF7D0),
+              width: cardWidth,
+            ),
+            _buildKpiCard(
+              title: 'Positif Jentik',
+              value: '$totalPositive',
+              subtitle: '${posPct.toStringAsFixed(1)}% Jentik',
+              icon: Icons.bug_report_outlined,
+              accentColor: const Color(0xFFDC2626),
+              bgColor: const Color(0xFFFEF2F2),
+              borderColor: const Color(0xFFFECACA),
+              width: cardWidth,
+            ),
+            _buildKpiCard(
+              title: 'Rata-rata ABJ',
+              value: '${overallAbj.toStringAsFixed(1)}%',
+              subtitle:
+                  isOverallTargetMet ? 'Target ≥95% Terpenuhi' : 'Waspada <95%',
+              icon: isOverallTargetMet
+                  ? Icons.verified_rounded
+                  : Icons.warning_amber_rounded,
+              accentColor: isOverallTargetMet
+                  ? const Color(0xFF16A34A)
+                  : const Color(0xFFEA580C),
+              bgColor: isOverallTargetMet
+                  ? const Color(0xFFF0FDF4)
+                  : const Color(0xFFFFF7ED),
+              borderColor: isOverallTargetMet
+                  ? const Color(0xFFBBF7D0)
+                  : const Color(0xFFFED7AA),
+              width: cardWidth,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildKpiCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color accentColor,
+    required Color bgColor,
+    required Color borderColor,
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: accentColor),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF10365F),
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF475569),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.outfit(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w500,
+                    color: accentColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarChart(List<_BarChartDetailItem> items, bool isDesktop) {
+    if (_isAbjMode) {
+      return _buildAbjBarChart(items, isDesktop);
+    } else {
+      return _buildHousesBarChart(items, isDesktop);
+    }
+  }
+
+  Widget _buildHousesBarChart(
+      List<_BarChartDetailItem> items, bool isDesktop) {
+    int maxVal = 0;
+    for (final it in items) {
+      if (it.free > maxVal) maxVal = it.free;
+      if (it.positive > maxVal) maxVal = it.positive;
+    }
+    final double maxY = maxVal <= 0 ? 10.0 : (maxVal * 1.25).ceilToDouble();
+    final double interval = (maxY / 4).clamp(1.0, 100000.0);
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        minY: 0,
+        maxY: maxY,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: interval,
+          getDrawingHorizontalLine: (val) => FlLine(
+            color: const Color(0xFFF1F5F9),
+            strokeWidth: 1.0,
+            dashArray: [4, 4],
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: const Border(
+            bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+            left: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+            top: BorderSide.none,
+            right: BorderSide.none,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              interval: interval,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value.toInt().toString(),
+                  style: GoogleFonts.outfit(
+                    fontSize: 9.5,
+                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 26,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx >= 0 &&
+                    idx < items.length &&
+                    (value - idx).abs() < 0.2) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 5.0),
+                    child: Text(
+                      items[idx].label,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchCallback: (event, response) {
+            if (response != null && response.spot != null) {
+              setState(() {
+                _touchedGroupIndex = response.spot!.touchedBarGroupIndex;
+              });
+            } else {
+              setState(() {
+                _touchedGroupIndex = null;
+              });
+            }
+          },
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => const Color(0xFF10365F),
+            tooltipBorderRadius: BorderRadius.circular(10),
+            tooltipPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              if (groupIndex < 0 || groupIndex >= items.length) return null;
+              final item = items[groupIndex];
+              return BarTooltipItem(
+                '${item.fullLabel}\n',
+                GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                children: [
+                  TextSpan(
+                    text: '🟢 Bebas Jentik: ${item.free} rumah\n',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4ADE80),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '🔴 Positif Jentik: ${item.positive} rumah\n',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFFF87171),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        'Diperiksa: ${item.inspected} | ABJ: ${item.abj.toStringAsFixed(1)}%',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        barGroups: List.generate(items.length, (i) {
+          final item = items[i];
+          final isHighlighted = _touchedGroupIndex == i;
+          final rodWidth = isDesktop ? 15.0 : 9.5;
+
+          return BarChartGroupData(
+            x: i,
+            barsSpace: isDesktop ? 6 : 4,
+            barRods: [
+              // Bebas Jentik Rod (Green)
+              BarChartRodData(
+                toY: item.free.toDouble(),
+                color: isHighlighted
+                    ? const Color(0xFF059669)
+                    : const Color(0xFF10B981),
+                width: rodWidth,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(5)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: maxY,
+                  color: const Color(0xFFF8FAFC),
+                ),
+              ),
+              // Positif Jentik Rod (Red)
+              BarChartRodData(
+                toY: item.positive.toDouble(),
+                color: isHighlighted
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFEF4444),
+                width: rodWidth,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(5)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: maxY,
+                  color: const Color(0xFFF8FAFC),
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildAbjBarChart(List<_BarChartDetailItem> items, bool isDesktop) {
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        minY: 0,
+        maxY: 105,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 25,
+          getDrawingHorizontalLine: (val) => FlLine(
+            color: const Color(0xFFF1F5F9),
+            strokeWidth: 1.0,
+            dashArray: [4, 4],
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: const Border(
+            bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+            left: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+            top: BorderSide.none,
+            right: BorderSide.none,
+          ),
+        ),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+              y: 95,
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.7),
+              strokeWidth: 1.2,
+              dashArray: [5, 4],
+              label: HorizontalLineLabel(
+                show: true,
+                alignment: Alignment.topRight,
+                padding: const EdgeInsets.only(right: 4, bottom: 2),
+                style: GoogleFonts.outfit(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2E7D32),
+                ),
+                labelResolver: (_) => 'Target 95%',
+              ),
+            ),
+          ],
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              interval: 25,
+              getTitlesWidget: (value, meta) {
+                if (value > 100) return const SizedBox.shrink();
+                return Text(
+                  '${value.toInt()}%',
+                  style: GoogleFonts.outfit(
+                    fontSize: 9.5,
+                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 26,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx >= 0 &&
+                    idx < items.length &&
+                    (value - idx).abs() < 0.2) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 5.0),
+                    child: Text(
+                      items[idx].label,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchCallback: (event, response) {
+            if (response != null && response.spot != null) {
+              setState(() {
+                _touchedGroupIndex = response.spot!.touchedBarGroupIndex;
+              });
+            } else {
+              setState(() {
+                _touchedGroupIndex = null;
+              });
+            }
+          },
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => const Color(0xFF10365F),
+            tooltipBorderRadius: BorderRadius.circular(10),
+            tooltipPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              if (groupIndex < 0 || groupIndex >= items.length) return null;
+              final item = items[groupIndex];
+              final isTargetMet = item.abj >= 95.0;
+              return BarTooltipItem(
+                '${item.fullLabel}\n',
+                GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'ABJ: ${item.abj.toStringAsFixed(1)}% ',
+                    style: GoogleFonts.outfit(
+                      color: isTargetMet
+                          ? const Color(0xFF4ADE80)
+                          : const Color(0xFFF87171),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        isTargetMet ? '(Target Terpenuhi)\n' : '(Waspada)\n',
+                    style: GoogleFonts.outfit(
+                      color: isTargetMet
+                          ? const Color(0xFF4ADE80)
+                          : const Color(0xFFF87171),
+                      fontSize: 10.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        'Diperiksa: ${item.inspected} | Bebas: ${item.free} | Positif: ${item.positive}',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        barGroups: List.generate(items.length, (i) {
+          final item = items[i];
+          final isTargetMet = item.abj >= 95.0;
+          final isHighlighted = _touchedGroupIndex == i;
+          final rodWidth = isDesktop ? 22.0 : 14.0;
+
+          final rodColor = isTargetMet
+              ? (isHighlighted
+                  ? const Color(0xFF059669)
+                  : const Color(0xFF10B981))
+              : (isHighlighted
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFFEF4444));
+
+          return BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: item.abj,
+                color: rodColor,
+                width: rodWidth,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(5)),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: 100,
+                  color: const Color(0xFFF1F5F9),
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildLegend() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFEDF2F7)),
+      ),
+      child: _isAbjMode
+          ? Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 14,
+              runSpacing: 4,
+              children: [
+                _buildLegendItem(
+                    const Color(0xFF10B981), 'Target Tercapai (≥95%)'),
+                _buildLegendItem(
+                    const Color(0xFFEF4444), 'Di Bawah Target (<95%)'),
+                _buildLegendLineItem(
+                    const Color(0xFF2E7D32), 'Garis Target Kemenkes'),
+              ],
+            )
+          : Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 4,
+              children: [
+                _buildLegendItem(
+                    const Color(0xFF10B981), 'Rumah Bebas Jentik'),
+                _buildLegendItem(
+                    const Color(0xFFEF4444), 'Rumah Positif Jentik'),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: GoogleFonts.outfit(
+            fontSize: 10.5,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF334155),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendLineItem(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 2.5,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: GoogleFonts.outfit(
+            fontSize: 10.5,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF334155),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableToggleButton(List<_BarChartDetailItem> items) {
+    return InkWell(
+      onTap: () => setState(() => _showTable = !_showTable),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: _showTable
+              ? const Color(0xFFEFF6FF)
+              : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _showTable
+                ? const Color(0xFFBFDBFE)
+                : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.table_chart_rounded,
+              size: 15,
+              color: _showTable
+                  ? const Color(0xFF1D4ED8)
+                  : const Color(0xFF475569),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _showTable
+                  ? 'Sembunyikan Rincian Angka Tabel'
+                  : 'Lihat Rincian Angka Tabel (${items.length} Data)',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: _showTable
+                    ? const Color(0xFF1D4ED8)
+                    : const Color(0xFF475569),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              _showTable
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: _showTable
+                  ? const Color(0xFF1D4ED8)
+                  : const Color(0xFF475569),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailTable(
+    List<_BarChartDetailItem> items,
+    int totalInspected,
+    int totalFree,
+    int totalPositive,
+    double overallAbj,
+    bool isOverallTargetMet,
+  ) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor:
+                WidgetStateProperty.all(const Color(0xFFF1F5F9)),
+            headingTextStyle: GoogleFonts.outfit(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+            ),
+            dataTextStyle: GoogleFonts.outfit(
+              fontSize: 11,
+              color: const Color(0xFF334155),
+            ),
+            horizontalMargin: 12,
+            columnSpacing: 16,
+            headingRowHeight: 38,
+            dataRowMinHeight: 36,
+            dataRowMaxHeight: 38,
+            columns: const [
+              DataColumn(label: Text('Periode/Wilayah')),
+              DataColumn(label: Text('Diperiksa'), numeric: true),
+              DataColumn(label: Text('Bebas Jentik'), numeric: true),
+              DataColumn(label: Text('Positif Jentik'), numeric: true),
+              DataColumn(label: Text('ABJ (%)'), numeric: true),
+              DataColumn(label: Text('Status')),
+            ],
+            rows: [
+              ...items.map((it) {
+                final isMet = it.abj >= 95.0;
+                return DataRow(
+                  cells: [
+                    DataCell(Text(it.fullLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                    DataCell(Text('${it.inspected}')),
+                    DataCell(Text('${it.free}',
+                        style: const TextStyle(
+                            color: Color(0xFF16A34A),
+                            fontWeight: FontWeight.bold))),
+                    DataCell(Text('${it.positive}',
+                        style: const TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.bold))),
+                    DataCell(Text('${it.abj.toStringAsFixed(1)}%',
+                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: isMet
+                              ? const Color(0xFFDCFCE7)
+                              : const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          isMet ? 'Aman' : 'Waspada',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isMet
+                                ? const Color(0xFF16A34A)
+                                : const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              // Total Row
+              DataRow(
+                color: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+                cells: [
+                  DataCell(Text('Total Keseluruhan',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A)))),
+                  DataCell(Text('$totalInspected',
+                      style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(Text('$totalFree',
+                      style: const TextStyle(
+                          color: Color(0xFF16A34A),
+                          fontWeight: FontWeight.bold))),
+                  DataCell(Text('$totalPositive',
+                      style: const TextStyle(
+                          color: Color(0xFFDC2626),
+                          fontWeight: FontWeight.bold))),
+                  DataCell(Text('${overallAbj.toStringAsFixed(1)}%',
+                      style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: isOverallTargetMet
+                            ? const Color(0xFFDCFCE7)
+                            : const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isOverallTargetMet ? 'Target Terpenuhi' : 'Waspada',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isOverallTargetMet
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 //  Reusable Summary Item for Reports Statistics
 // ─────────────────────────────────────────────────────────
 

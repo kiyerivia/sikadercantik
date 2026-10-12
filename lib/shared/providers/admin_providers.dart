@@ -5,7 +5,7 @@ import '../domain/models.dart';
 
 class MonthNotifier extends Notifier<int> {
   @override
-  int build() => DateTime.now().month;
+  int build() => 0; // Default: 0 = Semua Bulan
   void set(int val) => state = val;
 }
 
@@ -14,7 +14,7 @@ final selectedMonthProvider =
 
 class YearNotifier extends Notifier<int> {
   @override
-  int build() => DateTime.now().year;
+  int build() => 0; // Default: 0 = Semua Tahun
   void set(int val) => state = val;
 }
 
@@ -201,9 +201,9 @@ final monthlyAbjTrendProvider =
   ];
 
   return reportsAsync.whenData((reports) {
-    final targetYear = year == 0 ? DateTime.now().year : year;
-    final yearReports =
-        reports.where((r) => r.reportDate.year == targetYear).toList();
+    final yearReports = year == 0
+        ? reports
+        : reports.where((r) => r.reportDate.year == year).toList();
 
     final List<MonthlyAbjTrend> trends = [];
     for (int m = 1; m <= 12; m++) {
