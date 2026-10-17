@@ -1263,11 +1263,52 @@ class KaderDetailedBarChartCard extends StatefulWidget {
 
 class _KaderDetailedBarChartCardState
     extends State<KaderDetailedBarChartCard> {
+  static const List<String> _monthNames = [
+    'Semua Bulan',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
   bool _isAbjMode = false; // false = Jumlah Rumah, true = Nilai ABJ %
   bool _groupByPosyandu = false; // false = Bulanan, true = Per Posyandu
   int _selectedYear = 0; // 0 = Semua Tahun
+  int _selectedMonth = 0; // 0 = Semua Bulan
   bool _showTable = false; // Toggle view table
   int? _touchedGroupIndex;
+
+  String _getPeriodBadgeText() {
+    if (_selectedYear == 0 && _selectedMonth == 0) {
+      return 'Semua Tahun';
+    } else if (_selectedYear != 0 && _selectedMonth != 0) {
+      return '${_monthNames[_selectedMonth]} $_selectedYear';
+    } else if (_selectedYear != 0) {
+      return 'Tahun $_selectedYear';
+    } else {
+      return _monthNames[_selectedMonth];
+    }
+  }
+
+  String _getPeriodSubtitle() {
+    if (_selectedYear == 0 && _selectedMonth == 0) {
+      return 'Akumulasi semua laporan';
+    } else if (_selectedYear != 0 && _selectedMonth != 0) {
+      return 'Periode ${_monthNames[_selectedMonth]} $_selectedYear';
+    } else if (_selectedYear != 0) {
+      return 'Periode Tahun $_selectedYear';
+    } else {
+      return 'Periode Bulan ${_monthNames[_selectedMonth]}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1309,15 +1350,24 @@ class _KaderDetailedBarChartCardState
               .toList()
             ..sort((a, b) => b.compareTo(a));
 
-          final filteredReports = _selectedYear == 0
-              ? reports
-              : reports
-                  .where((r) => r.reportDate.year == _selectedYear)
-                  .toList();
+          final filteredReports = reports.where((r) {
+            final matchYear =
+                _selectedYear == 0 || r.reportDate.year == _selectedYear;
+            final matchMonth =
+                _selectedMonth == 0 || r.reportDate.month == _selectedMonth;
+            return matchYear && matchMonth;
+          }).toList();
 
           final monthlyItems = _computeBarMonthlyItems(filteredReports);
           final posyanduItems = _computeBarPosyanduItems(filteredReports);
-          final hasMultiplePosyandus = posyanduItems.length > 1;
+          final allPosyandus = reports
+              .map((r) => (r.posyanduName != null && r.posyanduName!.trim().isNotEmpty)
+                  ? r.posyanduName!.trim()
+                  : (r.villageName != null && r.villageName!.trim().isNotEmpty
+                      ? r.villageName!.trim()
+                      : 'Posyandu Lainnya'))
+              .toSet();
+          final hasMultiplePosyandus = allPosyandus.length > 1;
 
           final items = (_groupByPosyandu && hasMultiplePosyandus)
               ? posyanduItems
@@ -1333,14 +1383,15 @@ class _KaderDetailedBarChartCardState
               (totalInspected - totalPositive).clamp(0, totalInspected);
           final double overallAbj = totalInspected > 0
               ? (totalFree / totalInspected * 100)
-              : 100.0;
+              : 0.0;
           final double freePct = totalInspected > 0
               ? (totalFree / totalInspected * 100)
-              : 100.0;
+              : 0.0;
           final double posPct = totalInspected > 0
               ? (totalPositive / totalInspected * 100)
               : 0.0;
-          final bool isOverallTargetMet = overallAbj >= 95.0;
+          final bool isOverallTargetMet =
+              totalInspected > 0 && overallAbj >= 95.0;
 
           final screenWidth = MediaQuery.of(context).size.width;
           final isDesktop = screenWidth >= 900;
@@ -1370,6 +1421,46 @@ class _KaderDetailedBarChartCardState
               // Bar Chart Body (Scrollable horizontally if data spans many periods/years)
               LayoutBuilder(
                 builder: (context, constraints) {
+                  if (items.isEmpty) {
+                    return Container(
+                      height: 180,
+                      width: double.infinity,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.bar_chart_rounded,
+                            size: 38,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tidak ada data pada periode yang dipilih',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Coba pilih bulan atau tahun lainnya',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   final double barWidth = isDesktop ? 60.0 : 46.0;
                   final double minRequiredWidth = items.length * barWidth;
                   final bool needsScroll = minRequiredWidth > constraints.maxWidth;
@@ -1391,21 +1482,23 @@ class _KaderDetailedBarChartCardState
                 },
               ),
 
-              const SizedBox(height: 12),
-
-              // Legend
-              _buildLegend(),
-
-              const SizedBox(height: 14),
-
-              // Table Toggle Button
-              _buildTableToggleButton(items),
-
-              // Expandable Detail Table
-              if (_showTable) ...[
+              if (items.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _buildDetailTable(items, totalInspected, totalFree,
-                    totalPositive, overallAbj, isOverallTargetMet),
+
+                // Legend
+                _buildLegend(),
+
+                const SizedBox(height: 14),
+
+                // Table Toggle Button
+                _buildTableToggleButton(items),
+
+                // Expandable Detail Table
+                if (_showTable) ...[
+                  const SizedBox(height: 12),
+                  _buildDetailTable(items, totalInspected, totalFree,
+                      totalPositive, overallAbj, isOverallTargetMet),
+                ],
               ],
             ],
           );
@@ -1440,7 +1533,7 @@ class _KaderDetailedBarChartCardState
       bool hasMultiplePosyandus, List<int> availableYears) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 620;
+        final isNarrow = constraints.maxWidth < 780;
 
         final titleRow = Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1487,9 +1580,7 @@ class _KaderDetailedBarChartCardState
                           border: Border.all(color: const Color(0xFFBAE6FD)),
                         ),
                         child: Text(
-                          _selectedYear == 0
-                              ? 'Semua Tahun'
-                              : 'Tahun $_selectedYear',
+                          _getPeriodBadgeText(),
                           style: GoogleFonts.outfit(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -1501,8 +1592,8 @@ class _KaderDetailedBarChartCardState
                   ),
                   Text(
                     _isAbjMode
-                        ? 'Capaian persentase ABJ • Akumulasi semua laporan'
-                        : 'Rumah bebas vs positif jentik • Akumulasi semua laporan',
+                        ? 'Capaian persentase ABJ • ${_getPeriodSubtitle()}'
+                        : 'Rumah bebas vs positif jentik • ${_getPeriodSubtitle()}',
                     style: GoogleFonts.outfit(
                       fontSize: 10.5,
                       color: const Color(0xFF64748B),
@@ -1559,6 +1650,47 @@ class _KaderDetailedBarChartCardState
                   ),
                 ),
               ),
+
+            // Month Selector
+            Container(
+              height: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _selectedMonth,
+                  isDense: true,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Color(0xFF0288D1),
+                  ),
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF10365F),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: 0,
+                      child: Text('Semua Bulan'),
+                    ),
+                    for (int m = 1; m <= 12; m++)
+                      DropdownMenuItem(
+                        value: m,
+                        child: Text(_monthNames[m]),
+                      ),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedMonth = val);
+                  },
+                ),
+              ),
+            ),
 
             _buildModeToggle(),
 
@@ -1782,7 +1914,9 @@ class _KaderDetailedBarChartCardState
             _buildKpiCard(
               title: 'Bebas Jentik',
               value: '$totalFree',
-              subtitle: '${freePct.toStringAsFixed(1)}% Aman',
+              subtitle: totalInspected > 0
+                  ? '${freePct.toStringAsFixed(1)}% Aman'
+                  : '-',
               icon: Icons.check_circle_outline_rounded,
               accentColor: const Color(0xFF16A34A),
               bgColor: const Color(0xFFF0FDF4),
@@ -1792,7 +1926,9 @@ class _KaderDetailedBarChartCardState
             _buildKpiCard(
               title: 'Positif Jentik',
               value: '$totalPositive',
-              subtitle: '${posPct.toStringAsFixed(1)}% Jentik',
+              subtitle: totalInspected > 0
+                  ? '${posPct.toStringAsFixed(1)}% Jentik'
+                  : '-',
               icon: Icons.bug_report_outlined,
               accentColor: const Color(0xFFDC2626),
               bgColor: const Color(0xFFFEF2F2),
@@ -1801,21 +1937,34 @@ class _KaderDetailedBarChartCardState
             ),
             _buildKpiCard(
               title: 'Rata-rata ABJ',
-              value: '${overallAbj.toStringAsFixed(1)}%',
-              subtitle:
-                  isOverallTargetMet ? 'Target ≥95% Terpenuhi' : 'Waspada <95%',
+              value: totalInspected > 0
+                  ? '${overallAbj.toStringAsFixed(1)}%'
+                  : '-',
+              subtitle: totalInspected == 0
+                  ? 'Belum ada data'
+                  : (isOverallTargetMet
+                      ? 'Target ≥95% Terpenuhi'
+                      : 'Waspada <95%'),
               icon: isOverallTargetMet
                   ? Icons.verified_rounded
-                  : Icons.warning_amber_rounded,
-              accentColor: isOverallTargetMet
-                  ? const Color(0xFF16A34A)
-                  : const Color(0xFFEA580C),
-              bgColor: isOverallTargetMet
-                  ? const Color(0xFFF0FDF4)
-                  : const Color(0xFFFFF7ED),
-              borderColor: isOverallTargetMet
-                  ? const Color(0xFFBBF7D0)
-                  : const Color(0xFFFED7AA),
+                  : (totalInspected == 0
+                      ? Icons.info_outline_rounded
+                      : Icons.warning_amber_rounded),
+              accentColor: totalInspected == 0
+                  ? const Color(0xFF64748B)
+                  : (isOverallTargetMet
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFFEA580C)),
+              bgColor: totalInspected == 0
+                  ? const Color(0xFFF8FAFC)
+                  : (isOverallTargetMet
+                      ? const Color(0xFFF0FDF4)
+                      : const Color(0xFFFFF7ED)),
+              borderColor: totalInspected == 0
+                  ? const Color(0xFFE2E8F0)
+                  : (isOverallTargetMet
+                      ? const Color(0xFFBBF7D0)
+                      : const Color(0xFFFED7AA)),
               width: cardWidth,
             ),
           ],
