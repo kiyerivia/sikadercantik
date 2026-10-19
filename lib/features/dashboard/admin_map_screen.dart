@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,6 +8,57 @@ import 'package:geolocator/geolocator.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/providers/auth_providers.dart';
 import 'map_providers.dart';
+
+enum MapTileTheme {
+  googleRoadmap(
+    label: 'Google Maps (Standar)',
+    sublabel: 'Peta jalan raya jelas, navigasi & landmark',
+    urlTemplate: 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    maxZoom: 20.0,
+    icon: Icons.map_outlined,
+  ),
+  googleHybrid(
+    label: 'Google Maps Satelit (Hybrid)',
+    sublabel: 'Citra satelit asli + nama jalan & atap rumah',
+    urlTemplate: 'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    maxZoom: 20.0,
+    icon: Icons.satellite_alt_outlined,
+  ),
+  googleTerrain(
+    label: 'Google Maps Terrain',
+    sublabel: 'Topografi, kontur daratan & perbukitan',
+    urlTemplate: 'https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    maxZoom: 20.0,
+    icon: Icons.terrain_outlined,
+  ),
+  osm(
+    label: 'OpenStreetMap (OSM)',
+    sublabel: 'Peta terbuka komunitas OpenLayers / OSM',
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: ['a', 'b', 'c'],
+    maxZoom: 19.0,
+    icon: Icons.public_outlined,
+  );
+
+  final String label;
+  final String sublabel;
+  final String urlTemplate;
+  final List<String> subdomains;
+  final double maxZoom;
+  final IconData icon;
+
+  const MapTileTheme({
+    required this.label,
+    required this.sublabel,
+    required this.urlTemplate,
+    required this.subdomains,
+    required this.maxZoom,
+    required this.icon,
+  });
+}
 
 class AdminMapScreen extends ConsumerStatefulWidget {
   const AdminMapScreen({super.key});
@@ -18,6 +70,16 @@ class AdminMapScreen extends ConsumerStatefulWidget {
 class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
   final MapController _mapController = MapController();
   static const LatLng _center = LatLng(-7.4120, 108.9950);
+
+  // State Tema Peta
+  MapTileTheme _currentTheme = MapTileTheme.googleRoadmap;
+
+  // State Live GPS Tracking (Google Maps Live Location)
+  StreamSubscription<Position>? _positionStream;
+  LatLng? _userLocation;
+  double? _userAccuracy;
+  bool _isLiveTracking = false;
+  bool _followUserLocation = false;
 
   // State untuk mode edit
   bool _isEditMode = false;
@@ -39,6 +101,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
 
   @override
   void dispose() {
+    _positionStream?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -55,7 +118,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
     }
   }
 
-  Future<void> _getCurrentLocation() async {
+  Future<void> _startLiveTracking({bool centerMap = true}) async {
     setState(() {
       _isLoadingLocation = true;
     });
@@ -78,30 +141,71 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         throw 'Izin lokasi diblokir permanen di pengaturan browser/perangkat.';
       }
 
-      final position = await Geolocator.getCurrentPosition(
+      // 1. Ambil lokasi awal segera
+      final initialPos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.best,
         ),
       );
 
-      final newLocation = LatLng(position.latitude, position.longitude);
+      final currentLatLng = LatLng(initialPos.latitude, initialPos.longitude);
 
       setState(() {
-        _tempLocation = newLocation;
+        _userLocation = currentLatLng;
+        _userAccuracy = initialPos.accuracy;
+        _isLiveTracking = true;
+        _followUserLocation = true;
+
+        if (_isEditMode && _selectedPosyandu != null) {
+          _tempLocation = currentLatLng;
+        }
       });
 
-      _mapController.move(
-        newLocation,
-        18.0,
-      ); // Zoom lebih dekat agar mudah di-tap presisi
+      if (centerMap) {
+        _mapController.move(currentLatLng, 17.5);
+      }
+
+      // 2. Continuous real-time GPS stream
+      await _positionStream?.cancel();
+      _positionStream = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 2, // Tiap 2 meter
+        ),
+      ).listen((Position pos) {
+        if (!mounted) return;
+        final newLatLng = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _userLocation = newLatLng;
+          _userAccuracy = pos.accuracy;
+
+          if (_isEditMode && _selectedPosyandu != null && _tempLocation == null) {
+            _tempLocation = newLatLng;
+          }
+        });
+
+        if (_followUserLocation) {
+          _mapController.move(newLatLng, _mapController.camera.zoom);
+        }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '📍 Lokasi GPS ditemukan! (Geser/klik langsung pada atap bangunan jika kurang pas)',
+            content: Row(
+              children: [
+                const Icon(Icons.gps_fixed, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '📍 Live GPS Aktif! Titik biru mengikuti pergerakan posisi Anda secara realtime.',
+                    style: GoogleFonts.outfit(),
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: const Color(0xFF1A73E8),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -109,7 +213,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mendapatkan lokasi: $e'),
+            content: Text('Gagal mengaktifkan live GPS: $e'),
             backgroundColor: Colors.red.shade800,
           ),
         );
@@ -121,6 +225,194 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
         });
       }
     }
+  }
+
+  void _toggleLiveTracking() {
+    if (_isLiveTracking) {
+      if (_userLocation != null && !_followUserLocation) {
+        setState(() {
+          _followUserLocation = true;
+        });
+        _mapController.move(_userLocation!, 17.5);
+      } else {
+        _positionStream?.cancel();
+        _positionStream = null;
+        setState(() {
+          _isLiveTracking = false;
+          _followUserLocation = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Live GPS Tracking dinonaktifkan.',
+              style: GoogleFonts.outfit(),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      _startLiveTracking(centerMap: true);
+    }
+  }
+
+
+  void _showLayerSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 560,
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.layers_rounded,
+                          color: Color(0xFF10365F),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pilih Mode Peta',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF10365F),
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ganti tampilan peta ke Google Maps standar, satelit hybrid, terrain, atau OSM.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: Colors.blueGrey,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: MapTileTheme.values.map((theme) {
+                        final isSelected = _currentTheme == theme;
+                        return Card(
+                          elevation: isSelected ? 2 : 0,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? const Color(0xFF1A73E8)
+                                  : Colors.grey.shade300,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          color: isSelected
+                              ? const Color(0xFFE8F0FE)
+                              : Colors.white,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 2,
+                            ),
+                            leading: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFF1A73E8)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                theme.icon,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.blueGrey,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              theme.label,
+                              style: GoogleFonts.outfit(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                                fontSize: 14,
+                                color: isSelected
+                                    ? const Color(0xFF1A73E8)
+                                    : Colors.black87,
+                              ),
+                            ),
+                            subtitle: Text(
+                              theme.sublabel,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: Colors.blueGrey.shade600,
+                              ),
+                            ),
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF1A73E8),
+                                    size: 20,
+                                  )
+                                : null,
+                            onTap: () {
+                              setState(() {
+                                _currentTheme = theme;
+                              });
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _saveLocation() async {
@@ -305,7 +597,7 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
             : Text(
                 _isEditMode
                     ? 'Klik Peta untuk Presisi Titik Lokasi'
-                    : 'Peta Sebaran Jentik (OpenLayers/OSM)',
+                    : 'Peta Sebaran Jentik (${_currentTheme == MapTileTheme.googleHybrid ? 'Google Satelit' : _currentTheme == MapTileTheme.googleRoadmap ? 'Google Maps' : _currentTheme == MapTileTheme.googleTerrain ? 'Google Terrain' : 'OSM'})',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.outfit(
@@ -337,6 +629,12 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
           },
         ),
         actions: [
+          if (!_isEditMode && !_isSearching)
+            IconButton(
+              icon: const Icon(Icons.layers_outlined, color: Colors.white),
+              tooltip: 'Pilih Mode Peta',
+              onPressed: _showLayerSelector,
+            ),
           if (!_isEditMode && !_isSearching)
             IconButton(
               icon: const Icon(Icons.search, color: Colors.white),
@@ -476,6 +774,82 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                 )).toList());
           }
 
+          // Live GPS User Location (Google Maps Pulsing Blue Dot & Accuracy)
+          if (_userLocation != null) {
+            circles.add(
+              CircleMarker(
+                point: _userLocation!,
+                color: const Color(0xFF1A73E8).withValues(alpha: 0.15),
+                borderColor: const Color(0xFF1A73E8).withValues(alpha: 0.4),
+                borderStrokeWidth: 1.5,
+                useRadiusInMeter: true,
+                radius: (_userAccuracy != null && _userAccuracy! > 5)
+                    ? _userAccuracy!
+                    : 15,
+              ),
+            );
+
+            markers.add(
+              Marker(
+                point: _userLocation!,
+                width: 44,
+                height: 44,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _infoTitle = '📍 Lokasi Saya (Real-time GPS)';
+                      _infoAbj = 100.0;
+                      _infoInspected = 0;
+                    });
+                  },
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Outer pulsing glow
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF1A73E8).withValues(alpha: 0.25),
+                          ),
+                        ),
+                        // Blue Dot Google Maps
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF1A73E8),
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black38,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
           return Stack(
             children: [
               FlutterMap(
@@ -484,11 +858,19 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   initialCenter: _center,
                   initialZoom: 12.5, // Zoom out to show all 10 villages
                   onTap: (tapPosition, point) => _handleMapTap(point),
+                  onPositionChanged: (position, hasGesture) {
+                    if (hasGesture && _followUserLocation) {
+                      setState(() {
+                        _followUserLocation = false;
+                      });
+                    }
+                  },
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: _currentTheme.urlTemplate,
+                    subdomains: _currentTheme.subdomains,
+                    maxZoom: _currentTheme.maxZoom,
                     userAgentPackageName: 'com.example.sikadercantik',
                   ),
                   CircleLayer(circles: circles), // Added Area Effect
@@ -611,6 +993,56 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   ),
                 ),
 
+              // Floating Layer Selector Chip (Pojok Kanan Atas Peta)
+              if (!_isSearching)
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Material(
+                    elevation: 5,
+                    borderRadius: BorderRadius.circular(24),
+                    color: Colors.white,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: _showLayerSelector,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _currentTheme.icon,
+                              color: const Color(0xFF10365F),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _currentTheme == MapTileTheme.googleHybrid
+                                  ? 'Satelit Hybrid'
+                                  : _currentTheme == MapTileTheme.googleRoadmap
+                                      ? 'Google Maps'
+                                      : _currentTheme == MapTileTheme.googleTerrain
+                                          ? 'Terrain'
+                                          : 'OSM',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: const Color(0xFF10365F),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.blueGrey),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
               // Pop-up Info Window Floating Card
               if (!_isEditMode && _infoTitle != null)
                 Positioned(
@@ -629,7 +1061,9 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border(
                           left: BorderSide(
-                            color: _getColor(_infoAbj),
+                            color: _infoTitle!.contains('Lokasi Saya')
+                                ? const Color(0xFF1A73E8)
+                                : _getColor(_infoAbj),
                             width: 6,
                           ),
                         ),
@@ -662,57 +1096,115 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                             ],
                           ),
                           const Divider(),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.analytics_outlined,
-                                size: 20,
-                                color: Colors.blueGrey.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Capaian Angka Bebas Jentik (ABJ): ',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  color: Colors.blueGrey,
+                          if (_infoTitle!.contains('Lokasi Saya')) ...[
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.gps_fixed,
+                                  size: 20,
+                                  color: Color(0xFF1A73E8),
                                 ),
-                              ),
-                              Text(
-                                '${_infoAbj.toStringAsFixed(1)}%',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getColor(_infoAbj),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Koordinat GPS: ',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.home_work_outlined,
-                                size: 20,
-                                color: Colors.blueGrey.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Total Rumah Diperiksa: ',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  color: Colors.blueGrey,
+                                Text(
+                                  _userLocation != null
+                                      ? '${_userLocation!.latitude.toStringAsFixed(5)}, ${_userLocation!.longitude.toStringAsFixed(5)}'
+                                      : '-',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF10365F),
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '$_infoInspected rumah',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blueGrey.shade900,
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.radar,
+                                  size: 20,
+                                  color: Colors.green,
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Akurasi: ',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                                Text(
+                                  _userAccuracy != null
+                                      ? '±${_userAccuracy!.toStringAsFixed(1)} meter'
+                                      : 'Optimal',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.analytics_outlined,
+                                  size: 20,
+                                  color: Colors.blueGrey.shade600,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Capaian Angka Bebas Jentik (ABJ): ',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                                Text(
+                                  '${_infoAbj.toStringAsFixed(1)}%',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getColor(_infoAbj),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.home_work_outlined,
+                                  size: 20,
+                                  color: Colors.blueGrey.shade600,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Total Rumah Diperiksa: ',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                                Text(
+                                  '$_infoInspected rumah',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueGrey.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -763,25 +1255,110 @@ class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
                   ),
                 ),
 
-              // Tombol Lokasi Sekarang (Bulat di Kanan Bawah saat Edit Mode)
-              if (_isEditMode && _selectedPosyandu != null)
-                Positioned(
-                  bottom: 30,
-                  right: 20,
-                  child: FloatingActionButton(
-                    onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                    backgroundColor: Colors.blue.shade700,
-                    foregroundColor: Colors.white,
-                    elevation: 6,
-                    tooltip: 'Dapatkan Lokasi GPS Saat Ini',
-                    child: _isLoadingLocation
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          )
-                        : const Icon(Icons.my_location, size: 28),
-                  ),
+              // Floating Controls Google Maps di Pojok Kanan Bawah (Zoom & Live GPS)
+              Positioned(
+                bottom: 24,
+                right: 20,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Zoom Controls
+                    Card(
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      color: Colors.white,
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          InkWell(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            onTap: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                (_mapController.camera.zoom + 1).clamp(3.0, 20.0),
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(Icons.add, size: 22, color: Color(0xFF10365F)),
+                            ),
+                          ),
+                          Divider(height: 1, color: Colors.grey.shade300),
+                          InkWell(
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                            onTap: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                (_mapController.camera.zoom - 1).clamp(3.0, 20.0),
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(Icons.remove, size: 22, color: Color(0xFF10365F)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // My Location / Live GPS FAB
+                    FloatingActionButton(
+                      heroTag: 'map_realtime_location_fab',
+                      onPressed: _isLoadingLocation ? null : _toggleLiveTracking,
+                      backgroundColor: _isLiveTracking
+                          ? const Color(0xFF1A73E8)
+                          : Colors.white,
+                      foregroundColor: _isLiveTracking
+                          ? Colors.white
+                          : const Color(0xFF1A73E8),
+                      elevation: 6,
+                      tooltip: _isLiveTracking
+                          ? (_followUserLocation
+                              ? 'GPS Live Aktif (Mengikuti posisi Anda)'
+                              : 'Pusatkan ke Posisi Saya')
+                          : 'Pusatkan & Aktifkan Live GPS Tracking',
+                      child: _isLoadingLocation
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Color(0xFF1A73E8),
+                              ),
+                            )
+                          : Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(
+                                  _isLiveTracking
+                                      ? (_followUserLocation
+                                          ? Icons.my_location
+                                          : Icons.location_searching)
+                                      : Icons.my_location,
+                                  size: 26,
+                                ),
+                                if (_isLiveTracking && _followUserLocation)
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.greenAccent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
+                  ],
                 ),
+              ),
             ],
           );
         },
