@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../providers/report_providers.dart';
 import '../providers/auth_providers.dart';
 import '../domain/models.dart';
+import '../../features/broadcast/broadcast_repository.dart';
 
 class NotificationBadge extends ConsumerStatefulWidget {
   final Color color;
@@ -76,9 +77,11 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
     final isAdmin = roleClean == 'admin' || roleClean == 'superadmin' || roleClean.startsWith('admin') || roleClean.startsWith('superadmin');
 
     // Watch count
-    final count = isAdmin 
+    final activeAnnouncements = ref.watch(activeAnnouncementsProvider);
+    final baseCount = isAdmin 
         ? ref.watch(pendingVerificationCountProvider)
         : ref.watch(interventionCountProvider);
+    final count = baseCount + activeAnnouncements.length;
 
     // Watch if there are updated reports from kader
     final intervenedReportIds = ref.watch(intervenedReportIdsProvider);
@@ -86,7 +89,9 @@ class _NotificationBadgeState extends ConsumerState<NotificationBadge> {
     final hasUpdatedByKader = isAdmin && allReports.any((r) => r.status == 'submitted' && intervenedReportIds.contains(r.id));
 
     Color badgeColor = Colors.red;
-    if (isAdmin) {
+    if (activeAnnouncements.isNotEmpty) {
+      badgeColor = const Color(0xFFE11D48);
+    } else if (isAdmin) {
       badgeColor = hasUpdatedByKader ? const Color(0xFF059669) : Colors.orange;
     }
 
@@ -194,6 +199,7 @@ class _NotificationDialogContentState extends ConsumerState<_NotificationDialogC
     final intervenedReportIds = ref.watch(intervenedReportIdsProvider);
     final adminNotesAsync = ref.watch(allAdminNotesProvider);
     final adminNotes = adminNotesAsync.value ?? {};
+    final activeAnnouncements = ref.watch(activeAnnouncementsProvider);
 
     List<Report> rawList = [];
     if (widget.isAdmin) {
@@ -351,21 +357,28 @@ class _NotificationDialogContentState extends ConsumerState<_NotificationDialogC
                 _buildFilterChip(
                   label: 'Semua',
                   index: 0,
-                  count: widget.isAdmin ? countTotal : rawList.length,
+                  count: (widget.isAdmin ? countTotal : rawList.length) + activeAnnouncements.length,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 _buildFilterChip(
                   label: widget.isAdmin ? 'Baru' : 'Perlu Revisi',
                   index: 1,
                   count: countCategoryA,
                   highlightColor: widget.isAdmin ? Colors.blue : Colors.red,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 _buildFilterChip(
                   label: widget.isAdmin ? 'Diperbarui' : 'Diverifikasi',
                   index: 2,
                   count: countCategoryB,
                   highlightColor: const Color(0xFF059669),
+                ),
+                const SizedBox(width: 4),
+                _buildFilterChip(
+                  label: 'Instruksi',
+                  index: 3,
+                  count: activeAnnouncements.length,
+                  highlightColor: const Color(0xFFE11D48),
                 ),
               ],
             ),
@@ -373,70 +386,14 @@ class _NotificationDialogContentState extends ConsumerState<_NotificationDialogC
 
           // List Items
           Flexible(
-            child: filteredList.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline_rounded,
-                          size: 40,
-                          color: Colors.green.shade300,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          widget.isAdmin
-                              ? (_selectedFilter == 1
-                                  ? 'Tidak ada laporan baru.'
-                                  : (_selectedFilter == 2
-                                      ? 'Belum ada laporan yang diperbarui kader.'
-                                      : 'Semua laporan sudah terverifikasi.'))
-                              : (_selectedFilter == 1
-                                  ? 'Tidak ada data yang harus diperbaiki.'
-                                  : 'Belum ada notifikasi.'),
-                          style: GoogleFonts.outfit(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    itemCount: filteredList.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final report = filteredList[index];
-                      final isRepairedByKader = widget.isAdmin &&
-                          report.status == 'submitted' &&
-                          intervenedReportIds.contains(report.id);
-                      final isNewReport = widget.isAdmin &&
-                          report.status == 'submitted' &&
-                          !intervenedReportIds.contains(report.id);
-                      final isNeedIntervention = report.status == 'need_intervention';
-                      final isVerified = report.status == 'verified';
-
-                      final adminNote = adminNotes[report.id];
-                      final timeFormatted = DateFormat('EEE, d MMM • HH:mm', 'id_ID').format(report.createdAt);
-
-                      return _buildNotificationCard(
-                        context: context,
-                        ref: ref,
-                        report: report,
-                        isRepairedByKader: isRepairedByKader,
-                        isNewReport: isNewReport,
-                        isNeedIntervention: isNeedIntervention,
-                        isVerified: isVerified,
-                        adminNote: adminNote,
-                        timeFormatted: timeFormatted,
-                      );
-                    },
-                  ),
+            child: _buildNotificationList(
+              context: context,
+              ref: ref,
+              filteredList: filteredList,
+              activeAnnouncements: activeAnnouncements,
+              intervenedReportIds: intervenedReportIds,
+              adminNotes: adminNotes,
+            ),
           ),
         ],
       ),
@@ -766,6 +723,440 @@ class _NotificationDialogContentState extends ConsumerState<_NotificationDialogC
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationList({
+    required BuildContext context,
+    required WidgetRef ref,
+    required List<Report> filteredList,
+    required List<BroadcastAnnouncement> activeAnnouncements,
+    required Set<String> intervenedReportIds,
+    required Map<String, String> adminNotes,
+  }) {
+    // If Filter 3 (Instruksi)
+    if (_selectedFilter == 3) {
+      if (activeAnnouncements.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.campaign_outlined, size: 40, color: Colors.grey.shade300),
+                const SizedBox(height: 12),
+                Text(
+                  'Belum ada instruksi dinas aktif saat ini.',
+                  style: GoogleFonts.outfit(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      return ListView.separated(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        itemCount: activeAnnouncements.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          return _buildAnnouncementNotificationCard(context, activeAnnouncements[index]);
+        },
+      );
+    }
+
+    // Filter 0 (Semua): Pinned announcements first, then reports
+    final totalItems = (_selectedFilter == 0 ? activeAnnouncements.length : 0) + filteredList.length;
+
+    if (totalItems == 0) {
+      return Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_outline_rounded,
+              size: 40,
+              color: Colors.green.shade300,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.isAdmin
+                  ? (_selectedFilter == 1
+                      ? 'Tidak ada laporan baru.'
+                      : (_selectedFilter == 2
+                          ? 'Belum ada laporan yang diperbarui kader.'
+                          : 'Semua laporan sudah terverifikasi.'))
+                  : (_selectedFilter == 1
+                      ? 'Tidak ada data yang harus diperbaiki.'
+                      : 'Belum ada notifikasi.'),
+              style: GoogleFonts.outfit(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final int announcementCount = _selectedFilter == 0 ? activeAnnouncements.length : 0;
+
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      itemCount: totalItems,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        if (_selectedFilter == 0 && index < announcementCount) {
+          return _buildAnnouncementNotificationCard(context, activeAnnouncements[index]);
+        }
+
+        final reportIndex = index - announcementCount;
+        final report = filteredList[reportIndex];
+        final isRepairedByKader = widget.isAdmin &&
+            report.status == 'submitted' &&
+            intervenedReportIds.contains(report.id);
+        final isNewReport = widget.isAdmin &&
+            report.status == 'submitted' &&
+            !intervenedReportIds.contains(report.id);
+        final isNeedIntervention = report.status == 'need_intervention';
+        final isVerified = report.status == 'verified';
+
+        final adminNote = adminNotes[report.id];
+        final timeFormatted =
+            DateFormat('EEE, d MMM • HH:mm', 'id_ID').format(report.createdAt);
+
+        return _buildNotificationCard(
+          context: context,
+          ref: ref,
+          report: report,
+          isRepairedByKader: isRepairedByKader,
+          isNewReport: isNewReport,
+          isNeedIntervention: isNeedIntervention,
+          isVerified: isVerified,
+          adminNote: adminNote,
+          timeFormatted: timeFormatted,
+        );
+      },
+    );
+  }
+
+  Widget _buildAnnouncementNotificationCard(
+      BuildContext context, BroadcastAnnouncement item) {
+    Color cardBg;
+    Color borderColor;
+    Color iconBg;
+    Color iconColor;
+    String badgeLabel;
+    Color badgeBg;
+
+    switch (item.urgency) {
+      case 'darurat':
+        cardBg = const Color(0xFFFFF1F2);
+        borderColor = const Color(0xFFFECDD3);
+        iconBg = const Color(0xFFFFE4E6);
+        iconColor = const Color(0xFFE11D48);
+        badgeLabel = 'INSTRUKSI DARURAT DBD';
+        badgeBg = const Color(0xFFE11D48);
+        break;
+      case 'penting':
+        cardBg = const Color(0xFFFFFBEB);
+        borderColor = const Color(0xFFFDE68A);
+        iconBg = const Color(0xFFFEF3C7);
+        iconColor = const Color(0xFFD97706);
+        badgeLabel = 'INSTRUKSI PENTING DINKES';
+        badgeBg = const Color(0xFFD97706);
+        break;
+      default:
+        cardBg = const Color(0xFFF0FDF4);
+        borderColor = const Color(0xFFBBF7D0);
+        iconBg = const Color(0xFFDCFCE7);
+        iconColor = const Color(0xFF16A34A);
+        badgeLabel = 'PENGUMUMAN DINKES';
+        badgeBg = const Color(0xFF16A34A);
+    }
+
+    final timeFormatted =
+        DateFormat('EEE, d MMM • HH:mm', 'id_ID').format(item.createdAt);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _showAnnouncementDetailDialog(context, item),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      badgeLabel,
+                      style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    timeFormatted,
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: iconBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.campaign_rounded,
+                        color: iconColor, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.content,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            color: Colors.black87.withValues(alpha: 0.8),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Target: ${item.targetVillageName ?? "Seluruh Kabupaten"}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10.5,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'Baca Instruksi',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: badgeBg,
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          size: 10, color: badgeBg),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAnnouncementDetailDialog(
+      BuildContext context, BroadcastAnnouncement item) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFE4E6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.campaign_rounded,
+                      color: Color(0xFFE11D48), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Instruksi Resmi Dinas Kesehatan',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF10365F),
+                        ),
+                      ),
+                      Text(
+                        'Diterbitkan oleh: ${item.authorName}',
+                        style: GoogleFonts.outfit(
+                            fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text(
+              item.title,
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.content,
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                color: const Color(0xFF334155),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.place_outlined,
+                      size: 15, color: Color(0xFF64748B)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Wilayah Target: ${item.targetVillageName ?? "Seluruh Kabupaten"}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    DateFormat('d MMM yyyy • HH:mm', 'id_ID')
+                        .format(item.createdAt),
+                    style: GoogleFonts.outfit(
+                        fontSize: 11, color: const Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                if (widget.isAdmin)
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF10365F)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context);
+                        context.push('/broadcast');
+                      },
+                      child: Text('Kelola Broadcast',
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF10365F))),
+                    ),
+                  ),
+                if (widget.isAdmin) const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10365F),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('Tutup',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

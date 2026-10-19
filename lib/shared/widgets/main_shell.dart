@@ -71,6 +71,35 @@ class MainShell extends ConsumerWidget {
     );
   }
 
+  BottomNavigationBarItem _buildProfileNavItem({double size = 22}) {
+    return BottomNavigationBarItem(
+      icon: ClipOval(
+        child: Image.asset(
+          'assets/images/icon_profil.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
+      ),
+      activeIcon: Container(
+        padding: const EdgeInsets.all(1.5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AppTheme.primaryGreen, width: 2),
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            'assets/images/icon_profil.png',
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      label: 'Profil',
+    );
+  }
+
   Widget _buildKaderShell(
     BuildContext context,
     WidgetRef ref,
@@ -110,14 +139,14 @@ class MainShell extends ConsumerWidget {
           fontSize: 12,
         ),
         unselectedLabelStyle: GoogleFonts.outfit(fontSize: 12),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.description),
             label: 'Laporan',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Informasi'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          const BottomNavigationBarItem(icon: Icon(Icons.info), label: 'Informasi'),
+          _buildProfileNavItem(size: 24),
         ],
       ),
     );
@@ -168,16 +197,16 @@ class MainShell extends ConsumerWidget {
           fontSize: 10,
         ),
         unselectedLabelStyle: GoogleFonts.outfit(fontSize: 10),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+          const BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.fact_check),
             label: 'Verifikasi',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Rekap'),
-          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Info'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Rekap'),
+          const BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Info'),
+          _buildProfileNavItem(size: 22),
         ],
       ),
     );
@@ -230,13 +259,13 @@ class MainShell extends ConsumerWidget {
           fontSize: 10,
         ),
         unselectedLabelStyle: GoogleFonts.outfit(fontSize: 10),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'Wilayah'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Laporan'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Rekap'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+          const BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'Wilayah'),
+          const BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Peta'),
+          const BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Laporan'),
+          const BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Rekap'),
+          _buildProfileNavItem(size: 22),
         ],
       ),
     );

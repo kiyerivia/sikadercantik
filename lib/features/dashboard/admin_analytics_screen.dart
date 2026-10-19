@@ -8,6 +8,7 @@ import '../../shared/providers/report_providers.dart';
 import '../../shared/services/excel_export_service.dart';
 import '../../shared/widgets/notification_badge.dart';
 import '../../shared/widgets/user_profile_menu.dart';
+import '../../shared/widgets/official_pdf_export_dialog.dart';
 import 'dashboard_common_widgets.dart';
 
 class AdminAnalyticsScreen extends ConsumerStatefulWidget {
@@ -289,6 +290,31 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF107C41),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => OfficialPdfExportDialog(
+                            initialMonth: selectedMonth,
+                            initialYear: selectedYear,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: Text(
+                        'Cetak SK Resmi (PDF)',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE11D48),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         minimumSize: Size.zero,

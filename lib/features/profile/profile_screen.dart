@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../shared/providers/auth_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/constants.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -37,11 +38,7 @@ class ProfileScreen extends ConsumerWidget {
                 CircleAvatar(
                   radius: 56,
                   backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                  child: const Icon(
-                    Icons.person,
-                    size: 60,
-                    color: AppTheme.primaryBlue,
-                  ),
+                  backgroundImage: const AssetImage('assets/images/icon_profil.png'),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -110,6 +107,23 @@ class ProfileScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  '${AppConstants.appName} v${AppConstants.appVersion}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[500],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Sistem Informasi Pemantauan Jentik Nyamuk',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: Colors.grey[400],
                   ),
                 ),
               ],

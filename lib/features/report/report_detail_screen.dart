@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../shared/domain/models.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../shared/providers/admin_providers.dart';
+import '../../shared/providers/auth_providers.dart';
 import '../../shared/widgets/notification_badge.dart';
+import '../audit_log/audit_log_repository.dart';
 
 class ReportDetailScreen extends ConsumerWidget {
   final Report report;
@@ -178,7 +180,14 @@ class ReportDetailScreen extends ConsumerWidget {
                         ),
                         onPressed: () async {
                           try {
+                            final profile = ref.read(userProfileProvider).value;
                             await ref.read(reportRepositoryProvider).updateReportStatus(report.id, 'verified');
+                            await ref.read(auditLogRepositoryProvider).logAction(
+                              actionType: 'verifikasi_laporan',
+                              description: 'Verifikasi Laporan ${report.posyanduName ?? report.id.substring(0, 8)} disetujui (ABJ: ${abj.toStringAsFixed(1)}%)',
+                              targetId: report.id,
+                              actor: profile,
+                            );
                             ref.invalidate(allReportsProvider);
                             ref.invalidate(myReportsProvider);
                             ref.invalidate(pendingVerificationCountProvider);
@@ -314,11 +323,18 @@ class ReportDetailScreen extends ConsumerWidget {
               
               // Simple loading indicator would be better but let's at least handle error
               try {
+                final profile = ref.read(userProfileProvider).value;
                 await ref.read(reportRepositoryProvider).addIntervention(
                       reportId: report.id,
                       type: 'psn_ulang',
                       description: controller.text,
                     );
+                await ref.read(auditLogRepositoryProvider).logAction(
+                  actionType: 'intervensi',
+                  description: 'Instruksi PSN Ulang dikirim untuk ${report.posyanduName ?? report.id.substring(0, 8)}: "${controller.text}"',
+                  targetId: report.id,
+                  actor: profile,
+                );
                 ref.invalidate(allReportsProvider);
                 ref.invalidate(adminStatsProvider);
                 if (context.mounted) {

@@ -9,6 +9,7 @@ import 'superadmin_dashboard_screen.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/psn_recap_dialog.dart';
 import '../../shared/services/location_service.dart';
+import '../broadcast/broadcast_repository.dart';
 import 'dashboard_common_widgets.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -72,6 +73,7 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
     final locationAsync = ref.watch(currentLocationNameProvider);
     final myReportsAsync = ref.watch(myReportsProvider);
     final allReportsAsync = ref.watch(allReportsProvider);
+    final activeAnnouncements = ref.watch(activeAnnouncementsProvider);
 
     // Calculate jentik status from real data
     final reports = myReportsAsync.value ?? [];
@@ -109,6 +111,15 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
                 );
               },
             ),
+
+            if (activeAnnouncements.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildDinkesInstructionBanner(
+                    context, activeAnnouncements.first),
+              ),
+            ],
 
             const SizedBox(height: 16),
 
@@ -193,6 +204,198 @@ class _KaderDashboardState extends ConsumerState<_KaderDashboard> {
   }
 }
 
+Widget _buildDinkesInstructionBanner(
+    BuildContext context, BroadcastAnnouncement item) {
+    Color bannerBg = const Color(0xFF881337);
+    Color bannerEnd = const Color(0xFFBE123C);
+    if (item.urgency == 'penting') {
+      bannerBg = const Color(0xFF9A3412);
+      bannerEnd = const Color(0xFFEA580C);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [bannerBg, bannerEnd]),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: bannerEnd.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign_rounded,
+                color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'INSTRUKSI RESMI DINKES',
+                        style: GoogleFonts.outfit(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.bold,
+                          color: bannerBg,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Sasaran: ${item.targetVillageName ?? "Semua"}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                            fontSize: 10, color: Colors.white70),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: bannerBg,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              final isDesktop = MediaQuery.of(context).size.width >= 600;
+              Widget content(BuildContext ctx) => SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.campaign_rounded,
+                            color: Color(0xFFE11D48), size: 24),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Instruksi Resmi Dinas Kesehatan',
+                            style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Text(item.title,
+                        style: GoogleFonts.outfit(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Text(item.content,
+                        style: GoogleFonts.outfit(
+                            fontSize: 13, height: 1.45)),
+                    const SizedBox(height: 16),
+                    Text('Diterbitkan oleh: ${item.authorName}',
+                        style: GoogleFonts.outfit(
+                            fontSize: 11, color: Colors.grey.shade600)),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10365F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('Tutup Arahan',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (isDesktop) {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: content(ctx),
+                    ),
+                  ),
+                );
+              } else {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (ctx) => SafeArea(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.85,
+                      ),
+                      child: content(ctx),
+                    ),
+                  ),
+                );
+              }
+            },
+            child: Text('Lihat Arahan',
+                style: GoogleFonts.outfit(
+                    fontSize: 10.5, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
 // ─────────────────────────────────────────────────────────
 //  ADMIN PUSKESMAS DASHBOARD
 // ─────────────────────────────────────────────────────────
@@ -215,6 +418,7 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
 
     final reportsAsync = ref.watch(allReportsProvider);
     final locationAsync = ref.watch(currentLocationNameProvider);
+    final activeAnnouncements = ref.watch(activeAnnouncementsProvider);
 
     // Calculate aggregated jentik status from real data
     final reports = reportsAsync.value ?? [];
@@ -252,6 +456,15 @@ class _AdminDashboardState extends ConsumerState<_AdminDashboard> {
                 );
               },
             ),
+
+            if (activeAnnouncements.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildDinkesInstructionBanner(
+                    context, activeAnnouncements.first),
+              ),
+            ],
 
             const SizedBox(height: 16),
 

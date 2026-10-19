@@ -29,7 +29,7 @@ CREATE TABLE posyandus (
 CREATE TABLE profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('admin', 'kader')),
+    role TEXT NOT NULL CHECK (role IN ('admin', 'kader', 'superadmin')),
     posyandu_id UUID REFERENCES posyandus(id),
     phone_number TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -112,7 +112,7 @@ CREATE POLICY "Admins can view and update all reports." ON reports FOR ALL USING
 
 -- POLICIES (Interventions)
 CREATE POLICY "Admins can do everything with interventions." ON interventions FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND (role = 'admin' OR role = 'superadmin'))
 );
 CREATE POLICY "Kader can view interventions for their reports." ON interventions FOR SELECT USING (
     EXISTS (
@@ -121,3 +121,46 @@ CREATE POLICY "Kader can view interventions for their reports." ON interventions
         AND reports.kader_id = auth.uid()
     )
 );
+
+-- 7. Create Announcements Table (Broadcast Dinas)
+CREATE TABLE announcements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    urgency TEXT NOT NULL DEFAULT 'penting' CHECK (urgency IN ('biasa', 'penting', 'darurat')),
+    target_village_id UUID REFERENCES villages(id) ON DELETE SET NULL,
+    target_village_name TEXT,
+    created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    author_name TEXT DEFAULT 'Superadmin Dinkes',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8. Create Audit Logs Table (Jejak Aktivitas Sistem)
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    user_name TEXT NOT NULL,
+    user_role TEXT NOT NULL,
+    action_type TEXT NOT NULL CHECK (action_type IN ('verifikasi_laporan', 'intervensi', 'kelola_wilayah', 'kelola_pengguna', 'broadcast_instruksi', 'ekspor_data')),
+    description TEXT NOT NULL,
+    target_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ENABLE ROW LEVEL SECURITY FOR NEW TABLES
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- POLICIES (Announcements)
+CREATE POLICY "Public announcements viewable by everyone." ON announcements FOR SELECT USING (true);
+CREATE POLICY "Admins and Superadmins can manage announcements." ON announcements FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND (role = 'admin' OR role = 'superadmin'))
+);
+
+-- POLICIES (Audit Logs)
+CREATE POLICY "Authenticated users can insert audit logs." ON audit_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Admins and Superadmins can view audit logs." ON audit_logs FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND (role = 'admin' OR role = 'superadmin'))
+);
+

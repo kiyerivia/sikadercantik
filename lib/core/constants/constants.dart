@@ -1,6 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
+  static const String appName = 'SiKaderCantik';
+  static const String appVersion = '1.1.0';
+  static const String buildNumber = '2';
+  static const String fullVersion = 'v$appVersion+$buildNumber';
+
   static const String _defaultSupabaseUrl =
       'https://iyznzyqhsbjgtvxgiewe.supabase.co';
   static const String _defaultSupabaseAnonKey =

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../providers/auth_providers.dart';
+import '../../core/constants/constants.dart';
 
 class AdminSidebar extends StatelessWidget {
   final String activePage;
@@ -41,6 +42,48 @@ class AdminSidebar extends StatelessWidget {
             isActive: activePage == 'locations',
             onTap: () => context.go('/locations'),
           ),
+          Consumer(
+            builder: (context, ref, child) {
+              final profile = ref.watch(userProfileProvider).value;
+              final isSuperAdmin = profile?.role.toLowerCase().contains('superadmin') == true;
+              if (!isSuperAdmin) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 6),
+                    child: Text(
+                      'TATA KELOLA DINKES',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ),
+                  _SidebarItem(
+                    label: 'Kelola Petugas',
+                    icon: Icons.manage_accounts_outlined,
+                    isActive: activePage == 'users',
+                    onTap: () => context.go('/user-management'),
+                  ),
+                  _SidebarItem(
+                    label: 'Broadcast Instruksi',
+                    icon: Icons.campaign_outlined,
+                    isActive: activePage == 'broadcast',
+                    onTap: () => context.go('/broadcast'),
+                  ),
+                  _SidebarItem(
+                    label: 'Audit Log Sistem',
+                    icon: Icons.history_edu_outlined,
+                    isActive: activePage == 'audit',
+                    onTap: () => context.go('/audit-logs'),
+                  ),
+                ],
+              );
+            },
+          ),
           const Spacer(),
           Consumer(
             builder: (context, ref, child) => _SidebarItem(
@@ -54,7 +97,32 @@ class AdminSidebar extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF10B981),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${AppConstants.appName} v${AppConstants.appVersion}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

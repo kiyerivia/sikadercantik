@@ -6,7 +6,9 @@ import '../../shared/domain/models.dart';
 import '../../shared/providers/report_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/psn_recap_dialog.dart';
+import '../../shared/widgets/official_pdf_export_dialog.dart';
 import '../../shared/services/location_service.dart';
+import '../broadcast/broadcast_repository.dart';
 import 'dashboard_common_widgets.dart';
 
 class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
@@ -29,6 +31,7 @@ class _SuperAdminDashboardScreenState
 
     final reportsAsync = ref.watch(allReportsProvider);
     final locationAsync = ref.watch(currentLocationNameProvider);
+    final activeAnnouncements = ref.watch(activeAnnouncementsProvider);
 
     // Calculate aggregated jentik status from all reports
     final reports = reportsAsync.value ?? [];
@@ -66,6 +69,16 @@ class _SuperAdminDashboardScreenState
                 );
               },
             ),
+
+            // Active Dinkes Broadcast Banner (if any)
+            if (activeAnnouncements.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildActiveBroadcastBanner(
+                    context, activeAnnouncements.first),
+              ),
+            ],
 
             const SizedBox(height: 16),
 
@@ -235,6 +248,11 @@ class _SuperAdminDashboardScreenState
 
             const SizedBox(height: 16),
 
+            // Tata Kelola & Pengawasan Dinkes Section
+            _buildGovernanceSection(context, horizontalPadding, screenWidth),
+
+            const SizedBox(height: 16),
+
             // Statistik Laporan Se-Kabupaten
             Padding(
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -394,4 +412,328 @@ class _SuperAdminDashboardScreenState
       ),
     );
   }
+
+  Widget _buildActiveBroadcastBanner(
+      BuildContext context, BroadcastAnnouncement item) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF881337), Color(0xFFBE123C)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFBE123C).withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'INSTRUKSI DINAS AKTIF',
+                        style: GoogleFonts.outfit(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF881337),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '• Target: ${item.targetVillageName ?? "Semua"}',
+                      style: GoogleFonts.outfit(
+                          fontSize: 10.5, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Colors.white70),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => context.push('/broadcast'),
+            child: Text(
+              'Kelola',
+              style: GoogleFonts.outfit(
+                  fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGovernanceSection(
+      BuildContext context, double horizontalPadding, double screenWidth) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Tata Kelola & Pengawasan Dinkes',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF10365F),
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10365F).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'OTORITAS KABUPATEN',
+                  style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF10365F),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Fasilitas regulasi akun petugas, instruksi broadcast serentak, audit trail & cetak SK resmi.',
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (screenWidth >= 900)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Manajemen Pengguna',
+                    subtitle: 'RBAC Admin & Kader',
+                    icon: Icons.manage_accounts_rounded,
+                    color: const Color(0xFF7C3AED),
+                    bgColor: const Color(0xFFEDE9FE),
+                    onTap: () => context.push('/user-management'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Broadcast Instruksi',
+                    subtitle: 'Arahan Serentak Kader',
+                    icon: Icons.campaign_rounded,
+                    color: const Color(0xFFE11D48),
+                    bgColor: const Color(0xFFFFE4E6),
+                    onTap: () => context.push('/broadcast'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Audit Trail & Log',
+                    subtitle: 'Riwayat Integritas Data',
+                    icon: Icons.history_edu_rounded,
+                    color: const Color(0xFF0F172A),
+                    bgColor: const Color(0xFFE2E8F0),
+                    onTap: () => context.push('/audit-logs'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Cetak Dokumen SK',
+                    subtitle: 'PDF Resmi Berstempel',
+                    icon: Icons.picture_as_pdf_rounded,
+                    color: const Color(0xFF0284C7),
+                    bgColor: const Color(0xFFE0F2FE),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (ctx) => const OfficialPdfExportDialog(),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Manajemen Pengguna',
+                    subtitle: 'RBAC Admin & Kader',
+                    icon: Icons.manage_accounts_rounded,
+                    color: const Color(0xFF7C3AED),
+                    bgColor: const Color(0xFFEDE9FE),
+                    onTap: () => context.push('/user-management'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Broadcast Instruksi',
+                    subtitle: 'Arahan Serentak Kader',
+                    icon: Icons.campaign_rounded,
+                    color: const Color(0xFFE11D48),
+                    bgColor: const Color(0xFFFFE4E6),
+                    onTap: () => context.push('/broadcast'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Audit Trail & Log',
+                    subtitle: 'Riwayat Integritas Data',
+                    icon: Icons.history_edu_rounded,
+                    color: const Color(0xFF0F172A),
+                    bgColor: const Color(0xFFE2E8F0),
+                    onTap: () => context.push('/audit-logs'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGovernanceCard(
+                    title: 'Cetak Dokumen SK',
+                    subtitle: 'PDF Resmi Berstempel',
+                    icon: Icons.picture_as_pdf_rounded,
+                    color: const Color(0xFF0284C7),
+                    bgColor: const Color(0xFFE0F2FE),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (ctx) => const OfficialPdfExportDialog(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGovernanceCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF10365F),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      color: const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 13, color: Color(0xFF94A3B8)),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

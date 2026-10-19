@@ -11,6 +11,9 @@ import '../features/report/report_detail_screen.dart';
 import '../features/report/superadmin_reports_screen.dart';
 import '../features/report/draft_reports_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/user_management/user_management_screen.dart';
+import '../features/broadcast/broadcast_management_screen.dart';
+import '../features/audit_log/audit_log_screen.dart';
 import '../shared/providers/auth_providers.dart';
 import '../shared/domain/models.dart';
 import '../shared/widgets/main_shell.dart';
@@ -91,6 +94,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/drafts',
             builder: (context, state) => const DraftReportsScreen(),
+          ),
+          GoRoute(
+            path: '/user-management',
+            builder: (context, state) => const UserManagementScreen(),
+          ),
+          GoRoute(
+            path: '/broadcast',
+            builder: (context, state) => const BroadcastManagementScreen(),
+          ),
+          GoRoute(
+            path: '/audit-logs',
+            builder: (context, state) => const AuditLogScreen(),
           ),
         ],
       ),

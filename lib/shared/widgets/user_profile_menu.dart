@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import '../providers/auth_providers.dart';
 import '../domain/models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/constants.dart';
 import '../../features/dashboard/map_providers.dart';
 
 // ─────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ import '../../features/dashboard/map_providers.dart';
 // ─────────────────────────────────────────────────────────
 
 String _getDefaultAvatarAsset(String role) {
-  return 'assets/images/avatar_kader.png';
+  return 'assets/images/icon_profil.png';
 }
 
 String _getRoleLabel(String role) {
@@ -147,7 +148,14 @@ class UserProfileMenu extends ConsumerWidget {
             PopupMenuItem<String>(
               value: 'profile',
               child: Row(children: [
-                const Icon(Icons.person_outline, size: 20, color: AppTheme.textDark),
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/icon_profil.png',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.cover,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Text('Lihat Profil', style: GoogleFonts.outfit(fontSize: 14)),
               ]),
@@ -183,6 +191,21 @@ class UserProfileMenu extends ConsumerWidget {
                   ),
                 ),
               ]),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 28,
+              child: Center(
+                child: Text(
+                  '${AppConstants.appName} v${AppConstants.appVersion}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ],
         );
@@ -521,7 +544,14 @@ class _ProfileDetailDialogState extends ConsumerState<ProfileDetailDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.account_circle, color: AppTheme.primaryBlue),
+          ClipOval(
+            child: Image.asset(
+              'assets/images/icon_profil.png',
+              width: 24,
+              height: 24,
+              fit: BoxFit.cover,
+            ),
+          ),
           const SizedBox(width: 8),
           Text(
             'Profil Pengguna',
@@ -648,6 +678,13 @@ class _ProfileDetailDialogState extends ConsumerState<ProfileDetailDialog> {
               child: SelectableText(
                 'ID Pengguna: ${profile.id}',
                 style: GoogleFonts.outfit(fontSize: 9, color: Colors.grey[500]),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                '${AppConstants.appName} ${AppConstants.fullVersion}',
+                style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.w500),
               ),
             ),
           ],
