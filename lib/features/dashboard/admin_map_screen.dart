@@ -69,7 +69,7 @@ class AdminMapScreen extends ConsumerStatefulWidget {
 
 class _AdminMapScreenState extends ConsumerState<AdminMapScreen> {
   final MapController _mapController = MapController();
-  static const LatLng _center = LatLng(-7.4120, 108.9950);
+  static const LatLng _center = LatLng(-7.3890, 108.9920);
 
   // State Tema Peta
   MapTileTheme _currentTheme = MapTileTheme.googleRoadmap;

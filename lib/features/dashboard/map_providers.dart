@@ -47,6 +47,20 @@ final posyanduAbjProvider = FutureProvider<Map<String, Map<String, dynamic>>>((
   return stats;
 });
 
+/// Koordinat resmi titik pusat setiap desa di Kecamatan Gumelar sesuai Google Maps / GIS
+const Map<String, ({double lat, double lon})> kGumelarVillageCoordinates = {
+  'gumelar': (lat: -7.375703, lon: 108.980212),
+  'cihonje': (lat: -7.396250, lon: 108.993298),
+  'cilangkap': (lat: -7.389525, lon: 108.963448),
+  'gancang': (lat: -7.403909, lon: 109.021787),
+  'kedungurang': (lat: -7.382196, lon: 109.023586),
+  'paningkaban': (lat: -7.426398, lon: 108.992495),
+  'karangkemojing': (lat: -7.435949, lon: 109.010416),
+  'samudra': (lat: -7.351828, lon: 109.013096),
+  'samudra kulon': (lat: -7.364052, lon: 108.988237),
+  'tlaga': (lat: -7.366452, lon: 108.969701),
+};
+
 class VillageMapData {
   final String name;
   final double latitude;
@@ -94,23 +108,60 @@ final villageMapDataProvider = FutureProvider<List<VillageMapData>>((ref) async 
     }
   }
   
+  // Pastikan seluruh 10 desa di Kecamatan Gumelar ditampilkan dengan koordinat resmi Google Maps
+  final allVillageNames = <String>{
+    ...villagePosyandus.keys,
+    'Gumelar',
+    'Cihonje',
+    'Cilangkap',
+    'Gancang',
+    'Kedungurang',
+    'Paningkaban',
+    'Karangkemojing',
+    'Samudra',
+    'Samudra Kulon',
+    'Tlaga',
+  };
+
   List<VillageMapData> result = [];
-  villagePosyandus.forEach((vName, posys) {
-    double sumLat = 0;
-    double sumLon = 0;
-    for (var p in posys) {
-      sumLat += p['latitude'] as double;
-      sumLon += p['longitude'] as double;
-    }
-    double avgLat = sumLat / posys.length;
-    double avgLon = sumLon / posys.length;
+  for (var vName in allVillageNames) {
+    final key = vName.trim().toLowerCase();
+    final canonical = kGumelarVillageCoordinates[key];
     
+    double targetLat;
+    double targetLon;
+
+    if (canonical != null) {
+      targetLat = canonical.lat;
+      targetLon = canonical.lon;
+    } else {
+      final posys = villagePosyandus[vName] ?? [];
+      if (posys.isNotEmpty) {
+        double sumLat = 0;
+        double sumLon = 0;
+        for (var p in posys) {
+          sumLat += p['latitude'] as double;
+          sumLon += p['longitude'] as double;
+        }
+        targetLat = sumLat / posys.length;
+        targetLon = sumLon / posys.length;
+      } else {
+        continue;
+      }
+    }
+
     int inspected = villageInspected[vName] ?? 0;
     int positive = villagePositive[vName] ?? 0;
     double abj = inspected > 0 ? ((inspected - positive) / inspected) * 100 : 100.0;
-    
-    result.add(VillageMapData(name: vName, latitude: avgLat, longitude: avgLon, abj: abj, inspected: inspected));
-  });
+
+    result.add(VillageMapData(
+      name: vName,
+      latitude: targetLat,
+      longitude: targetLon,
+      abj: abj,
+      inspected: inspected,
+    ));
+  }
   
   return result;
 });
