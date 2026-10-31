@@ -17,27 +17,63 @@ class BroadcastRepository {
   static final List<BroadcastAnnouncement> _defaultAnnouncements = [
     BroadcastAnnouncement(
       id: 'ann-001',
-      title: 'Gerakan PSN Serentak Menghadapi Musim Hujan 2026',
+      title: 'Instruksi Gerakan PSN 3M Plus Serentak Puncak Musim Hujan',
       content:
-          'Seluruh kader Posyandu se-Kecamatan Gumelar diinstruksikan melakukan pemeriksaan jentik serentak minimal 25 rumah per RT. Prioritaskan penampungan air terbuka, dispenser, dan talang air yang berisiko menjadi perindukan nyamuk Aedes aegypti.',
+          'Seluruh kader Posyandu se-Kecamatan Gumelar diinstruksikan melakukan pemeriksaan jentik serentak minimal 25-30 rumah per RT. Prioritaskan penampungan air terbuka, dispenser, vas bunga, dan talang air yang berisiko menjadi perindukan nyamuk Aedes aegypti.',
       urgency: 'darurat',
       targetVillageId: null,
-      targetVillageName: 'Seluruh Kabupaten / Puskesmas',
+      targetVillageName: 'Seluruh Wilayah Puskesmas Gumelar',
       authorName: 'Dinas Kesehatan Kab. Banyumas',
       isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(hours: 4)),
+      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
     ),
     BroadcastAnnouncement(
       id: 'ann-002',
-      title: 'Penyaluran Bubuk Abate & Larvasida Selektif',
+      title: 'Peringatan Dini Peningkatan Kasus DBD di Perbatasan Desa Cihonje',
       content:
-          'Puskesmas telah mendistribusikan stok larvasida abate ke koordinator posyandu desa dengan capaian ABJ di bawah 95%. Berikan abatisasi selektif untuk penampungan yang sulit dikuras secara rutin.',
+          'Ditemukan indikasi peningkatan kepadatan jentik nyamuk pada penampungan air di RW 02 dan RW 08 Desa Cihonje (ABJ < 90%). Bidan Desa dan seluruh kader diharapkan meningkatkan pemantauan mingguan serta membagikan bubuk abate secara terarah.',
       urgency: 'penting',
       targetVillageId: null,
-      targetVillageName: 'Desa Rawan ABJ < 95%',
-      authorName: 'Seksi P2M Dinkes',
+      targetVillageName: 'Desa Cihonje & Sekitarnya',
+      authorName: 'Seksi P2M Puskesmas Gumelar',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(hours: 18)),
+    ),
+    BroadcastAnnouncement(
+      id: 'ann-003',
+      title: 'Penyaluran Stok Larvasida Abate & Pipet Uji Jentik Periode November 2026',
+      content:
+          'Distribusi logistik pemeriksaan jentik (bubuk abate 100g, pipet plastik, dan senter LED pemeriksaan jentik) telah tiba di Puskesmas Gumelar. Ketua Posyandu dapat mengambil jatah logistik di ruang promkes pada jam kerja.',
+      urgency: 'penting',
+      targetVillageId: null,
+      targetVillageName: 'Koordinator Posyandu 10 Desa',
+      authorName: 'Farmasi & Promkes Dinkes',
       isActive: true,
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
+    ),
+    BroadcastAnnouncement(
+      id: 'ann-004',
+      title: 'Apresiasi Capaian Angka Bebas Jentik (ABJ) Wilayah Desa Paningkaban & Cilangkap',
+      content:
+          'Dinas Kesehatan mengapresiasi kerja keras kader Posyandu di Desa Paningkaban dan Cilangkap yang berhasil mempertahankan ABJ di atas 98% selama tiga bulan berturut-turut. Mari pertahankan status Bebas DBD!',
+      urgency: 'biasa',
+      targetVillageId: null,
+      targetVillageName: 'Desa Paningkaban & Cilangkap',
+      authorName: 'dr. H. Hendro Sutrisno, M.Kes (Superadmin)',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 4)),
+    ),
+    BroadcastAnnouncement(
+      id: 'ann-005',
+      title: 'Panduan Pengisian Laporan Digital & Validasi Geotagging SiKaderCantik',
+      content:
+          'Bagi kader yang melakukan pemeriksaan lapangan, pastikan GPS aktif saat memasukkan data KK baru. Fitur peta interaktif kini menampilkan klasterisasi jentik secara real-time untuk mempermudah evaluasi bulanan.',
+      urgency: 'biasa',
+      targetVillageId: null,
+      targetVillageName: 'Seluruh Kader & Admin Puskesmas',
+      authorName: 'Tim IT Dinkes Banyumas',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 6)),
     ),
   ];
 
@@ -61,7 +97,7 @@ class BroadcastRepository {
     }
 
     final localList = await _loadFromLocalCache();
-    if (localList.isNotEmpty) {
+    if (localList.length >= _defaultAnnouncements.length) {
       return localList;
     }
 

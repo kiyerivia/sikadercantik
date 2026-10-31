@@ -20,7 +20,7 @@ class UserManagementRepository {
       id: 'usr-001',
       fullName: 'dr. H. Hendro Sutrisno, M.Kes',
       role: 'superadmin',
-      phoneNumber: '081223344550',
+      phoneNumber: '0812-2334-4550',
       email: 'superadmin@dinkes-banyumas.go.id',
       posyanduName: 'Dinas Kesehatan Kab. Banyumas',
       villageName: 'Kabupaten Banyumas',
@@ -29,9 +29,9 @@ class UserManagementRepository {
     ),
     Profile(
       id: 'usr-002',
-      fullName: 'dr. Rian Firmansyah (Admin Puskesmas)',
+      fullName: 'dr. Rian Firmansyah',
       role: 'admin',
-      phoneNumber: '081399887766',
+      phoneNumber: '0813-9988-7766',
       email: 'admin.gumelar@dinkes.id',
       posyanduName: 'Puskesmas Gumelar',
       villageName: 'Gumelar',
@@ -40,51 +40,146 @@ class UserManagementRepository {
     ),
     Profile(
       id: 'usr-003',
-      fullName: 'Siti Aminah, S.Pd',
+      fullName: 'Bidan Retno Palupi, S.Tr.Keb',
+      role: 'admin',
+      phoneNumber: '0812-7890-4433',
+      email: 'retno.palupi@dinkes.id',
+      posyanduName: 'Puskesmas Gumelar (Promkes)',
+      villageName: 'Gumelar',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 50)),
+    ),
+    Profile(
+      id: 'usr-004',
+      fullName: 'Sri Hartati, A.Md.Keb',
       role: 'kader',
-      posyanduId: '20000000-0000-0000-0001-000000000001',
-      phoneNumber: '085712345678',
-      email: 'siti.kader@posyandu.id',
-      posyanduName: 'Posyandu Bina Sejahtera 1',
-      villageName: 'Cilangkap',
+      phoneNumber: '0821-5566-7788',
+      email: 'srihartati@posyandu.id',
+      posyanduName: 'Posyandu Bina Laju Sejahtera 1',
+      villageName: 'Gumelar',
       isActive: true,
       createdAt: DateTime.now().subtract(const Duration(days: 45)),
     ),
     Profile(
-      id: 'usr-004',
-      fullName: 'Endang Wahyuningsih',
+      id: 'usr-005',
+      fullName: 'Tasirem',
       role: 'kader',
-      posyanduId: '20000000-0000-0000-0002-000000000001',
-      phoneNumber: '081322334411',
-      email: 'endang.kader@posyandu.id',
-      posyanduName: 'Posyandu Dahlia 1',
+      phoneNumber: '0813-2745-8225',
+      email: 'tasirem@posyandu.id',
+      posyanduName: 'Posyandu Bina Sejahtera 1',
+      villageName: 'Cilangkap',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 40)),
+    ),
+    Profile(
+      id: 'usr-006',
+      fullName: 'Siti Aminah, S.Pd',
+      role: 'kader',
+      phoneNumber: '0857-1234-5678',
+      email: 'siti.aminah@posyandu.id',
+      posyanduName: 'Posyandu Bina Sejahtera 2',
+      villageName: 'Cilangkap',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 35)),
+    ),
+    Profile(
+      id: 'usr-007',
+      fullName: 'Winarsih',
+      role: 'kader',
+      phoneNumber: '0857-1213-5929',
+      email: 'winarsih@posyandu.id',
+      posyanduName: 'Posyandu Melati',
       villageName: 'Cihonje',
       isActive: true,
       createdAt: DateTime.now().subtract(const Duration(days: 30)),
     ),
     Profile(
-      id: 'usr-005',
-      fullName: 'Budi Santoso (Kader PSN)',
+      id: 'usr-008',
+      fullName: 'Endang Wahyuningsih',
       role: 'kader',
-      posyanduId: '20000000-0000-0000-0007-000000000001',
-      phoneNumber: '082155667788',
-      email: 'budi.gumelar@posyandu.id',
-      posyanduName: 'Posyandu Bina Laju Sejahtera 1',
-      villageName: 'Gumelar',
+      phoneNumber: '0813-2233-4411',
+      email: 'endang.wahyu@posyandu.id',
+      posyanduName: 'Posyandu Dahlia 1',
+      villageName: 'Cihonje',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 28)),
+    ),
+    Profile(
+      id: 'usr-009',
+      fullName: 'Sri Setiowati',
+      role: 'kader',
+      phoneNumber: '0852-2677-5619',
+      email: 'sri.setiowati@posyandu.id',
+      posyanduName: 'Posyandu Jatiwaluyo',
+      villageName: 'Paningkaban',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 25)),
+    ),
+    Profile(
+      id: 'usr-010',
+      fullName: 'Warsiyati',
+      role: 'kader',
+      phoneNumber: '0852-2709-8055',
+      email: 'warsiyati@posyandu.id',
+      posyanduName: 'Posyandu Taman Sari',
+      villageName: 'Kedungurang',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 22)),
+    ),
+    Profile(
+      id: 'usr-011',
+      fullName: 'Erni Wahyuningsih',
+      role: 'kader',
+      phoneNumber: '0815-4714-4210',
+      email: 'erni.wahyu@posyandu.id',
+      posyanduName: 'Posyandu Tunas Bangsa 1',
+      villageName: 'Gancang',
       isActive: true,
       createdAt: DateTime.now().subtract(const Duration(days: 20)),
     ),
     Profile(
-      id: 'usr-006',
-      fullName: 'Tri Retnowati',
+      id: 'usr-012',
+      fullName: 'Asmiyah',
       role: 'kader',
-      posyanduId: '20000000-0000-0000-0003-000000000001',
-      phoneNumber: '085877889900',
-      email: 'retno.paningkaban@posyandu.id',
-      posyanduName: 'Posyandu Jatiwaluyo',
-      villageName: 'Paningkaban',
+      phoneNumber: '0812-1096-7851',
+      email: 'asmiyah@posyandu.id',
+      posyanduName: 'Posyandu Balita Rahayu 1',
+      villageName: 'Tlaga',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 18)),
+    ),
+    Profile(
+      id: 'usr-013',
+      fullName: 'Titin Kurniasih',
+      role: 'kader',
+      phoneNumber: '0823-1635-8226',
+      email: 'titin.kurnia@posyandu.id',
+      posyanduName: 'Posyandu Budi Asih',
+      villageName: 'Samudra Kulon',
       isActive: true,
       createdAt: DateTime.now().subtract(const Duration(days: 15)),
+    ),
+    Profile(
+      id: 'usr-014',
+      fullName: 'Tri Retnowati',
+      role: 'kader',
+      phoneNumber: '0858-7788-9900',
+      email: 'retno.karang@posyandu.id',
+      posyanduName: 'Posyandu Sari Asih',
+      villageName: 'Karangkemojing',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 12)),
+    ),
+    Profile(
+      id: 'usr-015',
+      fullName: 'Siti Maryam',
+      role: 'kader',
+      phoneNumber: '0813-2981-1340',
+      email: 'siti.maryam@posyandu.id',
+      posyanduName: 'Posyandu Harapan Bangsa 1',
+      villageName: 'Samudra',
+      isActive: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 10)),
     ),
   ];
 
@@ -116,16 +211,25 @@ class UserManagementRepository {
         return Profile.fromMap(Map<String, dynamic>.from(item));
       }).toList();
 
-      if (list.length >= 2) {
-        await _saveToLocalCache(list);
-        return list;
+      if (list.isNotEmpty) {
+        // Merge remote profiles with rich default users so every village has represented cadres
+        final existingNames = list.map((u) => u.fullName.toLowerCase().trim()).toSet();
+        final existingIds = list.map((u) => u.id).toSet();
+        final combined = [...list];
+        for (var du in _defaultUsers) {
+          if (!existingNames.contains(du.fullName.toLowerCase().trim()) && !existingIds.contains(du.id)) {
+            combined.add(du);
+          }
+        }
+        await _saveToLocalCache(combined);
+        return combined;
       }
     } catch (e) {
       debugPrint('UserManagementRepository: remote fetch fallback: $e');
     }
 
     final localList = await _loadFromLocalCache();
-    if (localList.isNotEmpty) {
+    if (localList.length >= _defaultUsers.length) {
       return localList;
     }
 

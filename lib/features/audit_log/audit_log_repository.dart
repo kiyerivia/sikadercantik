@@ -15,56 +15,92 @@ class AuditLogRepository {
   static final List<AuditLogEntry> _defaultLogs = [
     AuditLogEntry(
       id: 'log-001',
-      userName: 'Superadmin Dinkes',
+      userName: 'dr. H. Hendro Sutrisno, M.Kes',
       userRole: 'superadmin',
       actionType: 'broadcast_instruksi',
-      description: 'Menerbitkan Instruksi Dinas: Gerakan PSN Serentak Menghadapi Puncak Musim Hujan 2026 ke seluruh kader posyandu.',
+      description: 'Menerbitkan Instruksi Dinas: Gerakan PSN 3M Plus Serentak Puncak Musim Hujan ke seluruh koordinator posyandu 10 desa.',
       targetId: 'ann-001',
       createdAt: DateTime.now().subtract(const Duration(hours: 3)),
     ),
     AuditLogEntry(
       id: 'log-002',
-      userName: 'Admin Puskesmas Gumelar',
+      userName: 'dr. Rian Firmansyah',
       userRole: 'admin',
       actionType: 'verifikasi_laporan',
-      description: 'Memverifikasi laporan PSN Posyandu Bina Sejahtera 1 (Desa Cilangkap) periode Oktober 2026.',
+      description: 'Memverifikasi laporan PSN Posyandu Bina Laju Sejahtera 1 (Desa Gumelar) periode Oktober 2026 (ABJ 96.7%).',
       targetId: 'rep-001',
-      createdAt: DateTime.now().subtract(const Duration(hours: 6)),
+      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
     ),
     AuditLogEntry(
       id: 'log-003',
-      userName: 'Admin Puskesmas Gumelar',
+      userName: 'dr. Rian Firmansyah',
       userRole: 'admin',
       actionType: 'intervensi',
-      description: 'Menginstruksikan intervensi Kunjungan Rumah & Abatisasi pada temuan 2 rumah positif jentik di Posyandu Dahlia 1.',
+      description: 'Menginstruksikan intervensi Kunjungan Rumah & Abatisasi pada temuan 4 rumah positif jentik di Posyandu Puji Lestari (Desa Cihonje).',
       targetId: 'rep-002',
-      createdAt: DateTime.now().subtract(const Duration(hours: 18)),
+      createdAt: DateTime.now().subtract(const Duration(hours: 9)),
     ),
     AuditLogEntry(
       id: 'log-004',
-      userName: 'Superadmin Dinkes',
+      userName: 'Bidan Retno Palupi, S.Tr.Keb',
+      userRole: 'admin',
+      actionType: 'verifikasi_laporan',
+      description: 'Memverifikasi laporan PSN Posyandu Bina Sejahtera 1 (Desa Cilangkap) periode Oktober 2026 (ABJ 100% Nihil Jentik).',
+      targetId: 'rep-003',
+      createdAt: DateTime.now().subtract(const Duration(hours: 14)),
+    ),
+    AuditLogEntry(
+      id: 'log-005',
+      userName: 'dr. H. Hendro Sutrisno, M.Kes',
+      userRole: 'superadmin',
+      actionType: 'broadcast_instruksi',
+      description: 'Menerbitkan Peringatan Dini Peningkatan Kasus DBD di Perbatasan Desa Cihonje & Samudra Kulon.',
+      targetId: 'ann-002',
+      createdAt: DateTime.now().subtract(const Duration(hours: 18)),
+    ),
+    AuditLogEntry(
+      id: 'log-006',
+      userName: 'dr. H. Hendro Sutrisno, M.Kes',
       userRole: 'superadmin',
       actionType: 'kelola_pengguna',
-      description: 'Menyetujui pendaftaran dan menetapkan penugasan Kader Siti Aminah ke Posyandu Bina Sejahtera 2.',
+      description: 'Menyetujui pendaftaran dan menetapkan penugasan Kader Siti Aminah, S.Pd ke Posyandu Bina Sejahtera 2.',
       targetId: 'usr-004',
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
     AuditLogEntry(
-      id: 'log-005',
-      userName: 'Superadmin Dinkes',
+      id: 'log-007',
+      userName: 'dr. Rian Firmansyah',
+      userRole: 'admin',
+      actionType: 'intervensi',
+      description: 'Menyelesaikan status intervensi: PSN Ulang Serentak warga Posyandu Bina Laju Sejahtera 5 (Desa Gumelar) telah tuntas.',
+      targetId: 'rep-005',
+      createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 6)),
+    ),
+    AuditLogEntry(
+      id: 'log-008',
+      userName: 'dr. H. Hendro Sutrisno, M.Kes',
       userRole: 'superadmin',
       actionType: 'kelola_wilayah',
-      description: 'Memperbarui koordinat Geotagging GPS Posyandu Dahlia 2 (-7.3752, 108.9921).',
-      targetId: 'pos-004',
+      description: 'Memperbarui koordinat Geotagging GPS presisi seluruh 80 Posyandu di wilayah Kecamatan Gumelar.',
+      targetId: 'pos-all-80',
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
     ),
     AuditLogEntry(
-      id: 'log-006',
-      userName: 'Superadmin Dinkes',
+      id: 'log-009',
+      userName: 'dr. Rian Firmansyah',
+      userRole: 'admin',
+      actionType: 'ekspor_data',
+      description: 'Mengekspor Laporan Bulanan Rekapitulasi ABJ Kecamatan Gumelar format Microsoft Excel (Oktober 2026).',
+      targetId: 'doc-xlsx-10',
+      createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 8)),
+    ),
+    AuditLogEntry(
+      id: 'log-010',
+      userName: 'dr. H. Hendro Sutrisno, M.Kes',
       userRole: 'superadmin',
       actionType: 'ekspor_data',
-      description: 'Mengunduh Dokumen Resmi SK Rekapitulasi ABJ Kabupaten Banyumas Triwulan III.',
-      targetId: 'doc-pdf-01',
+      description: 'Menerbitkan dan mengunduh Dokumen Resmi Surat Keputusan (SK) Rekapitulasi ABJ Kabupaten Banyumas Triwulan III (PDF).',
+      targetId: 'doc-pdf-sk01',
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
     ),
   ];
@@ -92,11 +128,11 @@ class AuditLogRepository {
 
     // 2. Fallback to SharedPreferences cache
     final localList = await _loadFromLocalCache();
-    if (localList.isNotEmpty) {
+    if (localList.length >= _defaultLogs.length) {
       return localList;
     }
 
-    // 3. If empty, seed default logs
+    // 3. If empty or outdated, seed default logs
     await _saveToLocalCache(_defaultLogs);
     return _defaultLogs;
   }
